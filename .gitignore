@@ -1,0 +1,63 @@
+# Project-root .gitignore for xx-wallet workspace
+# (xx-wallet-mobile/ has its own .gitignore for app-specific rules)
+
+# Dependencies (defensive — should be caught by inner .gitignore too)
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+
+# Environment files (we don't currently use any but defensive)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS / IDE noise
+.DS_Store
+Thumbs.db
+# Catches both the dot-separator and colon-separator forms of the Windows
+# "downloaded from internet" alternate-data-stream metadata files that
+# leak through rsync from NTFS (/mnt/c) to ext4 (~).
+*Zone.Identifier
+*:Zone.Identifier
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Go build artifacts inside sleeve-wasm/. Note that the *output* artifacts
+# (public/sleeve/main.wasm + wasm_exec.js) ARE intentionally committed so
+# day-to-day npm builds don't depend on Go being installed.
+xx-wallet-mobile/sleeve-wasm/*.test
+xx-wallet-mobile/sleeve-wasm/coverage.out
+
+# Throwaway / scratch — kept locally, not for the repo
+scratch/
+
+# Reference material in docs/ that came from external upstream repos.
+# These were cloned for reading + analysis (xxfoundation patterns, the
+# audited Sleeve reference, the experimental single-seed bounty fork).
+# Each has its own upstream and license; not part of this project's source.
+docs/sleeve-main/
+docs/sleeve-modification-single-seed-main*/
+docs/scripts-main/
+docs/xxfoundation-scripts/
+docs/xxnetwork-js-main/
+
+# xx network media kit — large binary archive + extracted folder.
+# We've already extracted just the icon SVGs we ship into public/brand/.
+# The full kit doesn't need to live in version control (and the .ai files
+# in particular are sizeable Illustrator binaries).
+docs/xx network_media kit/
+docs/xx network_media kit.zip
+
+# Misc one-off cleanup leftovers
+docs/test-write.txt
+docs/_to-delete-*

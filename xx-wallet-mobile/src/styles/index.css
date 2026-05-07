@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    background: theme('colors.ink.950');
+  }
+
+  body {
+    @apply font-sans text-ink-100 antialiased;
+    /* Prevent pull-to-refresh and overscroll glow */
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Amount and address displays use monospace for alignment */
+  .numeric {
+    @apply font-mono tabular-nums;
+  }
+}
+
+@layer components {
+  /* A subtle gradient mesh for hero backgrounds — gives the app atmosphere
+     without being a cliched purple gradient */
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 10% 0%, theme('colors.xx.800 / 0.4') 0px, transparent 50%),
+      radial-gradient(at 90% 20%, theme('colors.xx.700 / 0.15') 0px, transparent 50%),
+      radial-gradient(at 50% 100%, theme('colors.xx.900 / 0.3') 0px, transparent 50%);
+  }
+
+  /* Grain overlay for texture — keeps dark surfaces from feeling flat */
+  .grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.02;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Buttons optimized for thumb touch (min 44x44pt per Apple HIG) */
+  .btn-primary {
+    @apply flex items-center justify-center gap-2 min-h-[52px] px-6
+           rounded-2xl font-display font-medium text-base
+           bg-xx-500 text-ink-950
+           active:bg-xx-600 active:scale-[0.98]
+           transition-all duration-150
+           disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply flex items-center justify-center gap-2 min-h-[52px] px-6
+           rounded-2xl font-display font-medium text-base
+           bg-ink-700 text-ink-100 border border-ink-600
+           active:bg-ink-600 active:scale-[0.98]
+           transition-all duration-150
+           disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-ghost {
+    @apply flex items-center justify-center gap-2 min-h-[44px] px-4
+           rounded-xl font-sans font-medium text-sm
+           text-ink-300
+           active:bg-ink-800 active:text-ink-100
+           transition-all duration-150;
+  }
+
+  .input-base {
+    @apply w-full min-h-[52px] px-4 rounded-2xl
+           bg-ink-800 border border-ink-700
+           text-ink-100 placeholder:text-ink-400
+           focus:border-xx-500 focus:outline-none focus:ring-0
+           transition-colors duration-150;
+  }
+
+  .card {
+    @apply relative rounded-3xl bg-ink-800 border border-ink-700/50 p-5;
+  }
+
+  /* Safe area padding for devices with notches/home indicators */
+  .safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
