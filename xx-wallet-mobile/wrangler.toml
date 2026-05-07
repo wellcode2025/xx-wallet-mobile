@@ -1,0 +1,32 @@
+# Cloudflare Workers config for xx-wallet-mobile.
+#
+# Deployment target for the static SPA bundle in dist/. When the GitHub-connected
+# Worker on Cloudflare picks up a push to main, it runs:
+#
+#   1. (cd xx-wallet-mobile) npm install && npm run build
+#   2. npx wrangler deploy
+#
+# Wrangler reads this file to know what to upload. We deploy as a
+# static-assets-only Worker (no script entrypoint, just the built dist/
+# served at the URL root with SPA routing fallback for deep links).
+#
+# The `name` here MUST match the existing Worker on Cloudflare so this
+# becomes an update to that Worker rather than a new one — preserves the
+# URL `xx-wallet-mobile.xx-network.workers.dev` and any custom domains
+# we wire up later (e.g. mobile.xx.network).
+
+name = "xx-wallet-mobile"
+compatibility_date = "2026-05-05"
+
+[assets]
+# Path is relative to this wrangler.toml (i.e. xx-wallet-mobile/dist).
+directory = "./dist"
+
+# Any URL that doesn't match a static file serves index.html instead of
+# 404. Required for React Router — without this, deep links like
+# /tx/{id} or /send would 404 on direct visit / refresh.
+not_found_handling = "single-page-application"
+
+# Cleaner URL behaviour — auto-strips/adds trailing slashes for index.html
+# lookups. Matches what we configured in the dashboard previously.
+html_handling = "auto-trailing-slash"
