@@ -21,7 +21,7 @@ import nacl from 'tweetnacl';
 import { stringToU8a } from '@polkadot/util';
 import { base64Decode, base64Encode } from '@polkadot/util-crypto';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { manualScryptDecrypt, validatePkcs8 } from './store';
+import { manualScryptDecrypt, manualScryptEncrypt, validatePkcs8 } from './store';
 
 // PKCS8 header/divider — must match the constants in store.ts exactly.
 // Duplicated here intentionally; if store.ts ever changes these, the test
@@ -201,6 +201,107 @@ describe('manualScryptDecrypt', () => {
       const tampered = tamperParams(valid, { r: 17 });
       await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(/out-of-range/i);
     });
+  });
+});
+
+describe('manualScryptDecrypt — version pinning (H-3)', () => {
+  // The tampered keystores below deliberately violate the
+  // KeyringPair$Json type contract — that's the whole point of these
+  // tests. Cast through `unknown` so TS doesn't refuse to construct the
+  // invalid-by-design input.
+  it('rejects keystores with version other than "3"', async () => {
+    const json = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 32768);
+    const tampered = {
+      ...json,
+      encoding: { ...json.encoding, version: '2' },
+    } as unknown as KeyringPair$Json;
+    await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(
+      /Unsupported keystore version/i
+    );
+  });
+
+  it('rejects keystores not declaring scrypt + xsalsa20-poly1305', async () => {
+    const json = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 32768);
+    const tampered = {
+      ...json,
+      encoding: { ...json.encoding, type: ['pbkdf2', 'aes-gcm'] },
+    } as unknown as KeyringPair$Json;
+    await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(
+      /scrypt \+ xsalsa20-poly1305/i
+    );
+  });
+
+  it('rejects keystores with missing encoding metadata entirely', async () => {
+    const json = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 32768);
+    const tampered = {
+      ...json,
+      encoding: undefined,
+    } as unknown as KeyringPair$Json;
+    await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(
+      /Unsupported keystore version/i
+    );
+  });
+});
+
+describe('manualScryptEncrypt — round-trip and strong-default (H-1)', () => {
+  it('produces a v3 scrypt+xsalsa20-poly1305 keystore at N=131072 by default', async () => {
+    const pkcs8 = buildPkcs8(SECRET_KEY, PUBLIC_KEY);
+    const json = await manualScryptEncrypt(
+      pkcs8,
+      PASSWORD,
+      { address: 'test-address', meta: { name: 'test' } }
+    );
+
+    expect(json.encoding.version).toBe('3');
+    expect(json.encoding.type).toContain('scrypt');
+    expect(json.encoding.type).toContain('xsalsa20-poly1305');
+
+    // Inspect the encoded blob to verify N=131072 made it into the header.
+    const encoded = base64Decode(json.encoded);
+    const view = new DataView(encoded.buffer, encoded.byteOffset);
+    const N = view.getUint32(32, true);
+    expect(N).toBe(131072);
+  });
+
+  it('round-trips through manualScryptDecrypt', async () => {
+    const pkcs8 = buildPkcs8(SECRET_KEY, PUBLIC_KEY);
+    const json = await manualScryptEncrypt(
+      pkcs8,
+      PASSWORD,
+      { address: 'test-address', meta: { name: 'test' } }
+    );
+    const decrypted = await manualScryptDecrypt(json, PASSWORD);
+    validatePkcs8(decrypted);
+    expect(decrypted.slice(16, 80)).toEqual(SECRET_KEY);
+    expect(decrypted.slice(85, 117)).toEqual(PUBLIC_KEY);
+  });
+
+  it('honors custom params (e.g. N=32768 for compatibility tests)', async () => {
+    const pkcs8 = buildPkcs8(SECRET_KEY, PUBLIC_KEY);
+    const json = await manualScryptEncrypt(
+      pkcs8,
+      PASSWORD,
+      { address: 'test-address', meta: { name: 'test' } },
+      { N: 32768, r: 8, p: 1 }
+    );
+    const encoded = base64Decode(json.encoded);
+    const view = new DataView(encoded.buffer, encoded.byteOffset);
+    expect(view.getUint32(32, true)).toBe(32768);
+  });
+
+  it('produces fresh salt+nonce on each call (no static reuse)', async () => {
+    const pkcs8 = buildPkcs8(SECRET_KEY, PUBLIC_KEY);
+    const a = await manualScryptEncrypt(
+      pkcs8,
+      PASSWORD,
+      { address: 'a', meta: {} }
+    );
+    const b = await manualScryptEncrypt(
+      pkcs8,
+      PASSWORD,
+      { address: 'b', meta: {} }
+    );
+    expect(a.encoded).not.toBe(b.encoded);
   });
 });
 

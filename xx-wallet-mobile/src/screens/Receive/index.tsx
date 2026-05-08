@@ -67,11 +67,12 @@ export function Receive() {
 
     const url = urls[method];
     if (url) {
-      if (url.startsWith('tg://')) {
-        window.location.href = url;
-      } else {
-        window.open(url, '_blank');
-      }
+      // Use window.open for all share targets, including tg://. The previous
+      // approach of `window.location.href = 'tg://...'` would replace the
+      // current document on some browsers — if Telegram isn't installed the
+      // user got stuck on a broken page. window.open hands the URL to the
+      // OS protocol handler without navigating the wallet away.
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
     setShareOpen(false);
   };

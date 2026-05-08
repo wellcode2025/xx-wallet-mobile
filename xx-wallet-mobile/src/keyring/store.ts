@@ -30,6 +30,7 @@ import {
   mnemonicValidate,
   cryptoWaitReady,
   base64Decode,
+  base64Encode,
 } from '@polkadot/util-crypto';
 import { stringToU8a } from '@polkadot/util';
 import { scrypt as scryptAsync } from 'scrypt-js';
@@ -49,6 +50,14 @@ const SCRYPT_SALT_LEN = 32;
 const SCRYPT_HEADER_LEN = 44; // salt + N + p + r
 const NACL_NONCE_LEN = 24;
 const NACL_ENCRYPTED_HEADER_LEN = SCRYPT_HEADER_LEN + NACL_NONCE_LEN; // 68
+
+// Strong scrypt params used when this wallet creates a new account.
+// Matches what wallet.xx.network exports (and exceeds @polkadot/keyring's
+// default of N=32768) so a JSON exported from this wallet has the same
+// brute-force resistance as one exported from the official desktop wallet.
+const STRONG_SCRYPT_N = 131072;
+const STRONG_SCRYPT_R = 8;
+const STRONG_SCRYPT_P = 1;
 
 // PKCS8 wrapper markers that surround the secret key in the decrypted payload.
 // These come from @polkadot/keyring/pair/defaults.
@@ -106,6 +115,28 @@ export async function manualScryptDecrypt(
   json: KeyringPair$Json,
   password: string
 ): Promise<Uint8Array> {
+  // Pin the keystore format version + cipher suite. We only know the byte
+  // layout for v3 scrypt + xsalsa20-poly1305 keystores. A v2 (or future v4)
+  // would have a different layout, and feeding it through this function
+  // would silently slice bytes from the wrong offsets — bounds checks
+  // would either reject (good) or worse, pass and then fail at the
+  // secretbox open step. Either way, fail explicitly here instead.
+  const enc = json.encoding;
+  if (!enc || enc.version !== '3') {
+    throw new Error(
+      `Unsupported keystore version (expected 3, got ${enc?.version ?? 'unknown'}).`
+    );
+  }
+  if (
+    !Array.isArray(enc.type) ||
+    !enc.type.includes('scrypt') ||
+    !enc.type.includes('xsalsa20-poly1305')
+  ) {
+    throw new Error(
+      'Keystore is not encrypted with the expected scrypt + xsalsa20-poly1305 suite.'
+    );
+  }
+
   const encoded = base64Decode(json.encoded);
 
   // Parse scrypt params from the header
@@ -139,6 +170,80 @@ export async function manualScryptDecrypt(
     throw new Error('Incorrect password for this keystore.');
   }
   return decrypted;
+}
+
+/**
+ * Encrypt a PKCS8-wrapped sr25519 keypair into a Polkadot v3 JSON keystore
+ * using the strong xx-network-style scrypt parameters (N=131072, r=8, p=1).
+ *
+ * This is the inverse of `manualScryptDecrypt` and is what we use when
+ * creating a new account in this wallet — instead of `pair.toJson(password)`
+ * which uses @polkadot/util-crypto's weaker default of N=32768.
+ *
+ * The point: a JSON exported from this wallet should have the same
+ * brute-force resistance as one exported from `wallet.xx.network`. See
+ * SECURITY.md (H-1) for the threat-model rationale.
+ *
+ * `templateJson` provides `address` and `meta` — fields that aren't part
+ * of the encryption but are part of the standard keystore JSON shape.
+ *
+ * Exported for unit testing.
+ */
+export async function manualScryptEncrypt(
+  pkcs8: Uint8Array,
+  password: string,
+  templateJson: Pick<KeyringPair$Json, 'address' | 'meta'>,
+  params: { N: number; r: number; p: number } = {
+    N: STRONG_SCRYPT_N,
+    r: STRONG_SCRYPT_R,
+    p: STRONG_SCRYPT_P,
+  }
+): Promise<KeyringPair$Json> {
+  // Fresh salt + nonce per encryption — never reuse them. tweetnacl's
+  // randomBytes uses crypto.getRandomValues under the hood in browsers.
+  const salt = nacl.randomBytes(SCRYPT_SALT_LEN);
+  const nonce = nacl.randomBytes(NACL_NONCE_LEN);
+
+  // Same key derivation as the decrypt path: 64 bytes from scrypt, first
+  // 32 used as the secretbox key.
+  const passwordBytes = stringToU8a(password);
+  const derivedKey = await scryptAsync(
+    passwordBytes,
+    salt,
+    params.N,
+    params.r,
+    params.p,
+    64
+  );
+  const secretBoxKey = derivedKey.slice(0, 32);
+
+  // Encrypt the PKCS8 payload with xsalsa20-poly1305.
+  const ciphertext = nacl.secretbox(pkcs8, nonce, secretBoxKey);
+
+  // Pack the v3 layout: salt(32) | N(4 LE) | p(4 LE) | r(4 LE) | nonce(24) | ciphertext.
+  const encoded = new Uint8Array(NACL_ENCRYPTED_HEADER_LEN + ciphertext.length);
+  encoded.set(salt, 0);
+  const view = new DataView(encoded.buffer);
+  view.setUint32(SCRYPT_SALT_LEN, params.N, true);
+  view.setUint32(SCRYPT_SALT_LEN + 4, params.p, true);
+  view.setUint32(SCRYPT_SALT_LEN + 8, params.r, true);
+  encoded.set(nonce, SCRYPT_HEADER_LEN);
+  encoded.set(ciphertext, NACL_ENCRYPTED_HEADER_LEN);
+
+  // Best-effort wipe of the derived key bytes once encryption is done.
+  derivedKey.fill(0);
+  secretBoxKey.fill(0);
+
+  return {
+    address: templateJson.address,
+    encoded: base64Encode(encoded),
+    encoding: {
+      content: ['pkcs8', 'sr25519'],
+      type: ['scrypt', 'xsalsa20-poly1305'],
+      version: '3',
+    },
+    meta: templateJson.meta ?? {},
+  } as KeyringPair$Json;
 }
 
 /**
@@ -219,6 +324,12 @@ class XxKeyring {
   /**
    * Create a new account from a mnemonic and persist it.
    * The mnemonic should already be validated/confirmed by the user.
+   *
+   * Implementation note: we use `pair.toJson()` to get the standard PKCS8
+   * payload structure, then re-encrypt it at xx-network-strength scrypt
+   * (N=131072) instead of @polkadot's weaker N=32768 default. The
+   * intermediate decrypted PKCS8 buffer is wiped immediately. See
+   * SECURITY.md (H-1) for the rationale.
    */
   async createFromMnemonic(
     mnemonic: string,
@@ -232,7 +343,19 @@ class XxKeyring {
     }
 
     const pair = keyring.addFromUri(trimmed, { name: opts.name });
-    const json = pair.toJson(opts.password);
+    // pair.toJson uses @polkadot's hardcoded N=32768. We use this only as
+    // a stepping stone to get the canonical PKCS8 layout, then re-encrypt
+    // ourselves with N=131072. The weak JSON is never persisted.
+    const weakJson = pair.toJson(opts.password);
+    const decrypted = await manualScryptDecrypt(weakJson, opts.password);
+    let strongJson: KeyringPair$Json;
+    try {
+      validatePkcs8(decrypted);
+      strongJson = await manualScryptEncrypt(decrypted, opts.password, weakJson);
+    } finally {
+      // Wipe the intermediate plaintext PKCS8 buffer ASAP.
+      decrypted.fill(0);
+    }
 
     // Remove the in-memory pair — we only keep the encrypted JSON.
     keyring.removePair(pair.address);
@@ -240,7 +363,7 @@ class XxKeyring {
     const account: StoredAccount = {
       address: pair.address,
       name: opts.name,
-      json,
+      json: strongJson,
       createdAt: Date.now(),
     };
 
@@ -328,12 +451,20 @@ class XxKeyring {
   /**
    * Unlock an account to produce a signing pair.
    *
-   * The returned pair holds the decrypted secret key in memory — call
-   * `pair.lock()` or let it go out of scope ASAP after signing.
+   * The returned pair holds the decrypted secret key in memory — callers
+   * MUST call `pair.lock()` ASAP after signing, and ideally also
+   * `xxKeyring.removeFromKeyring(pair.address)` to evict the pair from
+   * the in-memory keyring map.
    *
-   * Handles BOTH Polkadot-default scrypt params AND wallet.xx.network custom
-   * params (N=131072). We always manually decrypt first, then build the
-   * KeyringPair from the raw key material.
+   * Handles both Polkadot-default scrypt params (legacy accounts) and
+   * wallet.xx.network custom params (N=131072). We always manually decrypt
+   * first, then build the KeyringPair from the raw key material.
+   *
+   * The intermediate `decrypted` and `secretKey` buffers are zeroed in
+   * `finally` blocks. JS Uint8Array.fill is not a guaranteed memory wipe
+   * (the engine may have moved the buffer or kept register copies), but
+   * it's still meaningfully better than letting the GC decide when —
+   * see SECURITY.md (H-2).
    */
   async unlock(address: string, password: string): Promise<KeyringPair> {
     const keyring = this.ensureReady();
@@ -342,31 +473,54 @@ class XxKeyring {
 
     // Step 1: Manually decrypt to validate the password.
     const decrypted = await manualScryptDecrypt(account.json, password);
-    validatePkcs8(decrypted);
+    try {
+      validatePkcs8(decrypted);
 
-    // Step 2: Extract the secret key and public key from the PKCS8 payload.
-    // Layout: [PKCS8_HEADER][64 bytes secretKey][PKCS8_DIVIDER][32 bytes publicKey]
-    const secretStart = PKCS8_HEADER.length;
-    const secretKey = decrypted.slice(secretStart, secretStart + 64);
-    const dividerStart = secretStart + 64;
-    // Sanity-check the divider
-    for (let i = 0; i < PKCS8_DIVIDER.length; i++) {
-      if (decrypted[dividerStart + i] !== PKCS8_DIVIDER[i]) {
-        throw new Error('Decrypted keystore has an invalid PKCS8 divider.');
+      // Step 2: Extract the secret key and public key from the PKCS8 payload.
+      // Layout: [PKCS8_HEADER][64 bytes secretKey][PKCS8_DIVIDER][32 bytes publicKey].
+      // Note `slice` returns a copy (not a view), so wiping `decrypted` does
+      // not also wipe `secretKey` — both need their own fill(0).
+      const secretStart = PKCS8_HEADER.length;
+      const secretKey = decrypted.slice(secretStart, secretStart + 64);
+      try {
+        const dividerStart = secretStart + 64;
+        for (let i = 0; i < PKCS8_DIVIDER.length; i++) {
+          if (decrypted[dividerStart + i] !== PKCS8_DIVIDER[i]) {
+            throw new Error('Decrypted keystore has an invalid PKCS8 divider.');
+          }
+        }
+        const publicKey = decrypted.slice(
+          dividerStart + PKCS8_DIVIDER.length,
+          dividerStart + PKCS8_DIVIDER.length + 32
+        );
+
+        // Step 3: Build a KeyringPair from the raw key material.
+        const pair = keyring.addFromPair(
+          { publicKey, secretKey },
+          { ...(account.json.meta || {}), name: account.name },
+          'sr25519'
+        );
+        return pair;
+      } finally {
+        secretKey.fill(0);
       }
+    } finally {
+      decrypted.fill(0);
     }
-    const publicKey = decrypted.slice(
-      dividerStart + PKCS8_DIVIDER.length,
-      dividerStart + PKCS8_DIVIDER.length + 32
-    );
+  }
 
-    // Step 3: Build a KeyringPair from the raw key material.
-    const pair = keyring.addFromPair(
-      { publicKey, secretKey },
-      { ...(account.json.meta || {}), name: account.name },
-      'sr25519'
-    );
-    return pair;
+  /**
+   * Evict an in-memory KeyringPair from @polkadot/keyring's internal map.
+   * Callers should invoke this after signing-and-locking is done so the
+   * pair object isn't kept alive longer than needed. Safe to call even
+   * if the pair isn't in the map (will silently no-op).
+   */
+  removeFromKeyring(address: string): void {
+    try {
+      this.keyring?.removePair(address);
+    } catch {
+      // Ignore — keyring may have already evicted, or pair never existed.
+    }
   }
 
   /**

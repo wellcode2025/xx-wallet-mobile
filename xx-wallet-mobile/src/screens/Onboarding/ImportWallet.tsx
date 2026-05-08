@@ -4,6 +4,7 @@ import { FileText, Upload, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { xxKeyring } from '@/keyring';
 import { useAccountsStore } from '@/store';
 import { TopBar } from '@/components/layout';
+import { isCommonPassword } from '@/utils';
 import clsx from 'clsx';
 
 type Method = 'mnemonic' | 'json';
@@ -38,11 +39,16 @@ export function ImportWallet() {
   };
 
   const mnemonicValid = mnemonic.trim().split(/\s+/).length >= 12;
+  // L-3: refuse common passwords on the new-password (mnemonic-import) path.
+  // The keystore-import path doesn't use this — that password is set by
+  // whoever exported the JSON, and we can't change theirs.
+  const passwordTooCommon = password.length > 0 && isCommonPassword(password);
   const mnemonicReady =
     mnemonicValid &&
     name.trim().length > 0 &&
     password.length >= 8 &&
-    password === passwordConfirm;
+    password === passwordConfirm &&
+    !passwordTooCommon;
 
   const handleImportMnemonic = async () => {
     setError(null);
@@ -170,6 +176,12 @@ export function ImportWallet() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {passwordTooCommon && (
+                <p className="text-xs text-danger mt-1.5">
+                  This password is on a list of commonly-used passwords.
+                  Please choose a different one.
+                </p>
+              )}
             </div>
 
             <div>

@@ -13,6 +13,15 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { isValidXxAddress } from '@/utils/address';
+
+// Bounds for imported contact data. Anyone legitimately needing more than
+// 64 chars for a label or 256 for a note is doing something unusual; any
+// import larger than 1000 contacts is more likely a malicious or runaway
+// file than a real address book.
+const CONTACT_NAME_MAX_LEN = 64;
+const CONTACT_NOTE_MAX_LEN = 256;
+const CONTACTS_TOTAL_MAX = 1000;
 
 /**
  * On-chain identity data, as returned by the identity pallet.
@@ -111,6 +120,10 @@ export const useAddressBook = create<AddressBookState>()(
         let added = 0;
         let skipped = 0;
         let errors = 0;
+        // How many more contacts we'll accept before hitting the cap. Once
+        // we hit it, every remaining entry counts as an error rather than
+        // silently truncating.
+        const remainingCapacity = Math.max(0, CONTACTS_TOTAL_MAX - existing.length);
 
         // Accept either { contacts: [...] } or [...]
         const list: unknown[] = Array.isArray(json)
@@ -121,14 +134,27 @@ export const useAddressBook = create<AddressBookState>()(
 
         const newContacts: Contact[] = [];
         for (const item of list) {
+          // Hit the per-wallet cap — count everything else as errors.
+          if (newContacts.length >= remainingCapacity) {
+            errors++;
+            continue;
+          }
           if (!item || typeof item !== 'object') { errors++; continue; }
           const entry = item as Record<string, unknown>;
           const address = typeof entry.address === 'string' ? entry.address.trim() : '';
           if (!address) { errors++; continue; }
+          // Anti-phishing: validate every imported address against the xx
+          // network SS58 format. Without this, an attacker could share a
+          // contacts file in which "Mum" points at their own address.
+          if (!isValidXxAddress(address)) { errors++; continue; }
           if (existingAddresses.has(address)) { skipped++; continue; }
 
-          const name = typeof entry.name === 'string' ? entry.name : '';
-          const note = typeof entry.note === 'string' && entry.note ? entry.note : undefined;
+          // Bound the free-text fields to prevent runaway file sizes from
+          // entries that try to store megabytes per contact.
+          const rawName = typeof entry.name === 'string' ? entry.name : '';
+          const name = rawName.slice(0, CONTACT_NAME_MAX_LEN);
+          const rawNote = typeof entry.note === 'string' ? entry.note : '';
+          const note = rawNote ? rawNote.slice(0, CONTACT_NOTE_MAX_LEN) : undefined;
 
           newContacts.push({
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${added}`,

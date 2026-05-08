@@ -105,8 +105,24 @@ export function useTx() {
         setStatus('error');
         throw err;
       } finally {
-        // Lock the pair as soon as we're done with it
-        pair?.lock?.();
+        // Lock the pair (re-encrypts the secret in @polkadot/keyring's
+        // internal storage) AND evict it from the keyring's in-memory map.
+        // Both must run; we use independent try/catch so a failure in one
+        // doesn't skip the other.
+        if (pair) {
+          if (typeof pair.lock === 'function') {
+            try { pair.lock(); } catch { /* swallow */ }
+          } else {
+            // Should not happen with current @polkadot/keyring versions —
+            // if it does, the pair is sitting in memory unlocked and we
+            // want to know about it. Don't throw (we're in a finally
+            // block) but make the regression visible in the console.
+            console.error(
+              'KeyringPair has no lock() method — possible @polkadot/keyring API change'
+            );
+          }
+          xxKeyring.removeFromKeyring(pair.address);
+        }
       }
     },
     [reset]

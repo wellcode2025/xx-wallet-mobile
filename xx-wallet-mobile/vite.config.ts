@@ -7,7 +7,16 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' instead of 'autoUpdate' so the service worker doesn't
+      // silently reload the page when a new deploy is detected — that
+      // would blow away React state mid-onboarding (e.g., the user is on
+      // the reveal-mnemonics screen, switches to a password manager to
+      // copy the phrase, comes back to the wallet, and the page has
+      // reloaded with fresh state and DIFFERENT mnemonics). With 'prompt'
+      // we get update events we can choose to surface to the user. For
+      // now we don't show a UI for it; the next user-initiated reload
+      // will pick up the new version naturally.
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'xx Wallet',

@@ -573,11 +573,23 @@ export function Settings() {
 function validateRpcUrl(url: string): string | null {
   if (!url) return 'URL is required';
   if (!/^wss?:\/\//i.test(url)) return 'Must start with wss:// or ws://';
+  let parsed: URL;
   try {
-    const parsed = new URL(url);
+    parsed = new URL(url);
     if (!parsed.host) return 'Missing host (e.g. wss://node.example.com)';
   } catch {
     return 'Invalid URL';
+  }
+  // ws:// (plaintext) is only allowed for localhost. For remote nodes the
+  // wallet would otherwise leak the full transaction history to anyone on
+  // the network path — signed extrinsics don't reveal keys, but they do
+  // reveal exactly what the user is doing on chain. For a wallet on a
+  // privacy-focused network that's particularly off-brand.
+  if (parsed.protocol === 'ws:') {
+    const localHosts = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+    if (!localHosts.has(parsed.hostname.toLowerCase())) {
+      return 'Plaintext ws:// is only allowed for localhost. Use wss:// for remote nodes.';
+    }
   }
   return null;
 }

@@ -16,9 +16,97 @@ import {
 import { xxKeyring, generateSleeveAccount, initSleeve } from '@/keyring';
 import { useAccountsStore } from '@/store';
 import { TopBar } from '@/components/layout';
+import { isCommonPassword } from '@/utils';
+import { copyToClipboard } from '@/utils/clipboard';
 import clsx from 'clsx';
 
 type Step = 'password' | 'security' | 'generating' | 'reveal' | 'confirm';
+
+// ---------------------------------------------------------------------------
+// Persisted onboarding state
+//
+// Mobile browsers (and the PWA service worker, even with the new 'prompt'
+// update mode) can lose the React JS context when the user backgrounds the
+// wallet — for example, to switch to a password manager and paste a
+// mnemonic. Without persistence, the next foreground brings up a fresh
+// CreateWallet component with empty state, and the *generating* step would
+// produce DIFFERENT mnemonics than what the user just wrote down. That's
+// not just bad UX; it's a path to lost funds (the user backs up phrases
+// that don't correspond to the eventually-created account).
+//
+// We persist to sessionStorage (per-tab; auto-cleared when the tab/PWA is
+// closed) so the same mnemonics are restored on remount. Password fields
+// are included because handleConfirm needs them to call createFromMnemonic
+// at the end — without them we'd have to re-prompt for password mid-flow,
+// which is its own UX trap.
+//
+// Threat model: same-origin JS can read sessionStorage during the create
+// flow's lifetime. Our CSP disallows external/inline scripts, so the
+// realistic attacker is a malicious browser extension — explicitly out of
+// scope per SECURITY.md. Cleared on successful account creation.
+// ---------------------------------------------------------------------------
+const CREATE_FLOW_STATE_KEY = 'xx-wallet:create-flow:state';
+
+interface PersistedCreateFlowState {
+  step: Step;
+  name: string;
+  password: string;
+  passwordConfirm: string;
+  ackOffline: boolean;
+  ackBrowser: boolean;
+  quantumMnemonic: string;
+  standardMnemonic: string;
+  confirmPicks: { quantum: number[]; standard: number[] };
+  // The words the user has typed back during the confirm step. Persisted
+  // so backgrounding mid-verification (e.g. to check the next word in a
+  // password manager) doesn't lose what they've already typed. Same
+  // threat model as the mnemonics themselves — these words are a subset
+  // of the full mnemonic, which is already in sessionStorage during the
+  // create flow.
+  confirmInputs: {
+    quantum: Record<number, string>;
+    standard: Record<number, string>;
+  };
+}
+
+function loadCreateFlowState(): Partial<PersistedCreateFlowState> {
+  try {
+    const raw = sessionStorage.getItem(CREATE_FLOW_STATE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as PersistedCreateFlowState;
+    // Restore mid-flow steps only when we actually have mnemonics.
+    // Otherwise reset to 'password' — restoring 'generating' would
+    // deadlock (the gen-useEffect skips when mnemonics are present).
+    if ((parsed.step === 'reveal' || parsed.step === 'confirm') &&
+        (!parsed.quantumMnemonic || !parsed.standardMnemonic)) {
+      parsed.step = 'password';
+    }
+    if (parsed.step === 'generating') {
+      parsed.step = 'password';
+    }
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function saveCreateFlowState(state: PersistedCreateFlowState): void {
+  try {
+    sessionStorage.setItem(CREATE_FLOW_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore — sessionStorage may be disabled (private mode in some
+    // browsers) or quota-exceeded. The wallet still works; the user
+    // just loses the persistence safety net.
+  }
+}
+
+function clearCreateFlowState(): void {
+  try {
+    sessionStorage.removeItem(CREATE_FLOW_STATE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 /**
  * Four-step Sleeve-by-default create flow:
@@ -37,26 +125,34 @@ export function CreateWallet() {
   const navigate = useNavigate();
   const refreshAccounts = useAccountsStore((s) => s.refresh);
 
-  const [step, setStep] = useState<Step>('password');
+  // Load any persisted in-progress create flow state. This restores the
+  // exact same mnemonics the user just wrote down if the page is reloaded
+  // (service-worker update, mobile-tab-eviction, manual refresh, etc.)
+  // mid-onboarding. See the PersistedCreateFlowState block above for the
+  // threat-model rationale.
+  const persisted = useMemo(() => loadCreateFlowState(), []);
+
+  const [step, setStep] = useState<Step>(persisted.step ?? 'password');
 
   // Step 1 — name + password
-  const [name, setName] = useState('Main account');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [name, setName] = useState(persisted.name ?? 'Main account');
+  const [password, setPassword] = useState(persisted.password ?? '');
+  const [passwordConfirm, setPasswordConfirm] = useState(persisted.passwordConfirm ?? '');
   const [showPassword, setShowPassword] = useState(false);
 
   // Step 2 — OPSEC attestations. Modeled on sleeve.xx.network's flow because
   // if this wallet ever gets foundation endorsement we want the security
   // hygiene to match what the official tool already trains users to expect.
-  const [ackOffline, setAckOffline] = useState(false);
-  const [ackBrowser, setAckBrowser] = useState(false);
+  const [ackOffline, setAckOffline] = useState(persisted.ackOffline ?? false);
+  const [ackBrowser, setAckBrowser] = useState(persisted.ackBrowser ?? false);
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
 
-  // Step 2/3 — Sleeve mnemonics (generated, never stored after this screen)
-  const [quantumMnemonic, setQuantumMnemonic] = useState('');
-  const [standardMnemonic, setStandardMnemonic] = useState('');
+  // Step 2/3 — Sleeve mnemonics (generated, never stored after this screen
+  // beyond sessionStorage during the create flow itself; cleared on success)
+  const [quantumMnemonic, setQuantumMnemonic] = useState(persisted.quantumMnemonic ?? '');
+  const [standardMnemonic, setStandardMnemonic] = useState(persisted.standardMnemonic ?? '');
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [copiedKey, setCopiedKey] = useState<'quantum' | 'standard' | null>(null);
@@ -65,13 +161,44 @@ export function CreateWallet() {
   const [confirmPicks, setConfirmPicks] = useState<{
     quantum: number[];
     standard: number[];
-  }>({ quantum: [], standard: [] });
+  }>(persisted.confirmPicks ?? { quantum: [], standard: [] });
   const [confirmInputs, setConfirmInputs] = useState<{
     quantum: Record<number, string>;
     standard: Record<number, string>;
-  }>({ quantum: {}, standard: {} });
+  }>(persisted.confirmInputs ?? { quantum: {}, standard: {} });
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // Persist the flow state on every meaningful change. Skip 'generating' —
+  // that's a transient step that resolves to 'reveal' in the same render
+  // cycle once mnemonics arrive, and persisting it would risk a deadlocked
+  // restore (covered defensively in loadCreateFlowState too).
+  useEffect(() => {
+    if (step === 'generating') return;
+    saveCreateFlowState({
+      step,
+      name,
+      password,
+      passwordConfirm,
+      ackOffline,
+      ackBrowser,
+      quantumMnemonic,
+      standardMnemonic,
+      confirmPicks,
+      confirmInputs,
+    });
+  }, [
+    step,
+    name,
+    password,
+    passwordConfirm,
+    ackOffline,
+    ackBrowser,
+    quantumMnemonic,
+    standardMnemonic,
+    confirmPicks,
+    confirmInputs,
+  ]);
 
   // Pre-warm the Sleeve WASM as soon as the user lands on the password screen.
   // The 3.3 MB module takes a noticeable moment to fetch + instantiate on
@@ -126,8 +253,16 @@ export function CreateWallet() {
     }
   }, [step, confirmPicks.quantum.length]);
 
+  // L-3: refuse the worst-offending common passwords. This isn't a strength
+  // meter — just a hard floor that catches `12345678`, `password123`, etc.
+  // before they get encrypted under any KDF.
+  const passwordTooCommon = password.length > 0 && isCommonPassword(password);
+
   const passwordValid =
-    password.length >= 8 && password === passwordConfirm && name.trim().length > 0;
+    password.length >= 8 &&
+    password === passwordConfirm &&
+    name.trim().length > 0 &&
+    !passwordTooCommon;
 
   const allConfirmInputsFilled = useMemo(() => {
     return (
@@ -138,13 +273,14 @@ export function CreateWallet() {
 
   const handleCopy = async (kind: 'quantum' | 'standard') => {
     const text = kind === 'quantum' ? quantumMnemonic : standardMnemonic;
-    try {
-      await navigator.clipboard.writeText(text);
+    // Use the shared copyToClipboard helper, which tries
+    // navigator.clipboard.writeText first (secure context only) and falls
+    // back to document.execCommand('copy') on plain-HTTP origins like the
+    // LAN dev server. Without this, the button silently no-ops on HTTP.
+    const ok = await copyToClipboard(text);
+    if (ok) {
       setCopiedKey(kind);
       setTimeout(() => setCopiedKey((c) => (c === kind ? null : c)), 1500);
-    } catch {
-      /* HTTP / no-permission fallback is handled centrally elsewhere; for the
-         keystore copy flow we just silently swallow — user can hand-write. */
     }
   };
 
@@ -183,6 +319,11 @@ export function CreateWallet() {
         name: name.trim(),
         password,
       });
+      // Account is now persisted; the in-flight create-flow state (which
+      // includes the password and both mnemonics) is no longer needed and
+      // shouldn't linger in sessionStorage where another script in the
+      // same origin could read it.
+      clearCreateFlowState();
       refreshAccounts();
       navigate('/', { replace: true });
     } catch (err) {
@@ -242,6 +383,12 @@ export function CreateWallet() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {passwordTooCommon && (
+                  <p className="text-xs text-danger mt-1.5">
+                    This password is on a list of commonly-used passwords.
+                    Please choose a different one.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -334,10 +481,10 @@ export function CreateWallet() {
                   browser, on your device. Nothing is sent to any server.
                 </p>
                 <p className="text-ink-300 text-xs leading-relaxed">
-                  For maximum security against compromised browser
-                  extensions or malware monitoring your screen, disconnect
-                  from the internet now and reconnect after you've written
-                  down both phrases.
+                  Recommended: write both phrases on paper. If you'll be
+                  doing that, disconnecting from the internet now adds
+                  extra protection against screen-monitoring or compromised
+                  extensions during generation.
                 </p>
               </div>
             </div>
@@ -410,12 +557,19 @@ export function CreateWallet() {
           <div className="space-y-6">
             <div className="flex items-start gap-3 p-4 rounded-2xl bg-warning/10 border border-warning/30">
               <Shield size={20} className="text-warning flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-ink-200">
-                <p className="font-medium mb-1">Two phrases — both required</p>
+              <div className="text-sm text-ink-200 space-y-2">
+                <p className="font-medium">Two phrases — both required</p>
                 <p className="text-ink-300 text-xs leading-relaxed">
-                  Write both down on paper, in order, and store somewhere
-                  safe. The wallet does not save these — losing them means
-                  losing access. Never share them with anyone.
+                  Recommended: write both down on paper by hand, in order,
+                  and store somewhere safe. Password managers and clipboard
+                  copy work but trade some security for convenience — your
+                  call.
+                </p>
+                <p className="text-ink-300 text-xs leading-relaxed">
+                  Your progress is saved on this device until creation is
+                  complete, so you can take your time and switch apps if
+                  you need to. The wallet itself never saves these phrases —
+                  losing them means losing access.
                 </p>
               </div>
             </div>
@@ -556,12 +710,32 @@ function Attestation({ checked, onChange, label }: AttestationProps) {
   );
 }
 
+/**
+ * Pick `count` distinct random indices from [0, range). Uses
+ * crypto.getRandomValues with rejection sampling against the largest
+ * uint32 multiple of `range` to avoid modulo bias for non-power-of-2
+ * ranges (24 in our case).
+ *
+ * Math.random() would technically work for the current "verify 2 words"
+ * use case, but switching to a CSPRNG with unbiased sampling is the
+ * conservative default for anything in onboarding security.
+ */
 function pickRandomIndices(count: number, range: number): number[] {
   const pool = Array.from({ length: range }, (_, i) => i);
   const picks: number[] = [];
+  const buf = new Uint32Array(1);
   while (picks.length < count) {
-    const i = Math.floor(Math.random() * pool.length);
-    picks.push(pool.splice(i, 1)[0]);
+    const limit = pool.length;
+    // Largest multiple of `limit` that fits in uint32. Values at or above
+    // this are rejected; everything below is uniformly distributed mod limit.
+    const cutoff = Math.floor(0x100000000 / limit) * limit;
+    let r: number;
+    do {
+      crypto.getRandomValues(buf);
+      r = buf[0];
+    } while (r >= cutoff);
+    const idx = r % limit;
+    picks.push(pool.splice(idx, 1)[0]);
   }
   return picks.sort((a, b) => a - b);
 }
