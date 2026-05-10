@@ -15,13 +15,45 @@
  * fake-but-real-looking accounts.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeAll } from 'vitest';
 import { scrypt as scryptAsync } from 'scrypt-js';
 import nacl from 'tweetnacl';
+import { Keyring } from '@polkadot/keyring';
 import { stringToU8a } from '@polkadot/util';
-import { base64Decode, base64Encode } from '@polkadot/util-crypto';
+import { base64Decode, base64Encode, mnemonicGenerate } from '@polkadot/util-crypto';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { manualScryptDecrypt, manualScryptEncrypt, validatePkcs8 } from './store';
+import {
+  manualScryptDecrypt,
+  manualScryptEncrypt,
+  validatePkcs8,
+  xxKeyring,
+} from './store';
+
+// In-memory localStorage shim. The xxKeyring singleton persists accounts
+// via localStorage; the vitest env is `node` (no DOM) so we provide a minimal
+// implementation just for these integration-flavored tests. The shim only
+// exists if real localStorage isn't already there, so tests stay portable.
+beforeAll(() => {
+  if (typeof (globalThis as { localStorage?: unknown }).localStorage === 'undefined') {
+    const store = new Map<string, string>();
+    (globalThis as { localStorage: Storage }).localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        store.set(k, v);
+      },
+      removeItem: (k: string) => {
+        store.delete(k);
+      },
+      clear: () => {
+        store.clear();
+      },
+      key: (i: number) => Array.from(store.keys())[i] ?? null,
+      get length() {
+        return store.size;
+      },
+    };
+  }
+});
 
 // PKCS8 header/divider — must match the constants in store.ts exactly.
 // Duplicated here intentionally; if store.ts ever changes these, the test
@@ -316,5 +348,104 @@ describe('validatePkcs8', () => {
     const corrupt = new Uint8Array(120);
     corrupt[0] = 0xff; // wrong first byte
     expect(() => validatePkcs8(corrupt)).toThrow(/PKCS8 header/i);
+  });
+});
+
+/**
+ * Regression test for the wipe-before-sign bug.
+ *
+ * History: H-2 hardening added `secretKey.fill(0)` in a `finally` clause
+ * inside `xxKeyring.unlock()`. The intent was good — don't leave plaintext
+ * secret material around longer than needed. The implementation was wrong:
+ * the wipe ran AFTER `keyring.addFromPair({secretKey, publicKey})` returned
+ * but BEFORE the caller received the pair, and `@polkadot/keyring`'s
+ * `addFromPair` retains a reference to the secretKey buffer rather than
+ * making a defensive copy. So the live pair's secret bytes were zeroed
+ * before the caller could call `pair.sign(...)`, producing the cryptic
+ * "Cannot sign with a locked key pair" error from `@polkadot/keyring` on
+ * every send attempt.
+ *
+ * The fix removed the premature wipe. The H-2 contract is still upheld by
+ * (a) the outer `decrypted.fill(0)` and (b) the mandatory caller-side
+ * `pair.lock()` (verified by the second test below).
+ *
+ * If this test ever fails with "Cannot sign with a locked key pair", the
+ * wipe-before-sign mistake has come back. Read the fix commit before
+ * re-adding any defensive zeroing inside `unlock()`.
+ */
+describe('xxKeyring.unlock — pair must be usable for signing', () => {
+  it('returns a pair that can sign without throwing locked-key-pair', async () => {
+    await xxKeyring.init();
+
+    // Build a fresh keystore JSON via @polkadot/keyring's own toJson — uses
+    // the library default scrypt params (N=32768) so the test runs fast.
+    // The unlock path under test handles both N=32768 and N=131072 the
+    // same way, so this is a representative case.
+    const tmpKeyring = new Keyring({ type: 'sr25519' });
+    const mnemonic = mnemonicGenerate();
+    const password = 'sign-me-please-9c4e';
+    const sourcePair = tmpKeyring.addFromUri(mnemonic);
+    const json = sourcePair.toJson(password);
+
+    // Import into the wallet's keyring (preserves JSON as-is, no re-encryption).
+    const account = await xxKeyring.importFromJson({ json, password });
+
+    try {
+      // The path that had the bug.
+      const pair = await xxKeyring.unlock(account.address, password);
+
+      // The smoking gun. Pre-fix this would throw. We sign once to verify
+      // the pair is usable, then again to confirm the secret state isn't
+      // single-use (e.g., consumed by the first sign).
+      const message = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+      const sig1 = pair.sign(message);
+      expect(sig1).toBeInstanceOf(Uint8Array);
+      expect(sig1.length).toBe(64);
+      // sr25519 signatures are randomized, but signing zeros would still
+      // produce a 64-byte buffer — assert at least one non-zero byte to
+      // distinguish "real signature" from "the zeroed-buffer ghost result".
+      expect(sig1.some((b) => b !== 0)).toBe(true);
+
+      const sig2 = pair.sign(message);
+      expect(sig2.length).toBe(64);
+      expect(sig2.some((b) => b !== 0)).toBe(true);
+
+      // Verify post-sign cleanup contract: caller MUST be able to lock.
+      expect(typeof pair.lock).toBe('function');
+      expect(() => pair.lock()).not.toThrow();
+    } finally {
+      // Don't pollute the singleton across tests.
+      try {
+        xxKeyring.removeFromKeyring(account.address);
+      } catch { /* ignore */ }
+      xxKeyring.removeAccount(account.address);
+    }
+  });
+
+  it('locking the pair after sign blocks further signs (H-2 contract)', async () => {
+    await xxKeyring.init();
+
+    const tmpKeyring = new Keyring({ type: 'sr25519' });
+    const password = 'lock-me-after-2f9a';
+    const sourcePair = tmpKeyring.addFromUri(mnemonicGenerate());
+    const json = sourcePair.toJson(password);
+    const account = await xxKeyring.importFromJson({ json, password });
+
+    try {
+      const pair = await xxKeyring.unlock(account.address, password);
+
+      // Pre-lock: signs work.
+      const message = new Uint8Array([9, 8, 7, 6]);
+      expect(() => pair.sign(message)).not.toThrow();
+
+      // Lock and confirm @polkadot's "no signing while locked" guard fires.
+      pair.lock();
+      expect(() => pair.sign(message)).toThrow(/locked/i);
+    } finally {
+      try {
+        xxKeyring.removeFromKeyring(account.address);
+      } catch { /* ignore */ }
+      xxKeyring.removeAccount(account.address);
+    }
   });
 });

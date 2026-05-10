@@ -479,31 +479,44 @@ class XxKeyring {
       // Step 2: Extract the secret key and public key from the PKCS8 payload.
       // Layout: [PKCS8_HEADER][64 bytes secretKey][PKCS8_DIVIDER][32 bytes publicKey].
       // Note `slice` returns a copy (not a view), so wiping `decrypted` does
-      // not also wipe `secretKey` — both need their own fill(0).
+      // not also wipe `secretKey` / `publicKey`.
       const secretStart = PKCS8_HEADER.length;
       const secretKey = decrypted.slice(secretStart, secretStart + 64);
-      try {
-        const dividerStart = secretStart + 64;
-        for (let i = 0; i < PKCS8_DIVIDER.length; i++) {
-          if (decrypted[dividerStart + i] !== PKCS8_DIVIDER[i]) {
-            throw new Error('Decrypted keystore has an invalid PKCS8 divider.');
-          }
+      const dividerStart = secretStart + 64;
+      for (let i = 0; i < PKCS8_DIVIDER.length; i++) {
+        if (decrypted[dividerStart + i] !== PKCS8_DIVIDER[i]) {
+          throw new Error('Decrypted keystore has an invalid PKCS8 divider.');
         }
-        const publicKey = decrypted.slice(
-          dividerStart + PKCS8_DIVIDER.length,
-          dividerStart + PKCS8_DIVIDER.length + 32
-        );
-
-        // Step 3: Build a KeyringPair from the raw key material.
-        const pair = keyring.addFromPair(
-          { publicKey, secretKey },
-          { ...(account.json.meta || {}), name: account.name },
-          'sr25519'
-        );
-        return pair;
-      } finally {
-        secretKey.fill(0);
       }
+      const publicKey = decrypted.slice(
+        dividerStart + PKCS8_DIVIDER.length,
+        dividerStart + PKCS8_DIVIDER.length + 32
+      );
+
+      // Step 3: Build a KeyringPair from the raw key material.
+      //
+      // IMPORTANT: do NOT wipe `secretKey` here. @polkadot/keyring's
+      // `addFromPair` retains a reference to (or otherwise depends on)
+      // the secretKey buffer for the lifetime of the pair — wiping it
+      // immediately after creation collapses the pair's secret state
+      // and the next `pair.sign(...)` call fails with
+      // "Cannot sign with a locked key pair".
+      //
+      // The H-2 hardening contract (don't leave plaintext secret material
+      // around longer than necessary) is still upheld by:
+      //   1. The outer `finally` zeroing the full `decrypted` PKCS8 blob.
+      //   2. The mandatory caller-side `pair.lock()` after signing
+      //      (documented in this method's docstring; enforced by the
+      //      `removeFromKeyring` cleanup pattern in `useTx`).
+      // The standalone `secretKey` slice we created above goes out of
+      // scope when this function returns and is collectable by the GC;
+      // the live secret material lives inside the returned pair, where
+      // the caller is responsible for clearing it.
+      return keyring.addFromPair(
+        { publicKey, secretKey },
+        { ...(account.json.meta || {}), name: account.name },
+        'sr25519'
+      );
     } finally {
       decrypted.fill(0);
     }
