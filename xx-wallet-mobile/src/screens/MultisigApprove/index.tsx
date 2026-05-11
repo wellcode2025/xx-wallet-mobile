@@ -31,13 +31,14 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  Key,
   X,
   Loader2,
 } from 'lucide-react';
 import { hexToU8a } from '@polkadot/util';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
-import { AddressChip, Sheet } from '@/components/ui';
+import { AddressChip, AddressIcon, Sheet } from '@/components/ui';
 import { useApi, usePendingMultisigs, useTx } from '@/hooks';
 import {
   useAccountsStore,
@@ -46,6 +47,7 @@ import {
 } from '@/store';
 import {
   decodeCall,
+  extractTransferSummary,
   multisigAddressMatches,
   normalizeCallBytes,
   shortenAddress,
@@ -105,8 +107,32 @@ function ApproveView({
 }) {
   const navigate = useNavigate();
   const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
-  const { activeAddress } = useAccountsStore();
+  const { accounts, activeAddress } = useAccountsStore();
   const { pending, isLoading: pendingLoading } = usePendingMultisigs(address);
+
+  // Snapshot the proposal once we've seen it. The chain removes it from
+  // storage the moment it executes (including via our own threshold-
+  // meeting signature), so without a snapshot the screen flashes to
+  // "proposal not found" right when the user is most expecting a
+  // success confirmation. With the snapshot, we can render the success
+  // sheet on top of the last-known proposal state instead.
+  //
+  // Tracked separately from `proposal` so the rest of the screen still
+  // reflects fresh chain state during normal operation.
+  const [snapshotProposal, setSnapshotProposal] = useState<
+    typeof pending[number] | null
+  >(null);
+  const liveProposal = pending.find((p) => p.callHash === callHash);
+  useEffect(() => {
+    if (liveProposal) {
+      setSnapshotProposal(liveProposal);
+    }
+  }, [liveProposal]);
+  // Effective proposal: prefer the live one; fall back to the snapshot
+  // when the live entry has disappeared (executed or cancelled). The
+  // snapshot lets the success sheet render coherently after we've just
+  // executed it ourselves.
+  const proposalForRender = liveProposal ?? snapshotProposal;
   const cachedEntry = usePendingBytesStore((s) => s.getBytes(address, callHash));
   const putBytes = usePendingBytesStore((s) => s.putBytes);
   const removeBytes = usePendingBytesStore((s) => s.removeBytes);
@@ -119,8 +145,10 @@ function ApproveView({
     reset: resetTx,
   } = useTx();
 
-  // Find the specific pending proposal we're approving
-  const proposal = pending.find((p) => p.callHash === callHash);
+  // The "proposal" we render details for. Always use proposalForRender
+  // (snapshot-aware) for display. Only use `liveProposal` directly when
+  // the chain's current state matters (e.g., the bounce-to-NotFound check).
+  const proposal = proposalForRender;
 
   // Paste affordance state
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -195,28 +223,92 @@ function ApproveView({
     }
   }, [callBytes, hashVerified, api]);
 
-  // What's the user's role on this proposal?
-  const userRole: UserRole = useMemo(() => {
-    if (!activeAddress) return 'not-a-signer';
-    if (!proposal) return 'not-a-signer';
-    const isSigner = multisig.signers.some(
-      (s) => s.address === activeAddress
+  // Compute the user's accounts that are signers of this multisig. Each
+  // can have a DIFFERENT role on this specific proposal (one might be the
+  // depositor, another might have already approved, a third might still
+  // be able to sign). Per the multisig signer-picker rule, the user
+  // explicitly chooses which of these accounts is acting on this screen
+  // — never use activeAddress as the implicit signer.
+  const eligibleSigners = useMemo(
+    () =>
+      accounts.filter((a) =>
+        multisig.signers.some((s) => s.address === a.address)
+      ),
+    [accounts, multisig.signers]
+  );
+
+  // Default the picker to whichever eligible signer can still meaningfully
+  // act on this proposal — i.e., a 'pending-approver'. Only fall back to
+  // the active account or first-eligible if none of the user's signers
+  // can still sign.
+  const computeDefaultSigner = (): string => {
+    if (!proposal) {
+      return activeAddress &&
+        eligibleSigners.some((a) => a.address === activeAddress)
+        ? activeAddress
+        : eligibleSigners[0]?.address ?? '';
+    }
+    const stillCanSign = eligibleSigners.find(
+      (a) =>
+        a.address !== proposal.depositor &&
+        !proposal.approvals.includes(a.address)
     );
-    if (!isSigner) return 'not-a-signer';
-    if (proposal.depositor === activeAddress) return 'depositor';
-    if (proposal.approvals.includes(activeAddress)) return 'already-approved';
+    if (stillCanSign) return stillCanSign.address;
+    if (
+      activeAddress &&
+      eligibleSigners.some((a) => a.address === activeAddress)
+    ) {
+      return activeAddress;
+    }
+    return eligibleSigners[0]?.address ?? '';
+  };
+
+  const [signerAddress, setSignerAddress] = useState<string>(() =>
+    computeDefaultSigner()
+  );
+
+  // Re-run the default when the proposal data first arrives or the
+  // eligible set changes. Without this, the initial render runs with
+  // proposal=undefined and we'd stick with whatever fallback we picked.
+  const eligibleKey = eligibleSigners.map((a) => a.address).join('|');
+  useEffect(() => {
+    if (
+      signerAddress &&
+      eligibleSigners.some((a) => a.address === signerAddress)
+    ) {
+      return;
+    }
+    setSignerAddress(computeDefaultSigner());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eligibleKey, proposal?.callHash]);
+
+  const signerAccount = accounts.find((a) => a.address === signerAddress);
+
+  // The role of the SELECTED signer on this proposal. Different from the
+  // pre-picker version (which used the active account); the picker may
+  // change this on the fly.
+  const userRole: UserRole = useMemo(() => {
+    if (!signerAddress) return 'not-a-signer';
+    if (!proposal) return 'not-a-signer';
+    if (proposal.depositor === signerAddress) return 'depositor';
+    if (proposal.approvals.includes(signerAddress)) return 'already-approved';
     return 'pending-approver';
-  }, [activeAddress, proposal, multisig.signers]);
+  }, [signerAddress, proposal]);
+
+  const hasEligibleSigner = eligibleSigners.length > 0;
 
   // Will the next approval execute? (At threshold-1 approvals, the next
   // signature finalizes the call.)
   const nextApprovalExecutes =
     proposal != null && proposal.approvals.length === multisig.threshold - 1;
 
-  // Did we still find a pending proposal? If `pending` finished loading
-  // but no entry matches our callHash, the proposal must have just
-  // executed or been cancelled — bounce back to the multisig detail.
-  if (!pendingLoading && !proposal) {
+  // Did we ever have this pending proposal? If `pending` finished loading
+  // AND we've never snapshotted a copy of this proposal, it really doesn't
+  // exist — bounce to NotFound. But if we DID have a snapshot (e.g., we
+  // just signed the threshold-meeting approval and the chain removed the
+  // proposal a moment ago), keep rendering the main view so the success
+  // sheet can surface a clear "executed" confirmation.
+  if (!pendingLoading && !proposal && !snapshotProposal) {
     return (
       <>
         <TopBar title="Proposal not found" showBack />
@@ -314,7 +406,7 @@ function ApproveView({
   };
 
   const handleConfirmApprove = async () => {
-    if (!activeAddress || !proposal || !callBytes) return;
+    if (!signerAddress || !proposal || !callBytes) return;
     setPasswordError(null);
     try {
       await submit(
@@ -327,13 +419,15 @@ function ApproveView({
             hexToU8a(callBytes)
           );
 
-          // other_signatories: every signer EXCEPT the user, sorted SS58.
-          // Substrate sorts them internally too, but we sort here for
+          // other_signatories: every signer EXCEPT the picked signatory,
+          // sorted SS58. We exclude based on the user-picked signer
+          // (NOT activeAddress) per the multisig signer-picker rule.
+          // Substrate sorts internally too, but we sort here for
           // consistency in case a future runtime change drops the
           // internal sort.
           const otherSignatories = multisig.signers
             .map((s) => s.address)
-            .filter((a) => a !== activeAddress)
+            .filter((a) => a !== signerAddress)
             .sort();
 
           // The Timepoint of the original proposal — required for any
@@ -351,7 +445,7 @@ function ApproveView({
             STATIC_INNER_CALL_WEIGHT
           );
         },
-        { address: activeAddress, password }
+        { address: signerAddress, password }
       );
       // On finalized, the tx hook flips status to 'finalized' and the
       // success sheet (driven by `isDone`) appears. The user dismisses
@@ -408,9 +502,69 @@ function ApproveView({
           <RoleBanner role={userRole} />
         </div>
 
+        {/* Signer picker — which of YOUR accounts is acting on this
+            proposal. Different of your accounts may have different roles
+            here (one might be the depositor, another might still be able
+            to sign), so this is consequential. */}
+        {hasEligibleSigner && (
+          <div className="card space-y-2">
+            <div className="flex items-center gap-2">
+              <Key size={14} className="text-xx-500" strokeWidth={2.25} />
+              <p className="text-[10px] uppercase tracking-wider text-ink-400 font-medium">
+                Acting as
+              </p>
+            </div>
+            {eligibleSigners.length === 1 ? (
+              <div className="flex items-center gap-2">
+                <AddressIcon
+                  address={eligibleSigners[0].address}
+                  size={28}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ink-100 truncate">
+                    {eligibleSigners[0].name}
+                  </p>
+                  <p className="font-mono text-[11px] text-ink-400 truncate">
+                    {eligibleSigners[0].address}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <select
+                value={signerAddress}
+                onChange={(e) => setSignerAddress(e.target.value)}
+                className="input-base text-sm"
+              >
+                {eligibleSigners.map((a) => {
+                  let suffix = '';
+                  if (proposal) {
+                    if (a.address === proposal.depositor) suffix = ' (depositor)';
+                    else if (proposal.approvals.includes(a.address))
+                      suffix = ' (already signed)';
+                  }
+                  return (
+                    <option key={a.address} value={a.address}>
+                      {a.name} — {a.address.slice(0, 8)}…
+                      {a.address.slice(-6)}
+                      {suffix}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
+            <p className="text-[10px] text-ink-500 leading-relaxed">
+              The chosen account signs the approval and pays the
+              extrinsic fee.
+            </p>
+          </div>
+        )}
+
         {/* Description — the central UX moment */}
         {bytesAvailable && hashVerified && decoded && (
-          <DecodedDescriptionCard decoded={decoded} />
+          <DecodedDescriptionCard
+            decoded={decoded}
+            source={cachedEntry?.source ?? 'received'}
+          />
         )}
         {bytesAvailable && hashVerified && !decoded && !decodeError && (
           <div className="card text-xs text-ink-400">Decoding…</div>
@@ -621,10 +775,39 @@ function ApproveView({
             <Row label="Multisig">
               <span className="font-medium text-sm">{multisig.localName}</span>
             </Row>
-            <Row label="Action">
-              <span className="text-sm text-ink-100 leading-snug whitespace-pre-line">
-                {decoded?.friendly ?? decoded?.literal ?? '(no decoded view)'}
+            <Row label="Signed by">
+              <span className="font-medium text-sm">
+                {signerAccount?.name ?? 'unknown'}
               </span>
+            </Row>
+            <Row label="Action">
+              {(() => {
+                // Mirror the main screen's amount-prominent rendering
+                // here on the final-confirmation step — same anti-extra-
+                // zero principle. The user is one tap away from signing;
+                // the amount must be impossible to misread.
+                const transfer = decoded ? extractTransferSummary(decoded) : null;
+                if (transfer) {
+                  return (
+                    <div className="text-right">
+                      <p className="text-lg font-display font-medium text-ink-100 numeric leading-tight">
+                        {transfer.formattedAmount}{' '}
+                        <span className="text-sm text-ink-300">
+                          {transfer.symbol}
+                        </span>
+                      </p>
+                      <p className="font-mono text-[10px] text-ink-400 break-all leading-tight">
+                        to {transfer.recipient}
+                      </p>
+                    </div>
+                  );
+                }
+                return (
+                  <span className="text-sm text-ink-100 leading-snug whitespace-pre-line">
+                    {decoded?.friendly ?? decoded?.literal ?? '(no decoded view)'}
+                  </span>
+                );
+              })()}
             </Row>
             <Row label="Effect">
               <span className="text-xs text-ink-300 leading-snug">
@@ -689,22 +872,88 @@ function ApproveView({
         </div>
       </Sheet>
 
-      {/* Success sheet */}
+      {/* Success sheet — content depends on whether this approval was
+          the threshold-meeting signature (executed the inner call) or
+          an intermediate signature (proposal still pending). For
+          executed transfers, mirror the same prominent amount/recipient
+          display the user just confirmed, so they get an unmistakable
+          "this is what just happened on chain" view. */}
       <Sheet open={isDone} onClose={closeSuccess}>
         <div className="flex flex-col items-center text-center py-6 space-y-4">
           <div className="w-16 h-16 rounded-full bg-xx-500/10 border border-xx-500/40 flex items-center justify-center">
             <Check size={32} className="text-xx-500" strokeWidth={2} />
           </div>
+
           <div>
             <h2 className="font-display font-semibold text-xl">
-              {nextApprovalExecutes ? 'Executed' : 'Approval recorded'}
+              {nextApprovalExecutes ? 'Transfer executed' : 'Approval recorded'}
             </h2>
-            <p className="text-sm text-ink-400 mt-1">
+            <p className="text-sm text-ink-400 mt-1 leading-relaxed">
               {nextApprovalExecutes
-                ? 'Threshold met — the inner action ran on chain.'
-                : 'Your signature is on chain. Awaiting remaining cosigners.'}
+                ? 'Threshold met. The transfer has executed on chain — funds have moved out of the multisig.'
+                : `Your signature is on chain. ${
+                    multisig.threshold - ((proposal?.approvals.length ?? 0) + 1)
+                  } more signature(s) needed before the transfer executes.`}
             </p>
           </div>
+
+          {/* Prominent amount + recipient — only when we executed AND we
+              have a decoded transfer to show. Same visual treatment as
+              the approval card so the user sees a clear, unambiguous
+              confirmation of what just happened. */}
+          {nextApprovalExecutes && decoded && (() => {
+            const transfer = extractTransferSummary(decoded);
+            if (!transfer) return null;
+            return (
+              <div className="w-full p-4 rounded-2xl bg-xx-500/5 border border-xx-500/30 space-y-2 text-left">
+                <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+                  Sent
+                </p>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-3xl font-display font-medium text-ink-100 numeric leading-none">
+                    {transfer.formattedAmount}
+                  </span>
+                  <span className="text-base text-ink-300 font-display font-medium">
+                    {transfer.symbol}
+                  </span>
+                </div>
+                <div className="pt-1">
+                  <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+                    To
+                  </p>
+                  <p className="font-mono text-xs text-ink-200 break-all leading-snug">
+                    {transfer.recipient}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* For intermediate (non-executing) signatures, show the
+              progress meter so the user understands the proposal's
+              new state at a glance. */}
+          {!nextApprovalExecutes && proposal && (
+            <div className="w-full p-3 rounded-xl bg-ink-800 border border-ink-700/50 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-ink-400">Approvals</span>
+                <span className="text-ink-100 font-medium numeric">
+                  {(proposal.approvals.length + 1)} of {multisig.threshold}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-ink-700 overflow-hidden">
+                <div
+                  className="h-full bg-xx-500 transition-all"
+                  style={{
+                    width: `${
+                      ((proposal.approvals.length + 1) / multisig.threshold) *
+                      100
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {txHash && (
             <div className="w-full">
               <p className="text-xs text-ink-400 mb-1 uppercase tracking-wide">
@@ -755,9 +1004,23 @@ function RoleBanner({ role }: { role: UserRole }) {
   );
 }
 
-function DecodedDescriptionCard({ decoded }: { decoded: DecodedCall }) {
-  const description = decoded.friendly ?? decoded.literal;
-  const isFriendly = decoded.friendly !== null;
+function DecodedDescriptionCard({
+  decoded,
+  source,
+}: {
+  decoded: DecodedCall;
+  /** Where the call data came from, so the user understands why they
+   *  weren't asked to paste it (or, conversely, that it's bytes they
+   *  themselves pasted). Doesn't affect security — both sources are
+   *  hash-verified before reaching here — but it's clarifying context. */
+  source: 'self-proposed' | 'received';
+}) {
+  // For transfer calls, render the amount with strong visual prominence
+  // so the user can't miss an extra zero (the most common amount-related
+  // social-engineering attack). For all other call types, fall back to
+  // the friendly text description.
+  const transfer = extractTransferSummary(decoded);
+
   return (
     <div className="card space-y-3 border border-xx-500/30 bg-xx-500/5">
       <div className="flex items-center gap-2">
@@ -766,17 +1029,94 @@ function DecodedDescriptionCard({ decoded }: { decoded: DecodedCall }) {
           Decoded by your wallet from verified call data
         </p>
       </div>
+
+      {transfer ? (
+        <TransferProminentDisplay transfer={transfer} />
+      ) : (
+        <FreeTextDescription decoded={decoded} />
+      )}
+
+      {/* Source attribution — explains where the call data came from.
+          Subtle, informational; the security gate is hash verification
+          regardless of source, so this is for clarity not for trust. */}
+      <p className="text-[10px] text-ink-500 leading-snug pt-1 border-t border-ink-700/40">
+        {source === 'self-proposed' ? (
+          <>
+            Source: <span className="text-ink-400">You proposed this from this wallet.</span> The
+            call data was cached locally when you submitted; no manual
+            paste was needed. Cosigners on other devices will need to
+            receive it from you.
+          </>
+        ) : (
+          <>
+            Source: <span className="text-ink-400">Call data you pasted into this wallet.</span> The
+            wallet has hash-verified it against the on-chain hash before
+            decoding.
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The amount-prominent rendering for transfer calls. Designed to make
+ * the magnitude of the transfer impossible to miss — the number is
+ * rendered large with explicit thousand separators, and the recipient
+ * is on a separate line below so the eye reads them as two distinct
+ * pieces of information rather than one run-on sentence.
+ *
+ * The "Sending" / "to" labels are intentionally subordinate — the
+ * value itself is what the user must read carefully. Anti-extra-zero
+ * scams: at this size and with grouping, 1,000,000 vs 10,000,000 is
+ * impossible to confuse at a glance.
+ */
+function TransferProminentDisplay({
+  transfer,
+}: {
+  transfer: ReturnType<typeof extractTransferSummary> & object;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+        Sending
+      </p>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-3xl font-display font-medium text-ink-100 numeric leading-none">
+          {transfer.formattedAmount}
+        </span>
+        <span className="text-base text-ink-300 font-display font-medium">
+          {transfer.symbol}
+        </span>
+      </div>
+      <div className="pt-1">
+        <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          To
+        </p>
+        <p className="font-mono text-xs text-ink-200 break-all leading-snug">
+          {transfer.recipient}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FreeTextDescription({ decoded }: { decoded: DecodedCall }) {
+  const description = decoded.friendly ?? decoded.literal;
+  const isFriendly = decoded.friendly !== null;
+  return (
+    <>
       <p className="text-base text-ink-100 leading-snug whitespace-pre-line">
         {description}
       </p>
       {!isFriendly && (
         <p className="text-[11px] text-amber-300 leading-snug">
           This call type is not specifically recognized by the wallet —
-          the description above is the literal pallet method and arguments.
-          Read carefully before approving.
+          the description above is the literal pallet method and
+          arguments. Read carefully before approving.
         </p>
       )}
-    </div>
+    </>
   );
 }
 

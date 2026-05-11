@@ -16,13 +16,18 @@
  */
 
 import { useMemo } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
-import { Users, ExternalLink } from 'lucide-react';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Users, ExternalLink, Plus, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
 import { AddressChip, AddressIcon } from '@/components/ui';
-import { useBalance, useMultisigActivity, type MultisigActivityItem } from '@/hooks';
-import { useMultisigsStore } from '@/store';
+import {
+  useBalance,
+  useMultisigActivity,
+  usePendingMultisigs,
+  type MultisigActivityItem,
+} from '@/hooks';
+import { useAccountsStore, useMultisigsStore } from '@/store';
 import { formatBalance } from '@/utils/format';
 import { shortenAddress } from '@/utils/address';
 import { XX_SYMBOL } from '@/api';
@@ -45,10 +50,21 @@ export function MultisigDetail() {
 }
 
 function MultisigView({ address }: { address: string }) {
+  const navigate = useNavigate();
   const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
+  const { activeAddress } = useAccountsStore();
   const { balance } = useBalance(address);
   const { activity, isLoading: activityLoading, error: activityError, total } =
     useMultisigActivity(address);
+  const { pending } = usePendingMultisigs(address);
+
+  // The user can only propose at this multisig if they're a signer of it.
+  // Defensive check — for a multisig that's been imported, this should
+  // always be true (the import flow won't let you create one you're not in)
+  // but we re-check here in case a future import path forgets to enforce it.
+  const userIsSigner = activeAddress
+    ? multisig.signers.some((s) => s.address === activeAddress)
+    : false;
 
   return (
     <>
@@ -98,6 +114,66 @@ function MultisigView({ address }: { address: string }) {
           </div>
         </div>
 
+        {/* Pending proposals — surfaced before historical activity since they
+            need attention. Each row links to the same approval flow as the
+            dropdown's Pending actions. */}
+        {pending.length > 0 && (
+          <div className="card space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-wider text-amber-400 font-medium">
+                Pending proposals ({pending.length})
+              </p>
+            </div>
+            <div className="space-y-2">
+              {pending.map((p) => {
+                const userHasApproved = activeAddress
+                  ? p.approvals.includes(activeAddress)
+                  : false;
+                const userIsDepositor = p.depositor === activeAddress;
+                const needsUser =
+                  userIsSigner && !userHasApproved && !userIsDepositor;
+                return (
+                  <button
+                    key={p.callHash}
+                    onClick={() =>
+                      navigate(`/multisig/${address}/approve/${p.callHash}`)
+                    }
+                    className={clsx(
+                      'w-full flex items-center gap-3 p-2.5 rounded-md text-left transition-colors',
+                      needsUser
+                        ? 'bg-amber-500/10 border border-amber-500/30 active:bg-amber-500/15'
+                        : 'bg-ink-900 border border-ink-700 active:bg-ink-800'
+                    )}
+                  >
+                    <Clock
+                      size={14}
+                      className={
+                        needsUser ? 'text-amber-300' : 'text-ink-400'
+                      }
+                      strokeWidth={2}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-ink-100">
+                        {needsUser
+                          ? 'Awaiting your approval'
+                          : userIsDepositor
+                          ? 'Your proposal'
+                          : userHasApproved
+                          ? "You've approved"
+                          : 'Awaiting other signers'}
+                      </p>
+                      <p className="text-[11px] text-ink-400">
+                        {p.approvals.length} of {multisig.threshold} signed
+                        · proposed at #{p.whenBlock.toLocaleString()}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Activity */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
@@ -133,11 +209,16 @@ function MultisigView({ address }: { address: string }) {
           )}
         </div>
 
-        {/* Footer note: where actions go in later slices */}
-        <p className="text-[11px] text-ink-500 text-center leading-relaxed">
-          Proposing and approving actions ships in upcoming releases. For now,
-          this view is read-only.
-        </p>
+        {/* Propose new call — primary action on this screen for signers */}
+        {userIsSigner && (
+          <button
+            onClick={() => navigate(`/multisig/${address}/propose`)}
+            className="btn-primary w-full"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Propose new call
+          </button>
+        )}
       </div>
     </>
   );

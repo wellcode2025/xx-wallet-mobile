@@ -361,6 +361,108 @@ function formatDestAddress(dest: unknown): string {
 
 // ---------- Convenience: hex helpers ----------
 
+// ---------- Display extraction helpers ----------
+
+/**
+ * Structured summary for a transfer call, suitable for visually-prominent
+ * rendering. Returns null if the decoded call isn't a transfer variant we
+ * recognize.
+ *
+ * Why we extract the amount + recipient as separate fields rather than
+ * letting the UI parse the friendly string: prominence. The single most
+ * common attack vector against approval flows is the extra-zero scam
+ * (1,000,000 vs 10,000,000 read in a hurry). The wallet's job is to
+ * make those visually unmistakable, which means rendering the amount
+ * with strong typography in its own visual region — not embedded in a
+ * sentence the eye can skim.
+ *
+ * The amount is returned formatted with thousand-separators (e.g.
+ * "1,000,000") so even at a glance the number of zeros is countable.
+ * The raw planck value is also returned in case the consumer wants to
+ * defensively re-verify against the call args.
+ */
+export interface TransferSummary {
+  /** Human-formatted amount with thousand separators, e.g. "1,500,000". */
+  formattedAmount: string;
+  /** Raw planck value (smallest chain unit), as a string for safe BigInt
+   *  reasoning by consumers. */
+  rawPlanck: string;
+  /** The on-chain currency symbol — currently always XX. */
+  symbol: string;
+  /** Recipient SS58 address (full form). */
+  recipient: string;
+}
+
+/**
+ * Try to extract a structured transfer summary from a decoded call.
+ * Returns null for any call type that isn't a balances transfer variant
+ * (or whose args we couldn't parse defensively).
+ */
+export function extractTransferSummary(
+  decoded: DecodedCall
+): TransferSummary | null {
+  if (
+    decoded.fq !== 'balances.transferKeepAlive' &&
+    decoded.fq !== 'balances.transferAllowDeath' &&
+    decoded.fq !== 'balances.transfer'
+  ) {
+    return null;
+  }
+  const dest = decoded.args.dest;
+  const value = decoded.args.value;
+  if (dest == null || value == null) return null;
+
+  // Resolve recipient. Reuse the same MultiAddress handling used by the
+  // friendly-description path (Id variant or plain string).
+  let recipient: string | null = null;
+  try {
+    const obj = dest as { toJSON?: () => unknown; toString?: () => string };
+    if (typeof obj.toJSON === 'function') {
+      const j = obj.toJSON();
+      if (typeof j === 'string') recipient = j;
+      else if (j && typeof j === 'object') {
+        const o = j as Record<string, unknown>;
+        const id = o.id ?? o.Id;
+        if (typeof id === 'string') recipient = id;
+      }
+    }
+    if (!recipient && typeof obj.toString === 'function') {
+      const s = obj.toString();
+      if (s.startsWith('6')) recipient = s;
+    }
+  } catch {
+    /* fall through */
+  }
+  if (!recipient) return null;
+
+  // Resolve raw planck. value may be a Compact<Balance> or already a
+  // string/number; defensive on both.
+  let rawPlanck: string | null = null;
+  try {
+    const v = value as { toString: () => string };
+    rawPlanck = String(v);
+  } catch {
+    rawPlanck = null;
+  }
+  if (!rawPlanck || !/^\d+$/.test(rawPlanck)) return null;
+
+  // formatBalance already groups by default and trims trailing zeros.
+  // We pass a high decimal cap so we don't truncate dust-level precision
+  // — for very small transfers, every digit matters.
+  const formattedAmount = formatBalance(rawPlanck, {
+    decimals: 9,
+    trim: true,
+    grouping: true,
+  });
+
+  return {
+    formattedAmount,
+    rawPlanck,
+    symbol: XX_SYMBOL,
+    recipient,
+  };
+}
+
 /**
  * Normalize call bytes to canonical 0x-prefixed lowercase hex. Used when
  * caching bytes locally — keeping a single canonical form simplifies

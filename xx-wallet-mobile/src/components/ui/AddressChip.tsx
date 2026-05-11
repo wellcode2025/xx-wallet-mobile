@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { shortenAddress } from '@/utils/address';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -17,7 +17,17 @@ export function AddressChip({
 }: AddressChipProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
+  // Stop the click from bubbling to any parent that's also clickable
+  // (e.g., contact rows that navigate to a details page on tap, or
+  // the dashboard account-switcher button). The chip is a self-contained
+  // copy-to-clipboard control — tapping it should ONLY copy, never
+  // trigger the surrounding row's action. We also preventDefault because
+  // a chip nested inside another button is technically invalid HTML and
+  // some browsers treat the inner click as activating the outer
+  // form/button by default.
+  const handleCopy = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    e.preventDefault();
     const success = await copyToClipboard(address);
     if (success) {
       setCopied(true);
@@ -27,6 +37,7 @@ export function AddressChip({
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
       className={clsx(
         'inline-flex items-center gap-2 px-3 py-1.5 rounded-full',

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import BigNumber from 'bignumber.js';
 import {
@@ -96,12 +96,26 @@ export function Send() {
     ? new BigNumber(balance.transferable.toString())
     : null;
 
-  // Would sender drop below existential deposit after this send?
+  // Would sender drop below existential deposit after this send? Catches
+  // both "leaves a tiny non-zero remainder" (was the only case before) AND
+  // "exactly drains the account" (which the chain would also reap, after
+  // fees — even setting amount = transferable still gets you reaped once
+  // the fee is deducted). We treat any post-transfer balance below ED as
+  // "would-be-reaped" and surface the conscious-acknowledge path so the
+  // user can opt in if they understand the consequences.
   const senderBelowED = useMemo(() => {
     if (!parsedAmount || !transferable) return false;
     const remaining = transferable.minus(parsedAmount);
-    return remaining.isGreaterThan(0) && remaining.isLessThan(EXISTENTIAL_DEPOSIT);
+    return remaining.isLessThan(EXISTENTIAL_DEPOSIT);
   }, [parsedAmount, transferable]);
+
+  // The user has explicitly acknowledged that they understand reaping
+  // and want to proceed anyway. Resets when amount/recipient changes so
+  // we don't carry the ack across an edit (force re-confirmation).
+  const [allowReaping, setAllowReaping] = useState(false);
+  useEffect(() => {
+    setAllowReaping(false);
+  }, [amount, recipient]);
 
   // Is recipient amount below existential deposit (new account risk)?
   const recipientBelowED = useMemo(() => {
@@ -115,7 +129,16 @@ export function Send() {
     transferable !== null &&
     parsedAmount.isLessThanOrEqualTo(transferable);
 
-  const canContinue = recipientValid && !recipientIsSelf && amountValid && active;
+  // If the transfer would reap the sender, the user must explicitly
+  // acknowledge before we let them continue. Otherwise the wallet would
+  // submit and the chain would either reject (transferKeepAlive's guard)
+  // or reap silently (transferAllowDeath) — neither is a good surprise.
+  const canContinue =
+    recipientValid &&
+    !recipientIsSelf &&
+    amountValid &&
+    !!active &&
+    (!senderBelowED || allowReaping);
 
   // Show "Save as contact" when recipient is valid but not yet saved.
   // Excluding self-sends here because saving "yourself" as a contact is
@@ -149,12 +172,38 @@ export function Send() {
     if (!active || !parsedAmount) return;
     setPasswordError(null);
     try {
+      // Pick the right extrinsic based on whether the user has consciously
+      // opted into draining their account below the existential deposit.
+      // Default is `transferKeepAlive` (chain-level guard against
+      // accidental reaping). When `allowReaping` is set, the user has
+      // acknowledged the consequences via the warning panel and we use
+      // the allow-death variant, which lets the transfer succeed even
+      // if the sender ends up below ED post-fee.
+      //
+      // Runtime fallback: newer Substrate runtimes call this
+      // `transferAllowDeath`; older ones (xx network as of 2026-05) keep
+      // the legacy name `transfer` which has identical semantics.
+      // Prefer the new name; fall back to the old. If neither is
+      // available, throw with a clear message rather than letting the
+      // chain raise "is not a function".
       await submit(
-        (api) =>
-          api.tx.balances.transferKeepAlive(
-            recipient.trim(),
-            parsedAmount.toFixed(0)
-          ),
+        (api) => {
+          const dest = recipient.trim();
+          const value = parsedAmount.toFixed(0);
+          if (allowReaping) {
+            const allowDeath =
+              api.tx.balances.transferAllowDeath ??
+              api.tx.balances.transfer;
+            if (!allowDeath) {
+              throw new Error(
+                'This chain exposes neither balances.transferAllowDeath ' +
+                  'nor balances.transfer — cannot drain the account.'
+              );
+            }
+            return allowDeath(dest, value);
+          }
+          return api.tx.balances.transferKeepAlive(dest, value);
+        },
         { address: active.address, password }
       );
     } catch (err) {
@@ -412,16 +461,58 @@ export function Send() {
                 Amount exceeds your transferable balance
               </p>
             )}
-          {/* Existential deposit warnings */}
+          {/* Existential deposit "would-be-reaped" warning + opt-in.
+              Replaces the prior hard-stop with a clear explanation of
+              what reaping actually does + a conscious-acknowledge step.
+              The address is unaffected — only the on-chain account
+              record gets removed (and anything attached to it). The
+              user can re-fund the address at any time. */}
           {senderBelowED && (
-            <div className="flex items-start gap-2 mt-2 p-3 rounded-xl bg-warning/10 border border-warning/30">
-              <ShieldAlert size={14} className="text-warning flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-ink-200 leading-relaxed">
-                This would leave your account below the minimum balance (0.001 XX).
-                Your account could be removed from the network.{' '}
-                <span className="text-warning font-medium">transferKeepAlive</span> will
-                prevent this transaction from going through — reduce the amount slightly.
-              </p>
+            <div className="flex flex-col gap-2 mt-2 p-3 rounded-xl bg-warning/10 border border-warning/30">
+              <div className="flex items-start gap-2">
+                <ShieldAlert
+                  size={14}
+                  className="text-warning flex-shrink-0 mt-0.5"
+                />
+                <p className="text-xs text-ink-200 leading-relaxed">
+                  This will leave your account below the existential
+                  deposit (0.001 XX) and the chain will remove the
+                  account record.
+                </p>
+              </div>
+              <div className="text-[11px] text-ink-300 leading-relaxed pl-6 space-y-1">
+                <p>What that means in practice:</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-ink-400">
+                  <li>
+                    Your address (and its private key / seed) are
+                    <span className="text-ink-200"> unchanged</span>.
+                    You can sign with it again any time someone — including
+                    you — funds it back above the existential deposit.
+                  </li>
+                  <li>
+                    Anything currently
+                    <span className="text-ink-200"> attached</span>
+                    {' '}to this account on chain will be removed: any
+                    on-chain identity, staking nominations, reserved
+                    deposits (multisig, proxy), pending vested
+                    balances, etc.
+                  </li>
+                  <li>
+                    Your account's nonce resets to 0.
+                  </li>
+                </ul>
+              </div>
+              <label className="flex items-start gap-2 mt-1 text-[11px] text-ink-200 leading-snug cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allowReaping}
+                  onChange={(e) => setAllowReaping(e.target.checked)}
+                  className="mt-0.5 w-3.5 h-3.5 accent-warning flex-shrink-0"
+                />
+                <span>
+                  I understand and want to proceed.
+                </span>
+              </label>
             </div>
           )}
           {recipientBelowED && recipientValid && !senderBelowED && (
