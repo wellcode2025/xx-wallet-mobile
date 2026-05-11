@@ -39,7 +39,13 @@ import { hexToU8a } from '@polkadot/util';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
 import { AddressChip, AddressIcon, Sheet } from '@/components/ui';
-import { useApi, usePendingMultisigs, useTx } from '@/hooks';
+import {
+  formatAge,
+  useApi,
+  usePendingMultisigs,
+  useStaleness,
+  useTx,
+} from '@/hooks';
 import {
   useAccountsStore,
   useMultisigsStore,
@@ -48,6 +54,7 @@ import {
 import {
   decodeCall,
   extractTransferSummary,
+  formatBalance,
   multisigAddressMatches,
   normalizeCallBytes,
   shortenAddress,
@@ -109,6 +116,7 @@ function ApproveView({
   const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
   const { accounts, activeAddress } = useAccountsStore();
   const { pending, isLoading: pendingLoading } = usePendingMultisigs(address);
+  const stalenessOf = useStaleness();
 
   // Snapshot the proposal once we've seen it. The chain removes it from
   // storage the moment it executes (including via our own threshold-
@@ -162,10 +170,32 @@ function ApproveView({
   const [bytesOpen, setBytesOpen] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
 
-  // Confirmation sheet (password + submit)
+  // Confirmation sheet (password + submit) — for the APPROVE action
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  // Confirmation sheet (password + submit) — for the CANCEL action.
+  // Cancel uses its own useTx instance so its lifecycle (signing,
+  // finalized, error) doesn't collide with the approve action's
+  // lifecycle. Each path is self-contained.
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelPassword, setCancelPassword] = useState('');
+  const [cancelPasswordError, setCancelPasswordError] = useState<string | null>(
+    null
+  );
+  const {
+    submit: submitCancel,
+    status: cancelStatus,
+    error: cancelError,
+    txHash: cancelTxHash,
+    reset: resetCancel,
+  } = useTx();
+  const isCancelSubmitting =
+    cancelStatus === 'signing' ||
+    cancelStatus === 'broadcasting' ||
+    cancelStatus === 'in-block';
+  const isCancelDone = cancelStatus === 'finalized';
 
   const isSubmitting =
     txStatus === 'signing' ||
@@ -301,6 +331,11 @@ function ApproveView({
   // signature finalizes the call.)
   const nextApprovalExecutes =
     proposal != null && proposal.approvals.length === multisig.threshold - 1;
+
+  // Compute staleness for this proposal. Used to amp up the Cancel
+  // affordance for depositors and surface a "this is stuck" note for
+  // non-depositor cosigners (who can't cancel themselves but can ask).
+  const staleness = proposal ? stalenessOf(proposal.whenBlock) : null;
 
   // Did we ever have this pending proposal? If `pending` finished loading
   // AND we've never snapshotted a copy of this proposal, it really doesn't
@@ -465,6 +500,74 @@ function ApproveView({
 
   const handleClearBytes = () => {
     if (callBytes) removeBytes(address, callHash);
+  };
+
+  // ---------- CANCEL flow ----------
+  // The depositor (and only the depositor — chain enforces) can cancel a
+  // pending multisig proposal. Cancelling removes the proposal from
+  // chain storage and returns the reserved deposit to the depositor.
+  // Per design doc §6.4 + §11.1.
+
+  const handleCancelTap = () => {
+    resetCancel();
+    setCancelPasswordError(null);
+    setCancelOpen(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!proposal || !signerAddress) return;
+    setCancelPasswordError(null);
+    try {
+      await submitCancel(
+        (api) => {
+          // cancelAsMulti needs the same context as approve — same
+          // signatory set, same timepoint, same call hash. Depositor
+          // is the signer of the cancel extrinsic itself.
+          const otherSignatories = multisig.signers
+            .map((s) => s.address)
+            .filter((a) => a !== signerAddress)
+            .sort();
+          const timepoint = {
+            height: proposal.whenBlock,
+            index: proposal.whenIndex,
+          };
+          return api.tx.multisig.cancelAsMulti(
+            multisig.threshold,
+            otherSignatories,
+            timepoint,
+            callHash
+          );
+        },
+        { address: signerAddress, password: cancelPassword }
+      );
+    } catch (err) {
+      const msg = (err as Error).message ?? '';
+      if (
+        msg.toLowerCase().includes('password') ||
+        msg.toLowerCase().includes('unable to decode') ||
+        msg.toLowerCase().includes('incorrect')
+      ) {
+        setCancelPasswordError('Incorrect password. Please try again.');
+      }
+    }
+  };
+
+  const closeCancelConfirm = () => {
+    if (isCancelSubmitting) return;
+    setCancelOpen(false);
+    setCancelPassword('');
+    setCancelPasswordError(null);
+    resetCancel();
+  };
+
+  const closeCancelSuccess = () => {
+    // Cancel succeeded — the proposal is gone from chain and the
+    // depositor's deposit has been returned. Cached bytes are no
+    // longer useful for this proposal; remove them.
+    if (callBytes) removeBytes(address, callHash);
+    resetCancel();
+    setCancelOpen(false);
+    navigate(`/multisig/${address}`, { replace: true });
   };
 
   const closeConfirm = () => {
@@ -748,12 +851,78 @@ function ApproveView({
               .
             </div>
           )}
+
+          {/* Stale-proposal note for non-depositor cosigners. They can't
+              cancel themselves (chain enforces depositor-only), but they
+              CAN nudge the depositor to clean it up. The notification
+              service (Phase 2a.5) will eventually offer a one-tap nudge;
+              for now this is informational. */}
+          {(userRole === 'pending-approver' ||
+            userRole === 'already-approved') &&
+            staleness?.isStale &&
+            proposal && (
+              <div className="card border border-amber-500/30 bg-amber-500/5 space-y-1.5">
+                <p className="text-xs font-medium text-amber-300">
+                  Stale — pending for {formatAge(staleness.ageDays)}
+                </p>
+                <p className="text-[11px] text-ink-300 leading-snug">
+                  Only the proposer ({shortenAddress(proposal.depositor)})
+                  can cancel this. If it's no longer wanted, ask them to
+                  cancel and reclaim the{' '}
+                  <span className="text-ink-200 numeric">
+                    {formatBalance(proposal.deposit)} XX
+                  </span>{' '}
+                  deposit they put up.
+                </p>
+              </div>
+            )}
           {userRole === 'depositor' && (
-            <div className="card text-center text-xs text-ink-400">
-              You proposed this. Cancellation comes in slice 4 — for now,
-              the proposal sits until enough cosigners approve or you
-              navigate elsewhere.
-            </div>
+            <>
+              <div
+                className={clsx(
+                  'card text-xs leading-relaxed space-y-2',
+                  staleness?.isStale
+                    ? 'border-amber-500/40 bg-amber-500/5 text-ink-200'
+                    : 'text-ink-300'
+                )}
+              >
+                {staleness?.isStale ? (
+                  <p className="text-amber-300 font-medium">
+                    This proposal has been pending for{' '}
+                    {formatAge(staleness.ageDays)} — past the stale
+                    threshold.
+                  </p>
+                ) : (
+                  <p>
+                    You proposed this. The proposal stays on chain until
+                    enough cosigners approve, OR until you cancel it.
+                  </p>
+                )}
+                {proposal && (
+                  <p className="text-ink-500">
+                    Cancelling refunds the{' '}
+                    <span className="text-ink-300 numeric">
+                      {formatBalance(proposal.deposit)} XX
+                    </span>{' '}
+                    deposit you put up when you proposed.
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleCancelTap}
+                className={clsx(
+                  'w-full',
+                  staleness?.isStale
+                    ? 'btn-primary bg-amber-500 text-ink-950 active:bg-amber-600'
+                    : 'btn-secondary text-danger border-danger/30 active:bg-danger/10'
+                )}
+              >
+                <X size={16} strokeWidth={2} />
+                {staleness?.isStale && proposal
+                  ? `Cancel & reclaim ${formatBalance(proposal.deposit)} XX`
+                  : 'Cancel proposal'}
+              </button>
+            </>
           )}
           {userRole === 'not-a-signer' && (
             <div className="card text-center text-xs text-ink-400">
@@ -963,6 +1132,144 @@ function ApproveView({
             </div>
           )}
           <button onClick={closeSuccess} className="btn-primary w-full mt-2">
+            Done
+          </button>
+        </div>
+      </Sheet>
+
+      {/* Cancel confirm sheet — for the depositor's "remove this proposal
+          from chain and reclaim the deposit" action. Independent useTx
+          state from the approve flow so the two paths don't collide. */}
+      <Sheet
+        open={cancelOpen && !isCancelDone}
+        onClose={closeCancelConfirm}
+        title="Cancel proposal"
+      >
+        <div className="space-y-4">
+          <div className="space-y-3 p-4 rounded-2xl bg-ink-800 border border-ink-700/50">
+            <Row label="Multisig">
+              <span className="font-medium text-sm">{multisig.localName}</span>
+            </Row>
+            <Row label="Cancelled by">
+              <span className="font-medium text-sm">
+                {signerAccount?.name ?? 'unknown'}
+              </span>
+            </Row>
+            <Row label="Action removed">
+              <span className="text-sm text-ink-100 leading-snug whitespace-pre-line">
+                {decoded?.friendly ?? decoded?.literal ?? '(no decoded view)'}
+              </span>
+            </Row>
+            {proposal && (
+              <Row label="Deposit returned">
+                <span className="font-mono text-sm text-ink-100 numeric">
+                  {formatBalance(proposal.deposit)} XX
+                </span>
+              </Row>
+            )}
+            <Row label="Effect">
+              <span className="text-xs text-ink-300 leading-snug">
+                The proposal is removed from chain storage. The reserved
+                deposit is returned to your account. Cosigners can no
+                longer approve it — they'll see the proposal disappear
+                from their pending list.
+              </span>
+            </Row>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
+              Password
+            </label>
+            <input
+              type="password"
+              value={cancelPassword}
+              onChange={(e) => {
+                setCancelPassword(e.target.value);
+                setCancelPasswordError(null);
+              }}
+              className="input-base"
+              placeholder="Enter your wallet password to sign"
+              autoComplete="current-password"
+              disabled={isCancelSubmitting}
+            />
+            {cancelPasswordError && (
+              <p className="text-xs text-danger mt-1.5 flex items-center gap-1">
+                <AlertTriangle size={12} />
+                {cancelPasswordError}
+              </p>
+            )}
+          </div>
+
+          {cancelError && !cancelPasswordError && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-danger/10 border border-danger/30 text-sm text-ink-200">
+              <AlertTriangle
+                size={16}
+                className="text-danger flex-shrink-0 mt-0.5"
+              />
+              <div>
+                <p className="font-medium mb-0.5">Cancel failed</p>
+                <p className="text-xs text-ink-300 break-all">
+                  {cancelError.message}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleConfirmCancel}
+            disabled={isCancelSubmitting || !cancelPassword}
+            className="btn-primary w-full bg-danger text-white active:bg-danger/80"
+          >
+            {isCancelSubmitting && (
+              <Loader2 size={16} className="animate-spin" />
+            )}
+            {isCancelSubmitting
+              ? cancelStatus === 'signing'
+                ? 'Signing…'
+                : cancelStatus === 'broadcasting'
+                ? 'Sending to network…'
+                : 'Waiting for finality…'
+              : 'Confirm cancellation'}
+          </button>
+        </div>
+      </Sheet>
+
+      {/* Cancel success sheet */}
+      <Sheet open={isCancelDone} onClose={closeCancelSuccess}>
+        <div className="flex flex-col items-center text-center py-6 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-ink-700/40 border border-ink-600/40 flex items-center justify-center">
+            <X size={32} className="text-ink-300" strokeWidth={2} />
+          </div>
+          <div>
+            <h2 className="font-display font-semibold text-xl">
+              Proposal cancelled
+            </h2>
+            <p className="text-sm text-ink-400 mt-1 leading-relaxed">
+              The proposal has been removed from chain storage.
+              {proposal && (
+                <>
+                  {' '}Your{' '}
+                  <span className="text-ink-200 numeric">
+                    {formatBalance(proposal.deposit)} XX
+                  </span>{' '}
+                  deposit has been returned.
+                </>
+              )}
+            </p>
+          </div>
+          {cancelTxHash && (
+            <div className="w-full">
+              <p className="text-xs text-ink-400 mb-1 uppercase tracking-wide">
+                Transaction hash
+              </p>
+              <AddressChip address={cancelTxHash} shortened className="w-full" />
+            </div>
+          )}
+          <button
+            onClick={closeCancelSuccess}
+            className="btn-primary w-full mt-2"
+          >
             Done
           </button>
         </div>

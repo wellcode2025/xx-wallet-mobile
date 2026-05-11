@@ -15,11 +15,20 @@ import {
   FileJson,
   Pencil,
 } from 'lucide-react';
-import { useAccountsStore, useConnectionStore, useSettingsStore } from '@/store';
+import {
+  STALE_THRESHOLD_DAYS_DEFAULT,
+  STALE_THRESHOLD_DAYS_MAX,
+  STALE_THRESHOLD_DAYS_MIN,
+  useAccountsStore,
+  useConnectionStore,
+  useMultisigsStore,
+  useSettingsStore,
+} from '@/store';
 import { XX_ENDPOINTS } from '@/api';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, Sheet } from '@/components/ui';
 import { xxKeyring } from '@/keyring';
+import { Users } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
@@ -204,6 +213,10 @@ export function Settings() {
             </div>
           ))}
         </Section>
+
+        {/* Multisig section — only renders if the user has multisigs;
+            avoids cluttering Settings for solo users */}
+        <MultisigSection />
 
         {/* Sync section */}
         <Section title="Sync to another device">
@@ -592,6 +605,86 @@ function validateRpcUrl(url: string): string | null {
     }
   }
   return null;
+}
+
+/**
+ * Multisig settings — for now just the stale-proposal threshold. Only
+ * renders when the user actually has multisigs in their wallet, so solo
+ * users don't see configuration for a feature they don't use.
+ *
+ * Per design doc §6.7. Threshold defaults to 30 days; bounded 7..365 in
+ * the store so a malformed input here can't break the staleness compare
+ * downstream.
+ */
+function MultisigSection() {
+  const multisigs = useMultisigsStore((s) => s.multisigs);
+  const staleThresholdDays = useSettingsStore((s) => s.staleThresholdDays);
+  const setStaleThresholdDays = useSettingsStore(
+    (s) => s.setStaleThresholdDays
+  );
+
+  // Local input state so the user can type freely; we commit to the
+  // store on blur (after clamping). This avoids resetting the input
+  // mid-typing if they're heading toward a value outside the bounds.
+  const [draft, setDraft] = useState<string>(String(staleThresholdDays));
+  useEffect(() => {
+    setDraft(String(staleThresholdDays));
+  }, [staleThresholdDays]);
+
+  if (multisigs.length === 0) return null;
+
+  const commit = () => {
+    const parsed = parseInt(draft, 10);
+    if (Number.isNaN(parsed)) {
+      setDraft(String(staleThresholdDays));
+      return;
+    }
+    setStaleThresholdDays(parsed);
+  };
+
+  return (
+    <Section title="Multisig">
+      <div className="px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 space-y-3">
+        <div className="flex items-center gap-3">
+          <Users size={16} className="text-ink-400" strokeWidth={1.75} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-ink-200">
+              Stale-proposal threshold
+            </p>
+            <p className="text-xs text-ink-500 leading-snug">
+              Pending proposals older than this get the stale treatment in
+              your wallet — depositors are nudged to cancel and reclaim
+              their deposit.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <input
+            type="number"
+            min={STALE_THRESHOLD_DAYS_MIN}
+            max={STALE_THRESHOLD_DAYS_MAX}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            className="input-base w-24 text-center font-mono"
+            inputMode="numeric"
+          />
+          <span className="text-sm text-ink-400">days</span>
+          {staleThresholdDays !== STALE_THRESHOLD_DAYS_DEFAULT && (
+            <button
+              onClick={() => setStaleThresholdDays(STALE_THRESHOLD_DAYS_DEFAULT)}
+              className="ml-auto text-xs text-xx-500 active:text-xx-600"
+            >
+              Reset to {STALE_THRESHOLD_DAYS_DEFAULT}
+            </button>
+          )}
+        </div>
+        <p className="text-[10px] text-ink-500">
+          Bounds: {STALE_THRESHOLD_DAYS_MIN}–{STALE_THRESHOLD_DAYS_MAX} days.
+        </p>
+      </div>
+    </Section>
+  );
 }
 
 function Section({

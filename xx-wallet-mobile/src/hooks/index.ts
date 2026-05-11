@@ -4,3 +4,4 @@ export * from './useTx';
 export * from './useTransfers';
 export * from './useMultisigActivity';
 export * from './usePendingMultisigs';
+export * from './useStaleness';

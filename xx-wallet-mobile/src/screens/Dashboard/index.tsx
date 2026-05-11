@@ -11,7 +11,13 @@ import {
   Users,
 } from 'lucide-react';
 import { useAccountsStore, useMultisigsStore, useSettingsStore } from '@/store';
-import { useAllPendingMultisigs, useBalance, useTransfers } from '@/hooks';
+import {
+  formatAge,
+  useAllPendingMultisigs,
+  useBalance,
+  useStaleness,
+  useTransfers,
+} from '@/hooks';
 import { formatBalance, splitBalance } from '@/utils';
 import { XX_SYMBOL } from '@/api';
 import { TopBar } from '@/components/layout';
@@ -33,6 +39,7 @@ export function Dashboard() {
   // Aggregated pending proposals across all multisigs the user is in.
   // Powers the Pending actions section in the switcher sheet.
   const { pending: pendingProposals } = useAllPendingMultisigs();
+  const stalenessOf = useStaleness();
 
   // The switcher is useful whenever the user has more than one entity to
   // navigate between — multiple accounts OR any multisigs (since multisigs
@@ -76,11 +83,25 @@ export function Dashboard() {
       />
 
       <div className="px-5 py-4 space-y-5">
-        {/* Account switcher */}
+        {/* Account switcher — gains a small amber badge in the top-right
+            corner whenever there's anything in the Pending actions list,
+            so the user notices on the next Dashboard open without us
+            shoving a banner in their face. The badge disappears when
+            there's nothing pending. Per design doc §6.1 (Option C). */}
         <button
           onClick={() => hasMoreThanOneEntity && setSwitcherOpen(true)}
-          className="w-full flex items-center gap-3 p-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800"
+          className="relative w-full flex items-center gap-3 p-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800"
         >
+          {pendingProposals.length > 0 && (
+            <span
+              className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-ink-950 text-[11px] font-medium flex items-center justify-center"
+              aria-label={`${pendingProposals.length} pending action${
+                pendingProposals.length === 1 ? '' : 's'
+              }`}
+            >
+              {pendingProposals.length}
+            </span>
+          )}
           <AddressIcon address={activeAccount.address} size={40} />
           <div className="flex-1 min-w-0 text-left">
             <p className="font-display font-medium text-base truncate">
@@ -251,6 +272,11 @@ export function Dashboard() {
                   const userIsDepositor = p.depositor === activeAccount.address;
                   const needsUser =
                     userIsSigner && !userHasApproved && !userIsDepositor;
+                  const stale = stalenessOf(p.whenBlock);
+                  // Stale items get the amber highlight regardless of role
+                  // (they need attention either way — depositor to cancel,
+                  // others to nudge the depositor).
+                  const highlight = stale.isStale || needsUser;
                   return (
                     <li key={`${p.multisigAddress}-${p.callHash}`}>
                       <button
@@ -262,7 +288,7 @@ export function Dashboard() {
                         }}
                         className={clsx(
                           'w-full flex items-center gap-3 p-3 rounded-2xl border transition-colors text-left',
-                          needsUser
+                          highlight
                             ? 'bg-amber-500/10 border-amber-500/30 active:bg-amber-500/15'
                             : 'bg-ink-800 border-ink-700/50 active:bg-ink-700'
                         )}
@@ -270,7 +296,7 @@ export function Dashboard() {
                         <div
                           className={clsx(
                             'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
-                            needsUser
+                            highlight
                               ? 'bg-amber-500/20 text-amber-300'
                               : 'bg-ink-700/50 text-ink-400'
                           )}
@@ -279,15 +305,22 @@ export function Dashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">
-                            {needsUser
-                              ? `Awaiting your approval`
+                            {stale.isStale && userIsDepositor
+                              ? 'Stale — cancel & reclaim'
+                              : stale.isStale
+                              ? 'Stale proposal'
+                              : needsUser
+                              ? 'Awaiting your approval'
                               : userIsDepositor
-                              ? `Your proposal`
-                              : `Awaiting other signers`}
+                              ? 'Your proposal'
+                              : 'Awaiting other signers'}
                           </p>
                           <p className="text-xs text-ink-400 truncate">
                             {m.localName} · {p.approvals.length} of{' '}
                             {m.threshold} signed
+                            {stale.ageDays > 0 && (
+                              <> · {formatAge(stale.ageDays)} old</>
+                            )}
                           </p>
                         </div>
                       </button>

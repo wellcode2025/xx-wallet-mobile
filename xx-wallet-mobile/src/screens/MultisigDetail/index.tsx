@@ -22,9 +22,11 @@ import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
 import { AddressChip, AddressIcon } from '@/components/ui';
 import {
+  formatAge,
   useBalance,
   useMultisigActivity,
   usePendingMultisigs,
+  useStaleness,
   type MultisigActivityItem,
 } from '@/hooks';
 import { useAccountsStore, useMultisigsStore } from '@/store';
@@ -57,6 +59,7 @@ function MultisigView({ address }: { address: string }) {
   const { activity, isLoading: activityLoading, error: activityError, total } =
     useMultisigActivity(address);
   const { pending } = usePendingMultisigs(address);
+  const stalenessOf = useStaleness();
 
   // The user can only propose at this multisig if they're a signer of it.
   // Defensive check — for a multisig that's been imported, this should
@@ -132,6 +135,11 @@ function MultisigView({ address }: { address: string }) {
                 const userIsDepositor = p.depositor === activeAddress;
                 const needsUser =
                   userIsSigner && !userHasApproved && !userIsDepositor;
+                const stale = stalenessOf(p.whenBlock);
+                // Stale items get the amber treatment regardless of role —
+                // they're attention-worthy. Non-stale items use the
+                // existing needs-user-vs-not styling.
+                const highlight = stale.isStale || needsUser;
                 return (
                   <button
                     key={p.callHash}
@@ -140,7 +148,7 @@ function MultisigView({ address }: { address: string }) {
                     }
                     className={clsx(
                       'w-full flex items-center gap-3 p-2.5 rounded-md text-left transition-colors',
-                      needsUser
+                      highlight
                         ? 'bg-amber-500/10 border border-amber-500/30 active:bg-amber-500/15'
                         : 'bg-ink-900 border border-ink-700 active:bg-ink-800'
                     )}
@@ -148,13 +156,17 @@ function MultisigView({ address }: { address: string }) {
                     <Clock
                       size={14}
                       className={
-                        needsUser ? 'text-amber-300' : 'text-ink-400'
+                        highlight ? 'text-amber-300' : 'text-ink-400'
                       }
                       strokeWidth={2}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-ink-100">
-                        {needsUser
+                        {stale.isStale && userIsDepositor
+                          ? 'Stale — cancel & reclaim'
+                          : stale.isStale
+                          ? 'Stale proposal'
+                          : needsUser
                           ? 'Awaiting your approval'
                           : userIsDepositor
                           ? 'Your proposal'
@@ -164,7 +176,9 @@ function MultisigView({ address }: { address: string }) {
                       </p>
                       <p className="text-[11px] text-ink-400">
                         {p.approvals.length} of {multisig.threshold} signed
-                        · proposed at #{p.whenBlock.toLocaleString()}
+                        {stale.ageDays > 0 && (
+                          <> · {formatAge(stale.ageDays)} old</>
+                        )}
                       </p>
                     </div>
                   </button>
