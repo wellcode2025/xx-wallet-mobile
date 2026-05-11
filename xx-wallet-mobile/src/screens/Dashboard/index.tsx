@@ -6,6 +6,7 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
+  Download,
   Loader2,
   Plus,
   Users,
@@ -30,6 +31,9 @@ export function Dashboard() {
   const multisigs = useMultisigsStore((s) => s.multisigs);
   const { hideBalances, toggleHideBalances } = useSettingsStore();
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  // Chooser sheet for "+ Add multisig" — Path A (manual) vs Path B
+  // (import from JSON). Path C (chain scan) joins this in slice 6.
+  const [addChooserOpen, setAddChooserOpen] = useState(false);
 
   const activeAccount = useMemo(
     () => accounts.find((a) => a.address === activeAddress) ?? accounts[0],
@@ -404,12 +408,15 @@ export function Dashboard() {
             </div>
           )}
 
-          {/* Add multisig affordance — always visible at the bottom of the sheet */}
+          {/* Add multisig affordance — opens a chooser sheet rather
+              than going straight to one path, so the user can pick
+              between creating new (Path A) and importing from JSON
+              (Path B). */}
           <div className="pt-1 border-t border-ink-800/60">
             <button
               onClick={() => {
-                navigate('/multisig/create');
                 setSwitcherOpen(false);
+                setAddChooserOpen(true);
               }}
               className="w-full flex items-center gap-3 p-3 rounded-2xl border border-dashed border-ink-700 active:bg-ink-800 text-ink-300"
             >
@@ -426,6 +433,62 @@ export function Dashboard() {
               </div>
             </button>
           </div>
+        </div>
+      </Sheet>
+
+      {/* Add multisig chooser — Path A vs Path B. Each row is a
+          self-contained block describing what the path does so the
+          user can pick without remembering which is which. */}
+      <Sheet
+        open={addChooserOpen}
+        onClose={() => setAddChooserOpen(false)}
+        title="Add multisig"
+      >
+        <div className="space-y-3">
+          <button
+            onClick={() => {
+              setAddChooserOpen(false);
+              navigate('/multisig/create');
+            }}
+            className="w-full flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-ink-900 border border-ink-700 flex items-center justify-center flex-shrink-0">
+              <Plus size={16} strokeWidth={2} className="text-xx-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-100">
+                Create new
+              </p>
+              <p className="text-[11px] text-ink-400 leading-snug mt-0.5">
+                Pick signers from your address book and set the
+                threshold. Use this if you're the one organizing the
+                multisig — afterward, export the config to share with
+                other signers.
+              </p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              setAddChooserOpen(false);
+              navigate('/multisig/import');
+            }}
+            className="w-full flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-ink-900 border border-ink-700 flex items-center justify-center flex-shrink-0">
+              <Download size={16} strokeWidth={2} className="text-xx-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-100">
+                Import from JSON
+              </p>
+              <p className="text-[11px] text-ink-400 leading-snug mt-0.5">
+                Load a config another signer shared with you (file, QR,
+                or paste). Your wallet verifies the config integrity
+                automatically before importing.
+              </p>
+            </div>
+          </button>
         </div>
       </Sheet>
     </>

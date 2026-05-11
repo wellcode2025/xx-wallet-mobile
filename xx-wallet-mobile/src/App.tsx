@@ -23,6 +23,7 @@ import { MultisigDetail } from '@/screens/MultisigDetail';
 import { MultisigApprove } from '@/screens/MultisigApprove';
 import { MultisigPropose } from '@/screens/MultisigPropose';
 import { MultisigShare } from '@/screens/MultisigShare';
+import { MultisigImport } from '@/screens/MultisigImport';
 
 /**
  * Resets scroll to the top on forward navigation (PUSH/REPLACE). Without
@@ -138,6 +139,7 @@ export function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
+            <Route path="/multisig/import" element={<MultisigImport />} />
             <Route path="/multisig/:address" element={<MultisigDetail />} />
             <Route
               path="/multisig/:address/propose"

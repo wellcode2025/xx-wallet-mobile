@@ -5,3 +5,4 @@ export * from './passwordBlocklist';
 export * from './multisig';
 export * from './decodeCall';
 export * from './bytesPackage';
+export * from './multisigConfig';

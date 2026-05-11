@@ -15,12 +15,24 @@
  * Per design doc §6.3.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Users, ExternalLink, Plus, Clock } from 'lucide-react';
+import {
+  Users,
+  ExternalLink,
+  Plus,
+  Clock,
+  Check,
+  Clipboard,
+  Download,
+  QrCode,
+  Send,
+  Share2,
+} from 'lucide-react';
+import QRCode from 'qrcode';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
-import { AddressChip, AddressIcon } from '@/components/ui';
+import { AddressChip, AddressIcon, Sheet } from '@/components/ui';
 import {
   formatAge,
   useBalance,
@@ -32,6 +44,11 @@ import {
 import { useAccountsStore, useMultisigsStore } from '@/store';
 import { formatBalance } from '@/utils/format';
 import { shortenAddress } from '@/utils/address';
+import {
+  buildMultisigConfig,
+  copyToClipboard,
+  serializeMultisigConfig,
+} from '@/utils';
 import { XX_SYMBOL } from '@/api';
 
 const EXPLORER_BASE = 'https://explorer.xx.network/blocks/';
@@ -60,6 +77,7 @@ function MultisigView({ address }: { address: string }) {
     useMultisigActivity(address);
   const { pending } = usePendingMultisigs(address);
   const stalenessOf = useStaleness();
+  const [exportOpen, setExportOpen] = useState(false);
 
   // The user can only propose at this multisig if they're a signer of it.
   // Defensive check — for a multisig that's been imported, this should
@@ -223,18 +241,269 @@ function MultisigView({ address }: { address: string }) {
           )}
         </div>
 
-        {/* Propose new call — primary action on this screen for signers */}
-        {userIsSigner && (
+        {/* Action row: Propose (primary, signers only) + Export config
+            (secondary, anyone — even watch-only viewers can re-share
+            the config to bring others onto the same multisig). */}
+        <div className="space-y-2">
+          {userIsSigner && (
+            <button
+              onClick={() => navigate(`/multisig/${address}/propose`)}
+              className="btn-primary w-full"
+            >
+              <Plus size={16} strokeWidth={2} />
+              Propose new call
+            </button>
+          )}
           <button
-            onClick={() => navigate(`/multisig/${address}/propose`)}
-            className="btn-primary w-full"
+            onClick={() => setExportOpen(true)}
+            className="btn-secondary w-full"
           >
-            <Plus size={16} strokeWidth={2} />
-            Propose new call
+            <Share2 size={16} strokeWidth={2} />
+            Export config to share with cosigners
           </button>
+        </div>
+      </div>
+
+      {/* Export sheet — produces a config JSON that other signers can
+          import to bring the same multisig into their wallets without
+          having to retype every signer + threshold. The receiving
+          wallet's parseMultisigConfig re-derives the address from the
+          JSON's parameters and refuses if it doesn't match what the
+          JSON claims, so this can be sent over untrusted channels
+          (Slack, email, etc.) safely. */}
+      <ExportConfigSheet
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        address={address}
+      />
+    </>
+  );
+}
+
+/**
+ * Sheet that produces a multisig config JSON and offers the same first-
+ * class share affordances as MultisigShare (file download primary, QR,
+ * native share, copy as text). Inlined here as a sub-component rather
+ * than a full screen because the export action is one-step (not a
+ * multi-screen flow) and a sheet maps cleanly to that.
+ */
+function ExportConfigSheet({
+  open,
+  onClose,
+  address,
+}: {
+  open: boolean;
+  onClose: () => void;
+  address: string;
+}) {
+  const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
+  const { activeAddress } = useAccountsStore();
+
+  // Build the config once when the sheet opens. The build itself is
+  // fast (just sorting + a hash check) so re-running on every open is
+  // fine — keeps the export current if the multisig record changes.
+  const config = useMemo(() => {
+    if (!open) return null;
+    try {
+      return buildMultisigConfig({
+        multisigAddress: address,
+        threshold: multisig.threshold,
+        signers: multisig.signers.map((s) => s.address),
+        suggestedName: multisig.localName,
+        // Stamp the active account as the creator if they're a signer
+        // of this multisig — informational only, the wallet does not
+        // authenticate this. Skip if the user isn't a signer (they're
+        // re-sharing someone else's multisig and shouldn't claim
+        // creator credit).
+        createdBy:
+          activeAddress &&
+          multisig.signers.some((s) => s.address === activeAddress)
+            ? activeAddress
+            : undefined,
+      });
+    } catch {
+      return null;
+    }
+  }, [open, address, multisig, activeAddress]);
+
+  const json = useMemo(
+    () => (config ? serializeMultisigConfig(config) : ''),
+    [config]
+  );
+
+  const fileName = `multisig-config-${address.slice(0, 10)}.json`;
+
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+  // Pre-render the QR when the JSON is ready so toggling the QR
+  // section doesn't show a flash of loading.
+  useEffect(() => {
+    if (!json) {
+      setQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(json, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 320,
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [json]);
+
+  const handleDownload = () => {
+    setShareError(null);
+    if (!json) return;
+    try {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      setShareError(`Download failed: ${(e as Error).message}`);
+    }
+  };
+
+  const handleCopy = async () => {
+    setShareError(null);
+    if (!json) return;
+    const ok = await copyToClipboard(json);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } else {
+      setShareError('Could not copy — try the download option instead.');
+    }
+  };
+
+  const handleShareSheet = async () => {
+    setShareError(null);
+    if (!json) return;
+    try {
+      const blob = new Blob([json], { type: 'application/json' });
+      const file = new File([blob], fileName, { type: 'application/json' });
+      const navWithCanShare = navigator as Navigator & {
+        canShare?: (data: { files?: File[] }) => boolean;
+      };
+      if (
+        navWithCanShare.canShare &&
+        navWithCanShare.canShare({ files: [file] })
+      ) {
+        await navigator.share({
+          files: [file],
+          title: 'Multisig config',
+          text: `Multisig config for ${multisig.localName}`,
+        });
+      } else if (navigator.share) {
+        await navigator.share({ title: 'Multisig config', text: json });
+      } else {
+        setShareError(
+          'Share sheet not available in this browser. Use Download or Copy instead.'
+        );
+      }
+    } catch (e) {
+      const msg = (e as Error).message ?? '';
+      if (!/abort|cancel/i.test(msg)) {
+        setShareError(`Share failed: ${msg}`);
+      }
+    }
+  };
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Export multisig config">
+      <div className="space-y-3">
+        <p className="text-xs text-ink-400 leading-relaxed">
+          Share this with other signers so they can import this multisig
+          into their wallet — no need for them to manually retype every
+          signer or threshold. Their wallet re-derives the address from
+          the JSON locally and refuses if anything's been tampered with,
+          so it's safe to send over Slack, email, AirDrop, or any
+          channel you trust.
+        </p>
+
+        {!config && (
+          <p className="text-xs text-danger">
+            Couldn't build the config (the stored multisig record is
+            inconsistent). Try removing and re-adding the multisig.
+          </p>
+        )}
+
+        {config && (
+          <>
+            <button onClick={handleDownload} className="btn-primary w-full">
+              <Download size={16} strokeWidth={2} />
+              Download as file
+            </button>
+            <p className="text-[10px] text-ink-500 leading-relaxed -mt-1 px-1">
+              Recommended. Saves <code>{fileName}</code> — share via any
+              channel you trust.
+            </p>
+
+            <button
+              onClick={() => setQrOpen((o) => !o)}
+              className="btn-secondary w-full"
+            >
+              <QrCode size={16} strokeWidth={2} />
+              {qrOpen ? 'Hide QR code' : 'Show QR code'}
+            </button>
+            {qrOpen && (
+              <div className="card flex flex-col items-center space-y-2 bg-white">
+                {qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt="Multisig config QR code"
+                    className="w-full max-w-[280px] h-auto"
+                  />
+                ) : (
+                  <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-500 text-xs">
+                    Generating…
+                  </div>
+                )}
+                <p className="text-[10px] text-ink-700 text-center px-2 pb-1">
+                  Have your cosigner scan this with their wallet.
+                </p>
+              </div>
+            )}
+
+            <button onClick={handleShareSheet} className="btn-secondary w-full">
+              <Send size={16} strokeWidth={2} />
+              Share via…
+            </button>
+
+            <button onClick={handleCopy} className="btn-secondary w-full">
+              {copied ? (
+                <Check size={16} className="text-xx-500" strokeWidth={2.25} />
+              ) : (
+                <Clipboard size={16} strokeWidth={2} />
+              )}
+              {copied ? 'Copied' : 'Copy as text'}
+            </button>
+
+            {shareError && (
+              <p className="text-xs text-danger leading-snug px-1">
+                {shareError}
+              </p>
+            )}
+          </>
         )}
       </div>
-    </>
+    </Sheet>
   );
 }
 

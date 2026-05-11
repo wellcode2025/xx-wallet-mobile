@@ -51,7 +51,7 @@ export interface BytesPackage {
 /** Return type from `parseBytesPackage`. Discriminated union — `ok: true`
  *  means the package validated AND its bytes hash to the claimed hash;
  *  `ok: false` carries a human-readable reason for refusing. */
-export type ParseResult =
+export type BytesPackageParseResult =
   | { ok: true; package: BytesPackage }
   | { ok: false; reason: string };
 
@@ -138,7 +138,7 @@ export function serializeBytesPackage(pkg: BytesPackage): string {
  * future versions can add fields without breaking older parsers, AND extra
  * fields injected by an attacker can never affect behavior).
  */
-export function parseBytesPackage(input: unknown): ParseResult {
+export function parseBytesPackage(input: unknown): BytesPackageParseResult {
   // Accept either a parsed object OR a JSON string (the file/QR paths
   // both end up as strings; the notification service ends up parsed).
   let raw: unknown = input;
