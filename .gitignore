@@ -61,3 +61,10 @@ docs/xx network_media kit.zip
 # Misc one-off cleanup leftovers
 docs/test-write.txt
 docs/_to-delete-*
+
+# After the May 2026 cleanup pass we moved all vendor reference clones
+# (sleeve, scripts, xxnetwork-js, etc.) under a single
+# docs/_external-reference/ folder. Same intent as the per-folder
+# patterns above — these are upstream reference repos we keep locally
+# for reading, NOT part of this project's source tree.
+docs/_external-reference/
