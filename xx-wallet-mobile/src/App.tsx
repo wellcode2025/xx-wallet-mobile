@@ -18,6 +18,9 @@ import { Send } from '@/screens/Send';
 import { Receive } from '@/screens/Receive';
 import { Settings } from '@/screens/Settings';
 import { TransactionDetail } from '@/screens/TransactionDetail';
+import { MultisigCreate } from '@/screens/MultisigCreate';
+import { MultisigDetail } from '@/screens/MultisigDetail';
+import { MultisigApprove } from '@/screens/MultisigApprove';
 
 /**
  * Resets scroll to the top on forward navigation (PUSH/REPLACE). Without
@@ -132,6 +135,12 @@ export function App() {
             <Route path="/receive" element={<Receive />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
+            <Route path="/multisig/create" element={<MultisigCreate />} />
+            <Route path="/multisig/:address" element={<MultisigDetail />} />
+            <Route
+              path="/multisig/:address/approve/:callHash"
+              element={<MultisigApprove />}
+            />
           </Route>
         </Route>
 

@@ -61,6 +61,26 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  server: {
+    // Bind to all interfaces by default so on-device testing from a phone
+    // on the same LAN works without remembering a --host flag every time.
+    // Dev-mode only; production builds aren't served by Vite.
+    //
+    // WSL2 caveat: the Network URL Vite announces will likely be a
+    // WSL-internal IP (10.x.x.x or 172.x.x.x) that your phone can't reach
+    // because it's not on your LAN. To make the Network URL phone-
+    // reachable, set up a port-proxy from the Windows host to WSL2:
+    //
+    //   # PowerShell as admin (one-time):
+    //   netsh interface portproxy add v4tov4 \
+    //     listenport=5173 listenaddress=0.0.0.0 \
+    //     connectport=5173 connectaddress=$(wsl hostname -I | tr -d ' ')
+    //
+    // Then point your phone at http://<windows-LAN-IP>:5173/.
+    // If that's too much hassle, fall back to Cloudflare deploy testing —
+    // see env_wsl_cowork notes.
+    host: true,
+  },
   build: {
     target: 'es2020',
     sourcemap: true,
