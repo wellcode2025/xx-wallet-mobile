@@ -9,6 +9,7 @@ import {
   Download,
   Loader2,
   Plus,
+  Search,
   Users,
 } from 'lucide-react';
 import { useAccountsStore, useMultisigsStore, useSettingsStore } from '@/store';
@@ -486,6 +487,29 @@ export function Dashboard() {
                 Load a config another signer shared with you (file, QR,
                 or paste). Your wallet verifies the config integrity
                 automatically before importing.
+              </p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              setAddChooserOpen(false);
+              navigate('/multisig/scan');
+            }}
+            className="w-full flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-ink-900 border border-ink-700 flex items-center justify-center flex-shrink-0">
+              <Search size={16} strokeWidth={2} className="text-xx-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-100">
+                Scan chain
+              </p>
+              <p className="text-[11px] text-ink-400 leading-snug mt-0.5">
+                Find multisigs that any of your wallet accounts are
+                signers of by walking past on-chain activity. Useful
+                if you've used a multisig elsewhere (e.g., the official
+                wallet) and want to surface it here.
               </p>
             </div>
           </button>
