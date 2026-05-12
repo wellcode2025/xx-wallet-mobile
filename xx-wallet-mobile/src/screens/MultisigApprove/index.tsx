@@ -38,7 +38,12 @@ import {
 import { hexToU8a } from '@polkadot/util';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
-import { AddressChip, AddressIcon, Sheet } from '@/components/ui';
+import {
+  AddressChip,
+  AddressIcon,
+  AddressLabel,
+  Sheet,
+} from '@/components/ui';
 import {
   formatAge,
   useApi,
@@ -726,11 +731,15 @@ function ApproveView({
             <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
               Proposal details
             </p>
-            <DetailRow
-              label="Proposed by"
-              value={shortenAddress(proposal.depositor)}
-              mono
-            />
+            {/* Depositor row uses AddressLabel so we get the name +
+                fragment instead of just an obscure truncated SS58. */}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-ink-400">Proposed by</span>
+              <AddressLabel
+                address={proposal.depositor}
+                className="text-sm"
+              />
+            </div>
             <DetailRow
               label="At block"
               value={`#${proposal.whenBlock.toLocaleString()}`}
@@ -760,13 +769,27 @@ function ApproveView({
                         <Check size={10} strokeWidth={2.5} />
                       )}
                     </div>
+                    {/* Per-signer row — AddressLabel resolves the
+                        best-available name (own account → contact →
+                        multisig nickname → fallback to fragment). The
+                        signer's local label still wins if it's set on
+                        the multisig record (most-specific source). */}
                     <span
                       className={clsx(
-                        'font-mono text-ink-300 truncate',
-                        hasApproved && 'text-ink-200'
+                        'truncate',
+                        hasApproved ? 'text-ink-200' : 'text-ink-300'
                       )}
                     >
-                      {s.label || shortenAddress(s.address)}
+                      {s.label ? (
+                        <>
+                          <span className="font-medium">{s.label}</span>{' '}
+                          <span className="font-mono text-[10px] text-ink-500">
+                            [{shortenAddress(s.address)}]
+                          </span>
+                        </>
+                      ) : (
+                        <AddressLabel address={s.address} />
+                      )}
                     </span>
                     {s.address === proposal.depositor && (
                       <span className="text-[9px] uppercase tracking-wider text-ink-500 ml-auto">
@@ -1396,11 +1419,16 @@ function TransferProminentDisplay({
           {transfer.symbol}
         </span>
       </div>
-      <div className="pt-1">
+      <div className="pt-1 space-y-1">
         <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
           To
         </p>
-        <p className="font-mono text-xs text-ink-200 break-all leading-snug">
+        {/* AddressLabel renders the name (own account / contact /
+            multisig) if known, plus the truncated address fragment.
+            Always the fragment too — never just a name, per the
+            decoder's no-misleading-substitution rule. */}
+        <AddressLabel address={transfer.recipient} stacked />
+        <p className="font-mono text-[10px] text-ink-500 break-all leading-snug pt-1">
           {transfer.recipient}
         </p>
       </div>

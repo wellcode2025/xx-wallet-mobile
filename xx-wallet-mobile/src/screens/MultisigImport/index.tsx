@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
-import { AddressIcon, QrScanner } from '@/components/ui';
+import { AddressIcon, AddressLabel, QrScanner } from '@/components/ui';
 import { useAccountsStore, useAddressBook, useMultisigsStore } from '@/store';
 import {
   deriveMultisigAddress,
@@ -564,13 +564,18 @@ export function MultisigImport() {
           <div className="space-y-2">
             {parsed.signers.map((addr) => {
               const ownAccount = accounts.find((a) => a.address === addr);
+              const existingContact = contacts.find((c) => c.address === addr);
               return (
                 <div key={addr} className="space-y-1">
                   <div className="flex items-center gap-2">
                     <AddressIcon address={addr} size={24} copyOnTap={false} />
-                    <p className="font-mono text-[11px] text-ink-300 truncate flex-1 min-w-0">
-                      {shortenAddress(addr, { start: 8, end: 6 })}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      {/* Show known-name + truncated fragment when this
+                          address resolves to a wallet account / contact /
+                          known multisig; otherwise just the truncated
+                          fragment. Either way the address is visible. */}
+                      <AddressLabel address={addr} className="text-[11px]" />
+                    </div>
                     {ownAccount && (
                       <span className="text-[9px] uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
                         you
@@ -579,7 +584,12 @@ export function MultisigImport() {
                   </div>
                   <input
                     type="text"
-                    value={labels[addr] ?? ownAccount?.name ?? ''}
+                    value={
+                      labels[addr] ??
+                      ownAccount?.name ??
+                      existingContact?.name ??
+                      ''
+                    }
                     onChange={(e) =>
                       setLabels((cur) => ({ ...cur, [addr]: e.target.value }))
                     }
@@ -727,6 +737,12 @@ function LegacyReview({
   onBack: () => void;
   onSave: () => void;
 }) {
+  // Look up address-book contacts so the signer rows can show
+  // known-contact names alongside the truncated address fragment, and
+  // so the per-signer label inputs can default to the existing contact
+  // name when one exists (just like the canonical-format flow).
+  const { contacts } = useAddressBook();
+
   // Derive the multisig address live as the user adjusts threshold.
   // The wallet computes this locally from (threshold, signers); the
   // user sees what they're committing to before they tap Save.
@@ -953,13 +969,14 @@ function LegacyReview({
           <div className="space-y-2">
             {signers.map((addr) => {
               const ownAccount = accounts.find((a) => a.address === addr);
+              const existingContact = contacts.find((c) => c.address === addr);
               return (
                 <div key={addr} className="space-y-1">
                   <div className="flex items-center gap-2">
                     <AddressIcon address={addr} size={24} copyOnTap={false} />
-                    <p className="font-mono text-[11px] text-ink-300 truncate flex-1 min-w-0">
-                      {shortenAddress(addr, { start: 8, end: 6 })}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <AddressLabel address={addr} className="text-[11px]" />
+                    </div>
                     {ownAccount && (
                       <span className="text-[9px] uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
                         you
@@ -968,7 +985,12 @@ function LegacyReview({
                   </div>
                   <input
                     type="text"
-                    value={labels[addr] ?? ownAccount?.name ?? ''}
+                    value={
+                      labels[addr] ??
+                      ownAccount?.name ??
+                      existingContact?.name ??
+                      ''
+                    }
                     onChange={(e) => onLabelChange(addr, e.target.value)}
                     placeholder="Optional label (e.g. Jim, Operations)"
                     maxLength={64}

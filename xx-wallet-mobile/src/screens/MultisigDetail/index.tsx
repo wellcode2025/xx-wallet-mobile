@@ -32,7 +32,7 @@ import {
 import QRCode from 'qrcode';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
-import { AddressChip, AddressIcon, Sheet } from '@/components/ui';
+import { AddressChip, AddressIcon, AddressLabel, Sheet } from '@/components/ui';
 import {
   formatAge,
   useBalance,
@@ -513,14 +513,20 @@ function SignerRow({ address, label }: { address: string; label?: string }) {
       <AddressIcon address={address} size={28} />
       <div className="flex-1 min-w-0">
         {label ? (
+          // Multisig record carries an explicit per-signer label — most
+          // specific source, prefer it over address-book lookup. Still
+          // pair with the truncated address per design doc §7.3.
           <>
             <p className="text-sm font-medium text-ink-100 truncate">{label}</p>
             <p className="font-mono text-[11px] text-ink-400 truncate">
-              {address}
+              {shortenAddress(address)}
             </p>
           </>
         ) : (
-          <p className="font-mono text-xs text-ink-200 truncate">{address}</p>
+          // Fall through to AddressLabel — it'll surface a name from
+          // own accounts / contacts / known multisigs if any of those
+          // match, else render just the truncated fragment.
+          <AddressLabel address={address} stacked className="text-sm" />
         )}
       </div>
       <AddressChip address={address} shortened className="flex-shrink-0" />
@@ -562,33 +568,61 @@ function ActivityRow({ item }: { item: MultisigActivityItem }) {
           item.success ? 'text-ink-100' : 'text-ink-500'
         )}
       >
-        {action}
+        {action.kind === 'transfer' ? (
+          <>
+            Sent{' '}
+            <span className="numeric">
+              {action.amount} {XX_SYMBOL}
+            </span>{' '}
+            to{' '}
+            {action.recipient ? (
+              <AddressLabel address={action.recipient} />
+            ) : (
+              <span className="font-mono text-xs text-ink-300">?</span>
+            )}
+          </>
+        ) : (
+          action.text
+        )}
         {!item.success && (
           <span className="text-danger text-xs ml-2">· failed</span>
         )}
       </p>
-      <p className="font-mono text-[10px] text-ink-500 truncate">
-        finalized by {shortenAddress(item.signer)}
+      <p className="text-[10px] text-ink-500 truncate">
+        finalized by{' '}
+        <AddressLabel address={item.signer} className="text-[10px]" />
       </p>
     </div>
   );
 }
 
 /**
- * Render a description of what a multisig action did, from the indexer's
- * decoded nested_calls structure.
+ * Decoded description of a multisig action, suitable for inline rendering.
  *
- * For slice 1, only `balances.transferKeepAlive` (the 100% of foundation
- * usage we observed in the spike) gets a "friendly" rendering. Anything
- * else falls back to `section.method` — truthful and clearly generic.
+ * For transfers we keep the recipient's full SS58 string (not a truncation)
+ * so the row can render it through AddressLabel — that surfaces a
+ * known-name + truncated fragment when the recipient is in the user's
+ * accounts / address book / known multisigs, and falls back to the
+ * truncated fragment otherwise.
  *
- * Slice 7 broadens this. The shape of nested_calls is loose (`unknown`)
- * because the indexer's exact JSON varies with runtime upgrades; we parse
- * defensively here and elsewhere it's consumed.
+ * Anything else gets a truthful fallback string (`section.method(...)`).
  */
-function describeAction(nestedCalls: unknown): string {
+type ActivityDescription =
+  | { kind: 'transfer'; amount: string; recipient: string | null }
+  | { kind: 'other'; text: string };
+
+/**
+ * Decode a multisig action from the indexer's nested_calls structure.
+ *
+ * Slice 7 broadens this: returns structured data so callers can apply
+ * address-book name substitution to recipient addresses. The shape of
+ * nested_calls is loose (`unknown`) because the indexer's exact JSON
+ * varies with runtime upgrades; we parse defensively here and elsewhere
+ * it's consumed.
+ */
+function describeAction(nestedCalls: unknown): ActivityDescription {
   if (!Array.isArray(nestedCalls) || nestedCalls.length === 0) {
-    return 'Multisig action (no decoded data available)';
+    return { kind: 'other', text: 'Multisig action (no decoded data available)' };
   }
 
   // The first depth-0 entry is the multisig wrapper; the inner call is
@@ -607,29 +641,33 @@ function describeAction(nestedCalls: unknown): string {
     // Just a multisig wrapper with no inner call we can describe — possibly
     // a proposal-only call (asMulti at first signature with `call` being a
     // hash-only reference). Should be rare for executed events but possible.
-    return wrapper
-      ? `${wrapper.module}.${wrapper.call ?? 'unknown'}(...)`
-      : 'Multisig action';
+    return {
+      kind: 'other',
+      text: wrapper
+        ? `${wrapper.module}.${wrapper.call ?? 'unknown'}(...)`
+        : 'Multisig action',
+    };
   }
 
   const fq = `${inner.module}.${inner.call}`;
 
-  // Friendly rendering for the one call type the foundation actually uses.
   if (
     fq === 'balances.transferKeepAlive' ||
     fq === 'balances.transferAllowDeath' ||
     fq === 'balances.transfer'
   ) {
     const parsed = parseArgs(inner.args);
-    const dest = extractDestAddress(parsed?.[0]);
-    const value = typeof parsed?.[1] === 'number' || typeof parsed?.[1] === 'string'
-      ? formatBalance(String(parsed[1]))
-      : '?';
-    return `Sent ${value} ${XX_SYMBOL} to ${dest}`;
+    const recipient = extractDestAddress(parsed?.[0]);
+    const amount =
+      typeof parsed?.[1] === 'number' || typeof parsed?.[1] === 'string'
+        ? formatBalance(String(parsed[1]))
+        : '?';
+    return { kind: 'transfer', amount, recipient };
   }
 
-  // Truthful fallback for anything else — slice 7 will broaden this.
-  return `${fq}(...)`;
+  // Truthful fallback for anything else — broader friendly rendering can
+  // come later. The `section.method(...)` form is at least never lying.
+  return { kind: 'other', text: `${fq}(...)` };
 }
 
 function parseArgs(args: unknown): unknown[] | null {
@@ -650,14 +688,16 @@ function parseArgs(args: unknown): unknown[] | null {
  * Extract a Substrate-style account address from a destination argument.
  * Polkadot encodes destinations as MultiAddress: `{id: "6..."}` or `{Id: "6..."}`,
  * sometimes also `{raw: "0x..."}` or `{index: N}`. We handle the common
- * `Id` variant; for everything else we render the destination opaquely.
+ * `Id` variant; for everything else we return null and the caller renders
+ * a placeholder. Returns the FULL SS58 string so callers can pass it to
+ * AddressLabel for name resolution.
  */
-function extractDestAddress(dest: unknown): string {
-  if (typeof dest === 'string') return shortenAddress(dest);
+function extractDestAddress(dest: unknown): string | null {
+  if (typeof dest === 'string') return dest;
   if (dest && typeof dest === 'object') {
     const d = dest as Record<string, unknown>;
     const id = d.id ?? d.Id;
-    if (typeof id === 'string') return shortenAddress(id);
+    if (typeof id === 'string') return id;
   }
-  return '?';
+  return null;
 }

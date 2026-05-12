@@ -5,3 +5,4 @@ export * from './useTransfers';
 export * from './useMultisigActivity';
 export * from './usePendingMultisigs';
 export * from './useStaleness';
+export * from './useAddressName';

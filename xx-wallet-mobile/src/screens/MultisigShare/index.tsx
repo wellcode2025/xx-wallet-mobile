@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { TopBar } from '@/components/layout';
+import { AddressLabel } from '@/components/ui';
 import { useApi, usePendingMultisigs } from '@/hooks';
 import { useMultisigsStore, usePendingBytesStore } from '@/store';
 import {
@@ -318,11 +319,23 @@ function ShareView({
                         {transfer.symbol}
                       </span>
                     </div>
-                    <div className="pt-1">
+                    <div className="pt-1 space-y-1">
                       <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
                         To
                       </p>
-                      <p className="font-mono text-xs text-ink-200 break-all leading-snug">
+                      <AddressLabel
+                        address={transfer.recipient}
+                        stacked
+                        className="text-sm"
+                      />
+                      {/* Always show the raw address too — name substitution
+                          must never hide what's actually being signed. When
+                          there's no nickname, AddressLabel already renders the
+                          fragment, so this would duplicate; only render when
+                          a name is present (i.e. AddressLabel rendered the
+                          name + small fragment, and we want the full address
+                          available for verification). */}
+                      <p className="font-mono text-[11px] text-ink-400 break-all leading-snug">
                         {transfer.recipient}
                       </p>
                     </div>

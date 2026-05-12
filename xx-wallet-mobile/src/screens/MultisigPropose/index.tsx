@@ -32,7 +32,13 @@ import {
 } from 'lucide-react';
 import BigNumber from 'bignumber.js';
 import { TopBar } from '@/components/layout';
-import { AddressChip, AddressIcon, QrScanner, Sheet } from '@/components/ui';
+import {
+  AddressChip,
+  AddressIcon,
+  AddressLabel,
+  QrScanner,
+  Sheet,
+} from '@/components/ui';
 import { useApi, useBalance, useTx } from '@/hooks';
 import {
   useAccountsStore,
@@ -814,7 +820,11 @@ function ProposeView({ address }: { address: string }) {
               </span>
             </Row>
             <Row label="To">
-              <AddressChip address={recipient.trim()} />
+              <AddressLabel
+                address={recipient.trim()}
+                stacked
+                className="text-sm items-end"
+              />
             </Row>
             <Row label="Amount">
               <span className="font-mono text-base text-ink-100">

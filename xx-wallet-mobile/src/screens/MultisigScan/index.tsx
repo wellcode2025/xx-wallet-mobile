@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
-import { AddressIcon } from '@/components/ui';
+import { AddressIcon, AddressLabel } from '@/components/ui';
 import { useAccountsStore, useAddressBook, useMultisigsStore } from '@/store';
 import {
   scanForUserMultisigs,
@@ -487,9 +487,13 @@ function DiscoveryCard({
                 <div key={addr} className="space-y-1">
                   <div className="flex items-center gap-2">
                     <AddressIcon address={addr} size={20} copyOnTap={false} />
-                    <p className="font-mono text-[11px] text-ink-300 truncate flex-1 min-w-0">
-                      {shortenAddress(addr, { start: 8, end: 6 })}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      {/* AddressLabel surfaces a known name (own account /
+                          contact / known multisig) paired with the
+                          truncated fragment, else just the truncated
+                          fragment. */}
+                      <AddressLabel address={addr} className="text-[11px]" />
+                    </div>
                     {ownAccount && (
                       <span className="text-[9px] uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
                         you
