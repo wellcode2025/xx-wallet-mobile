@@ -10,6 +10,21 @@
 /** SS58 prefix for xx network addresses — all xx addresses start with "6". */
 export const XX_SS58_PREFIX = 55;
 
+/**
+ * xx network mainnet genesis hash.
+ *
+ * Used when exporting an account as a polkadot.js KeyringPair$Json so the
+ * official xx wallet (a polkadot{.js} extension fork) recognizes the
+ * keystore as belonging to this network. Without this field set on
+ * `meta.genesisHash`, the official wallet rejects imports with a
+ * "format not supported" error.
+ *
+ * Verified against multiple independent exports from the official desktop
+ * wallet — the value is stable and is part of the chain's identity.
+ */
+export const XX_GENESIS_HASH =
+  '0x50dd5d206917bf10502c68fb4d18a59fc8aa31586f4e8856b493e43544aa82aa';
+
 /** Number of decimal places for XX balances. */
 export const XX_DECIMALS = 9;
 

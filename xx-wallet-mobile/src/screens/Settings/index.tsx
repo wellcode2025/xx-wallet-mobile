@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
+  Check,
   Download,
+  Loader2,
+  Package,
   Trash2,
   Plus,
   Globe,
@@ -14,6 +17,7 @@ import {
   PlusCircle,
   FileJson,
   Pencil,
+  X,
 } from 'lucide-react';
 import {
   STALE_THRESHOLD_DAYS_DEFAULT,
@@ -48,6 +52,7 @@ export function Settings() {
   const [renameDraft, setRenameDraft] = useState('');
   const [syncOpen, setSyncOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
   const [customDraft, setCustomDraft] = useState('');
   const [customError, setCustomError] = useState<string | null>(null);
 
@@ -161,13 +166,25 @@ export function Settings() {
         <Section
           title="Accounts"
           action={
-            <button
-              onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1 text-sm text-xx-500 active:text-xx-600"
-            >
-              <Plus size={16} />
-              Add
-            </button>
+            <div className="flex items-center gap-3">
+              {accounts.length > 1 && (
+                <button
+                  onClick={() => setBatchOpen(true)}
+                  className="flex items-center gap-1 text-sm text-ink-300 active:text-ink-100"
+                  title="Export multiple accounts in one file"
+                >
+                  <Package size={16} />
+                  Batch export
+                </button>
+              )}
+              <button
+                onClick={() => setAddOpen(true)}
+                className="flex items-center gap-1 text-sm text-xx-500 active:text-xx-600"
+              >
+                <Plus size={16} />
+                Add
+              </button>
+            </div>
           }
         >
           {accounts.map((acct) => (
@@ -544,6 +561,14 @@ export function Settings() {
         </div>
       </Sheet>
 
+      {/* Batch export — bundle several accounts into one file shaped for
+          polkadot.js-style "import all accounts" flows (including the
+          official xx desktop wallet's). */}
+      <BatchExportSheet
+        open={batchOpen}
+        onClose={() => setBatchOpen(false)}
+      />
+
       {/* Remove confirmation */}
       <Sheet
         open={toRemove !== null}
@@ -706,6 +731,356 @@ function Section({
       </div>
       <div className="space-y-2">{children}</div>
     </section>
+  );
+}
+
+/**
+ * Batch export sheet — bundles multiple accounts into one JSON file
+ * shaped for polkadot{.js}-style "import all accounts" flows.
+ *
+ * The official xx desktop wallet (and other polkadot.js-derived wallets)
+ * no longer expose a single-account import path in their UI — the only
+ * way in for a fresh keystore is the bulk "import all" flow, which
+ * expects a top-level JSON array of single-account KeyringPair$Json
+ * objects: `[{address, encoded, encoding, meta}, ...]`. This sheet
+ * produces exactly that.
+ *
+ * Each account is independently encrypted under its own password, so
+ * no re-encryption is needed — we just gather the per-account JSON
+ * blobs and write them to a single file. BUT we still ask the user
+ * for the password(s) up front and verify that they decrypt the
+ * stored keystores: a backup the user can't open later is a useless
+ * backup, and surfacing that problem now is far less painful than
+ * six months from now when they actually need to restore.
+ */
+function BatchExportSheet({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const accounts = useAccountsStore((s) => s.accounts);
+
+  // Which accounts the user wants included in the batch.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Password per account — typical case is each account uses its own.
+  // Keyed by SS58 address.
+  const [passwords, setPasswords] = useState<Record<string, string>>({});
+  // Verification result sets — both are subsets of `selected`.
+  const [verified, setVerified] = useState<Set<string>>(new Set());
+  const [failed, setFailed] = useState<Set<string>>(new Set());
+  const [verifying, setVerifying] = useState(false);
+  // Which address we're currently chewing through scrypt for (so the
+  // user gets per-row progress instead of a single dead spinner).
+  const [verifyingAddress, setVerifyingAddress] = useState<string | null>(null);
+
+  // Reset state every time the sheet opens, defaulting to "all selected".
+  useEffect(() => {
+    if (!open) return;
+    setSelected(new Set(accounts.map((a) => a.address)));
+    setPasswords({});
+    setVerified(new Set());
+    setFailed(new Set());
+    setVerifying(false);
+    setVerifyingAddress(null);
+  }, [open, accounts]);
+
+  const allSelected =
+    accounts.length > 0 && selected.size === accounts.length;
+  const allVerified = useMemo(
+    () =>
+      selected.size > 0 && [...selected].every((a) => verified.has(a)),
+    [selected, verified]
+  );
+  // Verify is enabled whenever at least one selected account has a
+  // password typed AND hasn't already been verified — i.e. there's at
+  // least one row that could potentially flip green.
+  const hasUnverifiedWithPassword = useMemo(
+    () =>
+      [...selected].some(
+        (addr) =>
+          !verified.has(addr) &&
+          (passwords[addr]?.length ?? 0) > 0
+      ),
+    [selected, verified, passwords]
+  );
+
+  const toggle = (addr: string) => {
+    if (verifying) return;
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(addr)) next.delete(addr);
+      else next.add(addr);
+      return next;
+    });
+    // Toggling invalidates any prior verification result for that row.
+    setVerified((cur) => {
+      const next = new Set(cur);
+      next.delete(addr);
+      return next;
+    });
+    setFailed((cur) => {
+      const next = new Set(cur);
+      next.delete(addr);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (verifying) return;
+    setSelected(new Set(accounts.map((a) => a.address)));
+    setFailed(new Set());
+  };
+  const selectNone = () => {
+    if (verifying) return;
+    setSelected(new Set());
+    setVerified(new Set());
+    setFailed(new Set());
+  };
+
+  const handleVerify = async () => {
+    if (selected.size === 0 || verifying) return;
+    setVerifying(true);
+    const nextVerified = new Set(verified);
+    const nextFailed = new Set<string>();
+    // Run each verification sequentially. scrypt at N=131072 is
+    // intentionally expensive (~1s per account); running in parallel
+    // would pin the browser tab even harder and gain little.
+    for (const addr of selected) {
+      if (nextVerified.has(addr)) continue;
+      const pw = passwords[addr] ?? '';
+      if (!pw) {
+        // No password typed for this row — leave it as "not yet
+        // verified" rather than marking it failed (which would imply
+        // a wrong password rather than an empty one).
+        continue;
+      }
+      setVerifyingAddress(addr);
+      try {
+        const ok = await xxKeyring.verifyPassword(addr, pw);
+        if (ok) nextVerified.add(addr);
+        else nextFailed.add(addr);
+      } catch {
+        nextFailed.add(addr);
+      }
+    }
+    setVerified(nextVerified);
+    setFailed(nextFailed);
+    setVerifying(false);
+    setVerifyingAddress(null);
+  };
+
+  const handleDownload = () => {
+    const batch = [...selected].map((addr) => xxKeyring.exportJson(addr));
+    const blob = new Blob([JSON.stringify(batch)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `xx-wallet-batch-${selected.size}-accounts-${date}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    onClose();
+  };
+
+  // Count of selected rows that still need a password typed — drives
+  // the helper text on the action button.
+  const pendingPasswordCount = [...selected].filter(
+    (a) => !verified.has(a) && !(passwords[a]?.length ?? 0)
+  ).length;
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Batch export accounts">
+      <div className="space-y-4">
+        <p className="text-xs text-ink-400 leading-relaxed">
+          Bundle multiple accounts into a single JSON file shaped for the
+          "import all accounts" flow used by the official xx desktop wallet
+          and other polkadot{'{.js}'}-derived wallets. Each account stays
+          encrypted under its own password.
+        </p>
+
+        {/* Account selector */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+              Select accounts ({selected.size}/{accounts.length})
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={selectAll}
+                disabled={allSelected || verifying}
+                className="text-xs text-xx-500 active:text-xx-600 disabled:opacity-40"
+              >
+                All
+              </button>
+              <button
+                onClick={selectNone}
+                disabled={selected.size === 0 || verifying}
+                className="text-xs text-ink-400 active:text-ink-200 disabled:opacity-40"
+              >
+                None
+              </button>
+            </div>
+          </div>
+
+          <ul className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {accounts.map((acct) => {
+              const isSelected = selected.has(acct.address);
+              const isVerified = verified.has(acct.address);
+              const isFailed = failed.has(acct.address);
+              const isCurrent = verifyingAddress === acct.address;
+              return (
+                <li key={acct.address} className="space-y-1.5">
+                  <button
+                    onClick={() => toggle(acct.address)}
+                    disabled={verifying}
+                    className={clsx(
+                      'w-full flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors',
+                      isSelected
+                        ? isVerified
+                          ? 'bg-xx-500/10 border-xx-500/40'
+                          : isFailed
+                          ? 'bg-danger/10 border-danger/30'
+                          : 'bg-ink-800 border-ink-700/50'
+                        : 'bg-ink-900 border-ink-800',
+                      verifying && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
+                    <div
+                      className={clsx(
+                        'w-5 h-5 rounded flex items-center justify-center flex-shrink-0',
+                        isSelected
+                          ? 'bg-xx-500 text-ink-950'
+                          : 'border border-ink-600'
+                      )}
+                    >
+                      {isSelected && <Check size={12} strokeWidth={2.5} />}
+                    </div>
+                    <AddressIcon
+                      address={acct.address}
+                      size={28}
+                      copyOnTap={false}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-ink-100 truncate">
+                        {acct.name}
+                      </p>
+                      <p className="font-mono text-[11px] text-ink-400 truncate">
+                        {acct.address.slice(0, 14)}…
+                      </p>
+                    </div>
+                    {isCurrent && (
+                      <Loader2
+                        size={14}
+                        className="animate-spin text-xx-500 flex-shrink-0"
+                      />
+                    )}
+                    {isSelected && isVerified && !isCurrent && (
+                      <Check
+                        size={14}
+                        className="text-xx-500 flex-shrink-0"
+                      />
+                    )}
+                    {isSelected && isFailed && !isCurrent && (
+                      <X size={14} className="text-danger flex-shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Password input — one per selected row. Hidden once
+                      the row is verified (no need to keep showing the
+                      field for an account we've already cleared). */}
+                  {isSelected && !isVerified && (
+                    <div className="ml-8">
+                      <input
+                        type="password"
+                        value={passwords[acct.address] ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setPasswords((cur) => ({
+                            ...cur,
+                            [acct.address]: value,
+                          }));
+                          // Clear any prior failure state for this row
+                          // when the user edits the password — they're
+                          // actively correcting, no need to keep the
+                          // red highlight.
+                          if (failed.has(acct.address)) {
+                            setFailed((cur) => {
+                              const next = new Set(cur);
+                              next.delete(acct.address);
+                              return next;
+                            });
+                          }
+                        }}
+                        placeholder={`Password for ${acct.name}`}
+                        className={clsx(
+                          'input-base text-xs',
+                          isFailed && 'border-danger/50'
+                        )}
+                        disabled={verifying}
+                        autoComplete="off"
+                      />
+                      {isFailed && (
+                        <p className="text-[10px] text-danger mt-1 pl-1">
+                          Wrong password — try again.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Action button */}
+        {allVerified ? (
+          <button onClick={handleDownload} className="btn-primary w-full">
+            <Download size={16} strokeWidth={2} />
+            Download {selected.size} account
+            {selected.size === 1 ? '' : 's'}
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <button
+              onClick={handleVerify}
+              disabled={
+                selected.size === 0 || verifying || !hasUnverifiedWithPassword
+              }
+              className="btn-primary w-full"
+            >
+              {verifying ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Verifying…
+                </>
+              ) : (
+                <>
+                  <Check size={16} strokeWidth={2} />
+                  Verify passwords
+                </>
+              )}
+            </button>
+            {pendingPasswordCount > 0 && !verifying && (
+              <p className="text-[10px] text-ink-500 text-center leading-relaxed">
+                {pendingPasswordCount} selected account
+                {pendingPasswordCount === 1 ? '' : 's'} still need
+                {pendingPasswordCount === 1 ? 's' : ''} a password.
+              </p>
+            )}
+          </div>
+        )}
+
+        <p className="text-[10px] text-ink-500 leading-relaxed text-center">
+          The exported file is a JSON array of encrypted keystores —
+          import it on the receiving wallet via its "Import all accounts"
+          or equivalent batch flow.
+        </p>
+      </div>
+    </Sheet>
   );
 }
 

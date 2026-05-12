@@ -35,7 +35,7 @@ import {
 import { stringToU8a } from '@polkadot/util';
 import { scrypt as scryptAsync } from 'scrypt-js';
 import nacl from 'tweetnacl';
-import { XX_SS58_PREFIX } from '../api/constants';
+import { XX_GENESIS_HASH, XX_SS58_PREFIX } from '../api/constants';
 
 const STORAGE_KEY = 'xx-wallet:accounts';
 
@@ -537,13 +537,65 @@ class XxKeyring {
   }
 
   /**
-   * Export an account's encrypted JSON (for backup).
+   * Check whether a password can decrypt a stored account's keystore.
+   *
+   * Used by the batch export flow to validate the user-supplied
+   * password(s) BEFORE writing the backup file — a backup the user
+   * can't decrypt later is a useless backup, and we'd rather surface
+   * that problem now while the user is alert at their machine than
+   * six months from now when they actually need to restore.
+   *
+   * Returns true on a successful decrypt + PKCS8 header check, false
+   * on any failure. The decrypted PKCS8 buffer is wiped immediately
+   * (per the keyring's "zero secret buffers" security policy) so this
+   * is safe to call many times in a tight loop.
+   */
+  async verifyPassword(address: string, password: string): Promise<boolean> {
+    const account = this.listAccounts().find((a) => a.address === address);
+    if (!account) return false;
+    let decrypted: Uint8Array | null = null;
+    try {
+      decrypted = await manualScryptDecrypt(account.json, password);
+      validatePkcs8(decrypted);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      decrypted?.fill(0);
+    }
+  }
+
+  /**
+   * Export an account's encrypted JSON (for backup or to import into
+   * another wallet — including the official xx desktop wallet).
+   *
    * The JSON is already encrypted; no password is needed here.
+   *
+   * Meta enrichment: stored accounts only carry the user-set `name` in
+   * their meta (that's all we ever needed locally). The official xx
+   * desktop wallet — a polkadot{.js} extension fork — rejects imports
+   * whose meta is missing `genesisHash`, treating them as belonging to
+   * an unknown network. We pad the four polkadot.js-canonical fields
+   * here at export time so the resulting JSON is accepted by any
+   * polkadot.js-derived wallet.
+   *
+   * The spread order means a stored `whenCreated` (if a re-exported
+   * file ever carried one) is preserved over the synthesized fallback,
+   * and the user-set name is never overwritten by the defaults.
    */
   exportJson(address: string): KeyringPair$Json {
     const account = this.listAccounts().find((a) => a.address === address);
     if (!account) throw new Error('Account not found.');
-    return account.json;
+    return {
+      ...account.json,
+      meta: {
+        genesisHash: XX_GENESIS_HASH,
+        isHardware: false,
+        tags: [],
+        whenCreated: Date.now(),
+        ...account.json.meta,
+      },
+    };
   }
 }
 
