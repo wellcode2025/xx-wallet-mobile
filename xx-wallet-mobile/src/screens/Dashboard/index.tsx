@@ -378,33 +378,29 @@ export function Dashboard() {
                 Multisigs
               </p>
               <ul className="space-y-2">
-                {multisigs.map((m) => (
-                  <li key={m.address}>
-                    <button
-                      onClick={() => {
-                        navigate(`/multisig/${m.address}`);
-                        setSwitcherOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 p-3 rounded-2xl border bg-ink-800 border-ink-700/50 active:bg-ink-700"
-                    >
-                      <AddressIcon address={m.address} size={36} />
-                      <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm truncate">
-                            {m.localName}
-                          </p>
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium flex-shrink-0">
-                            <Users size={9} strokeWidth={2.25} />
-                            {m.threshold}-of-{m.signers.length}
-                          </span>
-                        </div>
-                        <p className="font-mono text-xs text-ink-400 truncate">
-                          {m.address.slice(0, 12)}…
-                        </p>
-                      </div>
-                    </button>
-                  </li>
-                ))}
+                {multisigs.map((m) => {
+                  // Pending count for this specific multisig — peeled off
+                  // the aggregated list so we don't re-query the chain.
+                  const pendingCount = pendingProposals.filter(
+                    (p) => p.multisigAddress === m.address
+                  ).length;
+                  return (
+                    <li key={m.address}>
+                      <MultisigSwitcherRow
+                        address={m.address}
+                        localName={m.localName}
+                        threshold={m.threshold}
+                        signerCount={m.signers.length}
+                        pendingCount={pendingCount}
+                        hideBalances={hideBalances}
+                        onClick={() => {
+                          navigate(`/multisig/${m.address}`);
+                          setSwitcherOpen(false);
+                        }}
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -540,5 +536,72 @@ function BalanceRow({
         {hidden ? '••••' : formatBalance(value, { decimals: 4 })}
       </p>
     </div>
+  );
+}
+
+/**
+ * Single row in the multisig list inside the account switcher. Pulled
+ * out into its own component so each row can call useBalance for its
+ * own address — the at-a-glance balance is one of Phase 2a's
+ * acceptance criteria for the multisig list view (threshold + balance
+ * + pending count, all visible without drilling in).
+ *
+ * Per-row useBalance is acceptable here: foundation users typically
+ * have a handful of multisigs (the treasury multisig + a couple of
+ * working accounts), and polkadot.js caches system.account queries
+ * at the api layer so the cost stays modest. If multisig counts ever
+ * grow past ~20 we'd want to switch to a batched query.
+ */
+function MultisigSwitcherRow({
+  address,
+  localName,
+  threshold,
+  signerCount,
+  pendingCount,
+  hideBalances,
+  onClick,
+}: {
+  address: string;
+  localName: string;
+  threshold: number;
+  signerCount: number;
+  pendingCount: number;
+  hideBalances: boolean;
+  onClick: () => void;
+}) {
+  const { balance } = useBalance(address);
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 rounded-2xl border bg-ink-800 border-ink-700/50 active:bg-ink-700"
+    >
+      <AddressIcon address={address} size={36} />
+      <div className="flex-1 min-w-0 text-left">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-medium text-sm truncate">{localName}</p>
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium flex-shrink-0">
+            <Users size={9} strokeWidth={2.25} />
+            {threshold}-of-{signerCount}
+          </span>
+          {pendingCount > 0 && (
+            <span
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-xs font-medium flex-shrink-0"
+              title={`${pendingCount} pending proposal${pendingCount === 1 ? '' : 's'}`}
+            >
+              {pendingCount} pending
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="font-mono text-xs text-ink-300 numeric">
+            {hideBalances
+              ? '••••'
+              : balance
+              ? `${formatBalance(balance.free, { decimals: 4 })} ${XX_SYMBOL}`
+              : '—'}
+          </p>
+        </div>
+      </div>
+    </button>
   );
 }

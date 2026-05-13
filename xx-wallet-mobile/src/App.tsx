@@ -25,6 +25,7 @@ import { MultisigPropose } from '@/screens/MultisigPropose';
 import { MultisigShare } from '@/screens/MultisigShare';
 import { MultisigImport } from '@/screens/MultisigImport';
 import { MultisigScan } from '@/screens/MultisigScan';
+import { useMultisigNotifications } from '@/notifications';
 
 /**
  * Resets scroll to the top on forward navigation (PUSH/REPLACE). Without
@@ -48,10 +49,17 @@ function ScrollToTop() {
 
 /**
  * Guards the main app routes — if no accounts exist, redirect to onboarding.
+ *
+ * Also the mount point for app-wide notification wiring: the multisig
+ * notification hook lives here so it runs for every authenticated session
+ * (and never during onboarding, when the user has no multisigs anyway).
  */
 function RequireAccount() {
   const accounts = useAccountsStore((s) => s.accounts);
   const location = useLocation();
+  // Hook order: call before the conditional return so React's hook
+  // rules don't trip when the user is in the onboarding redirect path.
+  useMultisigNotifications();
   if (accounts.length === 0) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
   }
