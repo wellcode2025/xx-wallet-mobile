@@ -99,7 +99,7 @@ export function Dashboard() {
         >
           {pendingProposals.length > 0 && (
             <span
-              className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-ink-950 text-[11px] font-medium flex items-center justify-center"
+              className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-ink-950 text-xs font-medium flex items-center justify-center"
               aria-label={`${pendingProposals.length} pending action${
                 pendingProposals.length === 1 ? '' : 's'
               }`}
@@ -131,7 +131,7 @@ export function Dashboard() {
                 Transferable
               </span>
               {isLoading && !balance && (
-                <span className="text-xs text-ink-500 animate-pulse-subtle">
+                <span className="text-xs text-ink-400 animate-pulse-subtle">
                   Loading…
                 </span>
               )}
@@ -261,7 +261,7 @@ export function Dashboard() {
               needing the user's attention is more urgent than account switching */}
           {pendingProposals.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-amber-400 font-medium px-1">
+              <p className="text-xs uppercase tracking-wider text-amber-400 font-medium px-1">
                 Pending actions ({pendingProposals.length})
               </p>
               <ul className="space-y-2">
@@ -339,7 +339,7 @@ export function Dashboard() {
           {/* Accounts section */}
           <div className="space-y-2">
             {accounts.length > 1 && (
-              <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium px-1">
+              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1">
                 Your accounts
               </p>
             )}
@@ -374,7 +374,7 @@ export function Dashboard() {
           {/* Multisigs section (only renders when there's at least one) */}
           {multisigs.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium px-1">
+              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1">
                 Multisigs
               </p>
               <ul className="space-y-2">
@@ -393,7 +393,7 @@ export function Dashboard() {
                           <p className="font-medium text-sm truncate">
                             {m.localName}
                           </p>
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-[9px] font-medium flex-shrink-0">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium flex-shrink-0">
                             <Users size={9} strokeWidth={2.25} />
                             {m.threshold}-of-{m.signers.length}
                           </span>
@@ -426,7 +426,7 @@ export function Dashboard() {
               </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-medium">Add multisig</p>
-                <p className="text-[11px] text-ink-500">
+                <p className="text-sm text-ink-300 mt-0.5">
                   {multisigs.length === 0
                     ? 'Set up a shared multi-signature account'
                     : 'Add another multi-signature account'}
@@ -460,7 +460,7 @@ export function Dashboard() {
               <p className="text-sm font-medium text-ink-100">
                 Create new
               </p>
-              <p className="text-[11px] text-ink-400 leading-snug mt-0.5">
+              <p className="text-sm text-ink-300 leading-snug mt-0.5">
                 Pick signers from your address book and set the
                 threshold. Use this if you're the one organizing the
                 multisig — afterward, export the config to share with
@@ -483,7 +483,7 @@ export function Dashboard() {
               <p className="text-sm font-medium text-ink-100">
                 Import from JSON
               </p>
-              <p className="text-[11px] text-ink-400 leading-snug mt-0.5">
+              <p className="text-sm text-ink-300 leading-snug mt-0.5">
                 Load a config another signer shared with you (file, QR,
                 or paste). Your wallet verifies the config integrity
                 automatically before importing.
@@ -505,7 +505,7 @@ export function Dashboard() {
               <p className="text-sm font-medium text-ink-100">
                 Scan chain
               </p>
-              <p className="text-[11px] text-ink-400 leading-snug mt-0.5">
+              <p className="text-sm text-ink-300 leading-snug mt-0.5">
                 Find multisigs that any of your wallet accounts are
                 signers of by walking past on-chain activity. Useful
                 if you've used a multisig elsewhere (e.g., the official
@@ -533,7 +533,7 @@ function BalanceRow({
 }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium mb-0.5">
+      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
         {label}
       </p>
       <p className="font-mono text-sm text-ink-200">

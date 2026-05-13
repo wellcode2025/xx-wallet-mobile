@@ -178,7 +178,7 @@ export function MultisigCreate() {
       <div className="px-5 py-6 max-w-md mx-auto space-y-5 pb-24">
         {/* Nickname */}
         <div className="card space-y-2">
-          <label className="block text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
             Nickname
           </label>
           <input
@@ -189,7 +189,7 @@ export function MultisigCreate() {
             maxLength={64}
             className="w-full bg-ink-900 border border-ink-700 rounded-md px-3 py-2 text-ink-100 text-sm focus:outline-none focus:border-xx-500"
           />
-          <p className="text-[10px] text-ink-500 leading-relaxed">
+          <p className="text-xs text-ink-400 leading-relaxed">
             Local label, only visible to you. Other signers can use a
             different name for the same multisig — it doesn't affect the
             shared address.
@@ -199,11 +199,11 @@ export function MultisigCreate() {
         {/* Signer picker */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Signers ({selected.length} selected)
             </p>
             {selected.length < 2 && (
-              <span className="text-[10px] text-amber-400">need ≥ 2</span>
+              <span className="text-xs text-amber-400">need ≥ 2</span>
             )}
           </div>
           {candidates.length === 1 && (
@@ -237,17 +237,17 @@ export function MultisigCreate() {
                         {c.label}
                       </p>
                       {c.source === 'self' && (
-                        <span className="text-[9px] uppercase tracking-wider text-xx-500 font-medium">
+                        <span className="text-xs uppercase tracking-wider text-xx-500 font-medium">
                           you
                         </span>
                       )}
                       {c.source === 'contact' && (
-                        <span className="text-[9px] uppercase tracking-wider text-ink-500">
+                        <span className="text-xs uppercase tracking-wider text-ink-400">
                           contact
                         </span>
                       )}
                     </div>
-                    <p className="font-mono text-[11px] text-ink-400 truncate">
+                    <p className="font-mono text-xs text-ink-400 truncate">
                       {shortenAddress(c.address, { start: 8, end: 6 })}
                     </p>
                   </div>
@@ -268,7 +268,7 @@ export function MultisigCreate() {
 
         {/* Threshold */}
         <div className="card space-y-3">
-          <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
             Threshold (signatures required)
           </p>
           <div className="flex items-center justify-center gap-4">
@@ -299,7 +299,7 @@ export function MultisigCreate() {
               <Plus size={16} strokeWidth={2} />
             </button>
           </div>
-          <p className="text-[10px] text-ink-500 text-center leading-relaxed">
+          <p className="text-xs text-ink-400 text-center leading-relaxed">
             {threshold} of the {selected.length} signers must approve any
             action from this multisig before it executes.
           </p>
@@ -307,7 +307,7 @@ export function MultisigCreate() {
 
         {/* Live preview of the derived address */}
         <div className="card space-y-2">
-          <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
             Multisig address (derived)
           </p>
           {derivedAddress ? (
@@ -315,7 +315,7 @@ export function MultisigCreate() {
               <p className="font-mono text-xs text-ink-100 break-all leading-snug select-all">
                 {derivedAddress}
               </p>
-              <p className="text-[10px] text-ink-500 leading-relaxed">
+              <p className="text-xs text-ink-400 leading-relaxed">
                 Computed locally from your threshold + signers. Other
                 signers entering the same parameters will derive the same
                 address — that's how everyone ends up on the same multisig.
@@ -327,7 +327,7 @@ export function MultisigCreate() {
                     strokeWidth={2}
                     className="text-amber-400 mt-0.5 flex-shrink-0"
                   />
-                  <p className="text-[11px] text-amber-200 leading-snug">
+                  <p className="text-xs text-amber-200 leading-snug">
                     This multisig is already in your wallet as
                     <span className="font-medium"> "{existingMultisig.localName}"</span>.
                   </p>
@@ -335,7 +335,7 @@ export function MultisigCreate() {
               )}
             </>
           ) : (
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-ink-400">
               {selected.length < 2
                 ? 'Pick at least 2 signers to see the derived address.'
                 : 'Adjust the threshold to a valid value.'}

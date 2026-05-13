@@ -83,7 +83,7 @@ export function TransactionItem({ transfer }: TransactionItemProps) {
           <span
             className={clsx(
               'font-mono text-sm font-medium flex-shrink-0',
-              success ? config.color : 'text-ink-500 line-through'
+              success ? config.color : 'text-ink-400 line-through'
             )}
           >
             {config.prefix}
@@ -96,7 +96,7 @@ export function TransactionItem({ transfer }: TransactionItemProps) {
               ? 'Self transfer'
               : shortenAddress(counterparty, { start: 6, end: 4 })}
           </span>
-          <span className="text-[10px] text-ink-500 flex-shrink-0">{timeStr}</span>
+          <span className="text-xs text-ink-400 flex-shrink-0">{timeStr}</span>
         </div>
       </div>
     </Link>

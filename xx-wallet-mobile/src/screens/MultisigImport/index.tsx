@@ -297,7 +297,7 @@ export function MultisigImport() {
               safe to load configs received over Slack, email, AirDrop,
               or any other channel you trust the SENDER on.
             </p>
-            <p className="text-ink-500">
+            <p className="text-ink-400">
               You will still confirm the signer addresses with at least
               one cosigner out-of-band before the wallet treats the
               config as canonical.
@@ -375,7 +375,7 @@ export function MultisigImport() {
                   Couldn't import this config
                 </p>
               </div>
-              <p className="text-[11px] text-ink-300 leading-snug">
+              <p className="text-xs text-ink-300 leading-snug">
                 {parseError}
               </p>
             </div>
@@ -471,7 +471,7 @@ export function MultisigImport() {
               className="text-xx-500"
               strokeWidth={2.25}
             />
-            <p className="text-[10px] uppercase tracking-wider text-xx-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-xx-500 font-medium">
               Locally verified
             </p>
           </div>
@@ -484,7 +484,7 @@ export function MultisigImport() {
 
         {/* Multisig details */}
         <div className="card space-y-2">
-          <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
             Multisig
           </p>
           <div className="flex items-center gap-3">
@@ -493,7 +493,7 @@ export function MultisigImport() {
               <p className="font-mono text-xs text-ink-100 break-all leading-snug">
                 {parsed.multisigAddress}
               </p>
-              <p className="text-[11px] text-ink-400 mt-0.5">
+              <p className="text-xs text-ink-400 mt-0.5">
                 {parsed.threshold}-of-{parsed.signers.length}
               </p>
             </div>
@@ -505,7 +505,7 @@ export function MultisigImport() {
                 strokeWidth={2}
                 className="text-amber-300 flex-shrink-0 mt-0.5"
               />
-              <p className="text-[11px] text-amber-200 leading-snug">
+              <p className="text-xs text-amber-200 leading-snug">
                 None of your wallet's accounts are signers of this
                 multisig. You can import it as a watch-only view, but
                 you won't be able to propose or approve.
@@ -516,7 +516,7 @@ export function MultisigImport() {
 
         {/* Local nickname */}
         <div className="card space-y-2">
-          <label className="block text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
             Local nickname
           </label>
           <input
@@ -529,7 +529,7 @@ export function MultisigImport() {
             maxLength={64}
             className="input-base text-sm"
           />
-          <p className="text-[10px] text-ink-500 leading-relaxed">
+          <p className="text-xs text-ink-400 leading-relaxed">
             Local label, only visible to you. Other signers can use
             different nicknames for the same multisig.
             {parsed.suggestedName && (
@@ -554,10 +554,10 @@ export function MultisigImport() {
             logic in handleSave. */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Signers ({parsed.signers.length})
             </p>
-            <p className="text-[9px] uppercase tracking-wider text-ink-500">
+            <p className="text-xs uppercase tracking-wider text-ink-400">
               labeled = added to contacts
             </p>
           </div>
@@ -574,10 +574,10 @@ export function MultisigImport() {
                           address resolves to a wallet account / contact /
                           known multisig; otherwise just the truncated
                           fragment. Either way the address is visible. */}
-                      <AddressLabel address={addr} className="text-[11px]" />
+                      <AddressLabel address={addr} className="text-xs" />
                     </div>
                     {ownAccount && (
-                      <span className="text-[9px] uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
+                      <span className="text-xs uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
                         you
                       </span>
                     )}
@@ -617,14 +617,14 @@ export function MultisigImport() {
               Verify with a cosigner
             </p>
           </div>
-          <p className="text-[11px] text-ink-200 leading-relaxed">
+          <p className="text-xs text-ink-200 leading-relaxed">
             Anyone can put your address into a multisig signer set —
             that alone is not proof the multisig is legitimate. Confirm
             with at least one cosigner out-of-band (voice, video, in
             person) that the signer addresses above are who you think
             they are.
           </p>
-          <label className="flex items-start gap-2 mt-1 text-[11px] text-ink-200 leading-snug cursor-pointer select-none">
+          <label className="flex items-start gap-2 mt-1 text-xs text-ink-200 leading-snug cursor-pointer select-none">
             <input
               type="checkbox"
               checked={verified}
@@ -639,7 +639,7 @@ export function MultisigImport() {
         </div>
 
         {parsed.createdBy && (
-          <p className="text-[10px] text-ink-500 px-1 leading-relaxed">
+          <p className="text-xs text-ink-400 px-1 leading-relaxed">
             Sender claims this config was created by{' '}
             <span className="font-mono text-ink-400">
               {shortenAddress(parsed.createdBy, { start: 8, end: 6 })}
@@ -790,11 +790,11 @@ function LegacyReview({
               className="text-amber-400"
               strokeWidth={2.25}
             />
-            <p className="text-[10px] uppercase tracking-wider text-amber-200 font-medium">
+            <p className="text-xs uppercase tracking-wider text-amber-200 font-medium">
               Legacy format — additional input needed
             </p>
           </div>
-          <p className="text-[11px] text-ink-200 leading-relaxed">
+          <p className="text-xs text-ink-200 leading-relaxed">
             This file is in the official xx wallet's export format,
             which carries only the signer addresses. To finish the
             import, set the multisig's threshold and confirm the
@@ -805,7 +805,7 @@ function LegacyReview({
         {/* Live-derived multisig address — the central thing the user
             must see before save. Updates as they change the threshold. */}
         <div className="card space-y-2">
-          <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
             Multisig address (derived from your inputs)
           </p>
           {derivedAddress ? (
@@ -813,7 +813,7 @@ function LegacyReview({
               {derivedAddress}
             </p>
           ) : (
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-ink-400">
               Pick a valid threshold to see the derived address.
             </p>
           )}
@@ -840,7 +840,7 @@ function LegacyReview({
                   className="text-amber-400 mt-0.5 flex-shrink-0"
                 />
               )}
-              <div className="text-[11px] leading-snug">
+              <div className="text-xs leading-snug">
                 {filenameMatches ? (
                   <p className="text-ink-200">
                     Filename matches the derived address — extra
@@ -876,7 +876,7 @@ function LegacyReview({
                 strokeWidth={2}
                 className="text-amber-400 mt-0.5 flex-shrink-0"
               />
-              <p className="text-[11px] text-amber-200 leading-snug">
+              <p className="text-xs text-amber-200 leading-snug">
                 This multisig is already in your wallet.
               </p>
             </div>
@@ -889,7 +889,7 @@ function LegacyReview({
                 strokeWidth={2}
                 className="text-amber-300 mt-0.5 flex-shrink-0"
               />
-              <p className="text-[11px] text-amber-200 leading-snug">
+              <p className="text-xs text-amber-200 leading-snug">
                 None of your wallet's accounts are in this signer set —
                 you can import as a watch-only view but won't be able
                 to propose or approve.
@@ -900,7 +900,7 @@ function LegacyReview({
 
         {/* Threshold input */}
         <div className="card space-y-2">
-          <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
             Threshold (signatures required)
           </p>
           <div className="flex items-center gap-3">
@@ -929,7 +929,7 @@ function LegacyReview({
               +
             </button>
           </div>
-          <p className="text-[10px] text-ink-500 text-center leading-relaxed">
+          <p className="text-xs text-ink-400 text-center leading-relaxed">
             Most foundation multisigs use 2-of-N. If you're not sure,
             check with another cosigner.
           </p>
@@ -937,7 +937,7 @@ function LegacyReview({
 
         {/* Local nickname */}
         <div className="card space-y-2">
-          <label className="block text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
             Local nickname
           </label>
           <input
@@ -949,7 +949,7 @@ function LegacyReview({
             className="input-base text-sm"
           />
           {filenameNameHint && (
-            <p className="text-[10px] text-ink-500 leading-relaxed">
+            <p className="text-xs text-ink-400 leading-relaxed">
               Filename suggests:{' '}
               <span className="text-ink-400">"{filenameNameHint}"</span>
             </p>
@@ -959,10 +959,10 @@ function LegacyReview({
         {/* Signers + per-signer labels */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Signers ({signers.length})
             </p>
-            <p className="text-[9px] uppercase tracking-wider text-ink-500">
+            <p className="text-xs uppercase tracking-wider text-ink-400">
               labeled = added to contacts
             </p>
           </div>
@@ -975,10 +975,10 @@ function LegacyReview({
                   <div className="flex items-center gap-2">
                     <AddressIcon address={addr} size={24} copyOnTap={false} />
                     <div className="flex-1 min-w-0">
-                      <AddressLabel address={addr} className="text-[11px]" />
+                      <AddressLabel address={addr} className="text-xs" />
                     </div>
                     {ownAccount && (
-                      <span className="text-[9px] uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
+                      <span className="text-xs uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
                         you
                       </span>
                     )}
@@ -1010,14 +1010,14 @@ function LegacyReview({
               Verify with a cosigner
             </p>
           </div>
-          <p className="text-[11px] text-ink-200 leading-relaxed">
+          <p className="text-xs text-ink-200 leading-relaxed">
             Confirm out-of-band (voice, video, in person) with at
             least one cosigner that the threshold and signer
             addresses above are correct. Anyone can put your address
             into a multisig signer set — that alone is not proof the
             multisig is legitimate.
           </p>
-          <label className="flex items-start gap-2 mt-1 text-[11px] text-ink-200 leading-snug cursor-pointer select-none">
+          <label className="flex items-start gap-2 mt-1 text-xs text-ink-200 leading-snug cursor-pointer select-none">
             <input
               type="checkbox"
               checked={verified}

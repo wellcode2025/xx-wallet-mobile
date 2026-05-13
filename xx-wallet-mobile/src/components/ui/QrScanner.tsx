@@ -167,7 +167,7 @@ export function QrScanner({ onScan, onClose }: QrScannerProps) {
         ) : error ? (
           /* Camera error with manual fallback option */
           <div className="text-center space-y-4 max-w-xs">
-            <Camera size={48} className="text-ink-500 mx-auto" strokeWidth={1.25} />
+            <Camera size={48} className="text-ink-400 mx-auto" strokeWidth={1.25} />
             <p className="text-sm text-ink-300">{error}</p>
             <button onClick={() => setManualMode(true)} className="btn-primary w-full">
               <ClipboardPaste size={18} />
@@ -198,7 +198,7 @@ export function QrScanner({ onScan, onClose }: QrScannerProps) {
               )}
               {starting && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Camera size={40} className="text-ink-500 animate-pulse-subtle" />
+                  <Camera size={40} className="text-ink-400 animate-pulse-subtle" />
                 </div>
               )}
             </div>

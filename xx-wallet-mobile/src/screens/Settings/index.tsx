@@ -245,7 +245,7 @@ export function Settings() {
             <span className="flex-1 text-sm font-medium text-left">
               How to use on another device
             </span>
-            <ChevronRight size={16} className="text-ink-500" />
+            <ChevronRight size={16} className="text-ink-400" />
           </button>
         </Section>
 
@@ -255,7 +255,7 @@ export function Settings() {
             <div>
               <p className="text-sm font-medium text-ink-200">xx Wallet Mobile</p>
               <p className="text-xs text-ink-400">Version 0.1.0 · Phase 1</p>
-              <p className="text-xs text-ink-500 pt-1">
+              <p className="text-xs text-ink-400 pt-1">
                 Open source, non-custodial. Your keys stay on this device.
               </p>
             </div>
@@ -290,7 +290,7 @@ export function Settings() {
             </div>
             <div>
               <p className="font-medium text-sm text-ink-100">Create new wallet</p>
-              <p className="text-xs text-ink-400 mt-0.5">Generate a fresh 24-word recovery phrase</p>
+              <p className="text-sm text-ink-300 mt-0.5">Generate a fresh 24-word recovery phrase</p>
             </div>
           </button>
           <button
@@ -302,7 +302,7 @@ export function Settings() {
             </div>
             <div>
               <p className="font-medium text-sm text-ink-100">Import existing wallet</p>
-              <p className="text-xs text-ink-400 mt-0.5">Use a recovery phrase or keystore file</p>
+              <p className="text-sm text-ink-300 mt-0.5">Use a recovery phrase or keystore file</p>
             </div>
           </button>
         </div>
@@ -408,7 +408,7 @@ export function Settings() {
             </div>
           </div>
 
-          <p className="text-xs text-ink-500 text-center">
+          <p className="text-xs text-ink-400 text-center">
             Works between phone ↔ desktop ↔ wallet.xx.network
           </p>
         </div>
@@ -485,7 +485,7 @@ export function Settings() {
               >
                 Connect
               </button>
-              <p className="text-[10px] text-ink-500 mt-3 leading-relaxed">
+              <p className="text-xs text-ink-400 mt-3 leading-relaxed">
                 Point at a self-hosted xx node or alternate RPC provider. Use{' '}
                 <code className="font-mono text-xx-500">wss://</code> for remote
                 hosts; <code className="font-mono text-xx-500">ws://</code> only
@@ -508,13 +508,13 @@ export function Settings() {
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-ink-900 border border-ink-800">
               <AddressIcon address={renameTarget.address} size={36} />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
                   Current name
                 </p>
                 <p className="text-sm font-medium text-ink-100 truncate">
                   {renameTarget.name}
                 </p>
-                <p className="font-mono text-[11px] text-ink-400 truncate">
+                <p className="font-mono text-xs text-ink-400 truncate">
                   {renameTarget.address.slice(0, 14)}…
                 </p>
               </div>
@@ -522,7 +522,7 @@ export function Settings() {
           )}
 
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-ink-500 font-medium mb-2 block">
+            <label className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2 block">
               New name
             </label>
             <input
@@ -540,7 +540,7 @@ export function Settings() {
               className="input-base"
               placeholder="e.g. Foundation Multisig"
             />
-            <p className="text-[10px] text-ink-500 mt-2">
+            <p className="text-xs text-ink-400 mt-2">
               Updates the display name and the keystore JSON's metadata, so an
               export of this account will carry the new name to other devices.
             </p>
@@ -676,7 +676,7 @@ function MultisigSection() {
             <p className="text-sm font-medium text-ink-200">
               Stale-proposal threshold
             </p>
-            <p className="text-xs text-ink-500 leading-snug">
+            <p className="text-xs text-ink-400 leading-snug">
               Pending proposals older than this get the stale treatment in
               your wallet — depositors are nudged to cancel and reclaim
               their deposit.
@@ -704,7 +704,7 @@ function MultisigSection() {
             </button>
           )}
         </div>
-        <p className="text-[10px] text-ink-500">
+        <p className="text-xs text-ink-400">
           Bounds: {STALE_THRESHOLD_DAYS_MIN}–{STALE_THRESHOLD_DAYS_MAX} days.
         </p>
       </div>
@@ -905,7 +905,7 @@ function BatchExportSheet({
         {/* Account selector */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Select accounts ({selected.size}/{accounts.length})
             </p>
             <div className="flex items-center gap-3">
@@ -968,7 +968,7 @@ function BatchExportSheet({
                       <p className="text-sm font-medium text-ink-100 truncate">
                         {acct.name}
                       </p>
-                      <p className="font-mono text-[11px] text-ink-400 truncate">
+                      <p className="font-mono text-xs text-ink-400 truncate">
                         {acct.address.slice(0, 14)}…
                       </p>
                     </div>
@@ -1024,7 +1024,7 @@ function BatchExportSheet({
                         autoComplete="off"
                       />
                       {isFailed && (
-                        <p className="text-[10px] text-danger mt-1 pl-1">
+                        <p className="text-xs text-danger mt-1 pl-1">
                           Wrong password — try again.
                         </p>
                       )}
@@ -1065,7 +1065,7 @@ function BatchExportSheet({
               )}
             </button>
             {pendingPasswordCount > 0 && !verifying && (
-              <p className="text-[10px] text-ink-500 text-center leading-relaxed">
+              <p className="text-xs text-ink-400 text-center leading-relaxed">
                 {pendingPasswordCount} selected account
                 {pendingPasswordCount === 1 ? '' : 's'} still need
                 {pendingPasswordCount === 1 ? 's' : ''} a password.
@@ -1074,7 +1074,7 @@ function BatchExportSheet({
           </div>
         )}
 
-        <p className="text-[10px] text-ink-500 leading-relaxed text-center">
+        <p className="text-xs text-ink-400 leading-relaxed text-center">
           The exported file is a JSON array of encrypted keystores —
           import it on the receiving wallet via its "Import all accounts"
           or equivalent batch flow.
@@ -1104,7 +1104,7 @@ function Row({
       <span className="text-sm text-ink-400 font-mono truncate max-w-[140px]">
         {value}
       </span>
-      {!readonly && <ChevronRight size={16} className="text-ink-500" />}
+      {!readonly && <ChevronRight size={16} className="text-ink-400" />}
     </>
   );
 

@@ -214,7 +214,7 @@ export function MultisigScan() {
                 address locally, and shows you what's out there to
                 selectively import.
               </p>
-              <p className="text-ink-500">
+              <p className="text-ink-400">
                 You'll still confirm with at least one cosigner
                 out-of-band before importing — anyone can put your
                 address into a multisig signer set on chain, and that
@@ -315,7 +315,7 @@ export function MultisigScan() {
                       Verify before importing
                     </p>
                   </div>
-                  <p className="text-[11px] text-ink-200 leading-relaxed">
+                  <p className="text-xs text-ink-200 leading-relaxed">
                     Confirm out-of-band (voice, video, in person) with
                     a cosigner of each selected multisig that the
                     signer addresses below are who you think they are.
@@ -323,7 +323,7 @@ export function MultisigScan() {
                     legitimate — anyone could have added your address
                     to a signer set.
                   </p>
-                  <label className="flex items-start gap-2 mt-1 text-[11px] text-ink-200 leading-snug cursor-pointer select-none">
+                  <label className="flex items-start gap-2 mt-1 text-xs text-ink-200 leading-snug cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={verified}
@@ -443,11 +443,11 @@ function DiscoveryCard({
             {discovery.address}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-[9px] font-medium">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium">
               <Users size={9} strokeWidth={2.25} />
               {discovery.threshold}-of-{discovery.signers.length}
             </span>
-            <span className="text-[9px] uppercase tracking-wider text-ink-500">
+            <span className="text-xs uppercase tracking-wider text-ink-400">
               {discovery.activityCount} on-chain action
               {discovery.activityCount === 1 ? '' : 's'}
             </span>
@@ -459,7 +459,7 @@ function DiscoveryCard({
       {selected && selection && (
         <>
           <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Local nickname
             </p>
             <input
@@ -474,10 +474,10 @@ function DiscoveryCard({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
                 Signers ({discovery.signers.length})
               </p>
-              <p className="text-[9px] uppercase tracking-wider text-ink-500">
+              <p className="text-xs uppercase tracking-wider text-ink-400">
                 labeled = added to contacts
               </p>
             </div>
@@ -492,10 +492,10 @@ function DiscoveryCard({
                           contact / known multisig) paired with the
                           truncated fragment, else just the truncated
                           fragment. */}
-                      <AddressLabel address={addr} className="text-[11px]" />
+                      <AddressLabel address={addr} className="text-xs" />
                     </div>
                     {ownAccount && (
-                      <span className="text-[9px] uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
+                      <span className="text-xs uppercase tracking-wider text-xx-500 font-medium flex-shrink-0">
                         you
                       </span>
                     )}

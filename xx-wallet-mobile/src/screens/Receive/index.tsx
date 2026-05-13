@@ -101,7 +101,7 @@ export function Receive() {
         </div>
 
         <div className="card">
-          <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium mb-2">
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2">
             Full address
           </p>
           <p className="font-mono text-xs text-ink-100 break-all leading-relaxed select-all">

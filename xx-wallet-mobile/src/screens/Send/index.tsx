@@ -394,17 +394,17 @@ export function Send() {
                   )}
                 </div>
                 {matchedContact.name && matchedContact.identity?.display && matchedContact.identity.display !== matchedContact.name && (
-                  <p className="text-[10px] text-ink-400 truncate">
+                  <p className="text-xs text-ink-400 truncate">
                     on-chain: {matchedContact.identity.display}
                   </p>
                 )}
                 {matchedContact.note && (
-                  <p className="text-[10px] text-ink-500 truncate">{matchedContact.note}</p>
+                  <p className="text-xs text-ink-400 truncate">{matchedContact.note}</p>
                 )}
               </div>
               <button
                 onClick={() => handleOpenDetails(matchedContact.id)}
-                className="text-[10px] font-medium text-ink-400 active:text-ink-200 px-2 py-1"
+                className="text-xs font-medium text-ink-400 active:text-ink-200 px-2 py-1"
               >
                 Details
               </button>
@@ -480,7 +480,7 @@ export function Send() {
                   account record.
                 </p>
               </div>
-              <div className="text-[11px] text-ink-300 leading-relaxed pl-6 space-y-1">
+              <div className="text-xs text-ink-300 leading-relaxed pl-6 space-y-1">
                 <p>What that means in practice:</p>
                 <ul className="list-disc pl-4 space-y-0.5 text-ink-400">
                   <li>
@@ -502,7 +502,7 @@ export function Send() {
                   </li>
                 </ul>
               </div>
-              <label className="flex items-start gap-2 mt-1 text-[11px] text-ink-200 leading-snug cursor-pointer select-none">
+              <label className="flex items-start gap-2 mt-1 text-xs text-ink-200 leading-snug cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={allowReaping}

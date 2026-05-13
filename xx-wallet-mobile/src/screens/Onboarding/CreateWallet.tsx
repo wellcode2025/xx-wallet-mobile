@@ -457,7 +457,7 @@ export function CreateWallet() {
                 >
                   {isOnline ? 'You are online' : 'You are offline'}
                 </p>
-                <p className="text-xs text-ink-400 mt-0.5 leading-relaxed">
+                <p className="text-sm text-ink-300 mt-0.5 leading-relaxed">
                   {isOnline
                     ? 'Generation will work fine, but disconnecting first is recommended.'
                     : 'Ideal — generation runs entirely on this device, no network needed.'}
@@ -793,7 +793,7 @@ function PhraseCard({
                 accentBg
               )}
             >
-              <span className="text-ink-500 text-xs font-mono w-5 text-right">
+              <span className="text-ink-400 text-xs font-mono w-5 text-right">
                 {i + 1}
               </span>
               <span className="font-mono text-sm text-ink-100">{word}</span>

@@ -411,7 +411,7 @@ function ProposeView({ address }: { address: string }) {
               None of the accounts in your wallet are signers of this
               multisig.
             </p>
-            <p className="text-xs text-ink-500 leading-relaxed">
+            <p className="text-xs text-ink-400 leading-relaxed">
               To propose at it, import or create one of its signer
               accounts in this wallet first.
             </p>
@@ -429,17 +429,17 @@ function ProposeView({ address }: { address: string }) {
         <div className="card space-y-1">
           <div className="flex items-center gap-2">
             <Users size={14} className="text-xx-500" strokeWidth={2.25} />
-            <p className="text-[10px] uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Funds from multisig
             </p>
           </div>
           <p className="text-sm font-medium text-ink-100">
             {multisig.localName}
           </p>
-          <p className="font-mono text-[11px] text-ink-400 truncate">
+          <p className="font-mono text-xs text-ink-400 truncate">
             {address}
           </p>
-          <p className="text-[10px] text-ink-500">
+          <p className="text-xs text-ink-400">
             Balance:{' '}
             {balance ? formatBalance(balance.transferable) : '—'} {XX_SYMBOL} ·
             Threshold: {multisig.threshold}-of-{multisig.signers.length}
@@ -452,7 +452,7 @@ function ProposeView({ address }: { address: string }) {
         <div className="card space-y-2">
           <div className="flex items-center gap-2">
             <Key size={14} className="text-xx-500" strokeWidth={2.25} />
-            <p className="text-[10px] uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Signed by
             </p>
           </div>
@@ -469,7 +469,7 @@ function ProposeView({ address }: { address: string }) {
                 <p className="text-sm font-medium text-ink-100 truncate">
                   {eligibleSigners[0].name}
                 </p>
-                <p className="font-mono text-[11px] text-ink-400 truncate">
+                <p className="font-mono text-xs text-ink-400 truncate">
                   {eligibleSigners[0].address}
                 </p>
               </div>
@@ -488,7 +488,7 @@ function ProposeView({ address }: { address: string }) {
               ))}
             </select>
           )}
-          <p className="text-[10px] text-ink-500 leading-relaxed">
+          <p className="text-xs text-ink-400 leading-relaxed">
             This account signs the proposal on chain and pays the
             extrinsic fee. The funds themselves still come from the
             multisig above.
@@ -612,7 +612,7 @@ function ProposeView({ address }: { address: string }) {
                   account record.
                 </p>
               </div>
-              <div className="text-[11px] text-ink-300 leading-relaxed pl-6 space-y-1">
+              <div className="text-xs text-ink-300 leading-relaxed pl-6 space-y-1">
                 <p>What that means for this multisig:</p>
                 <ul className="list-disc pl-4 space-y-0.5 text-ink-400">
                   <li>
@@ -636,7 +636,7 @@ function ProposeView({ address }: { address: string }) {
                   </li>
                 </ul>
               </div>
-              <label className="flex items-start gap-2 mt-1 text-[11px] text-ink-200 leading-snug cursor-pointer select-none">
+              <label className="flex items-start gap-2 mt-1 text-xs text-ink-200 leading-snug cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={allowReaping}
@@ -668,7 +668,7 @@ function ProposeView({ address }: { address: string }) {
             content depends on threshold: at 1, a single signature
             executes immediately; at ≥2, this is the first of N
             signatures and the rest must approve before execution. */}
-        <div className="card text-[11px] text-ink-400 leading-relaxed space-y-1">
+        <div className="card text-xs text-ink-400 leading-relaxed space-y-1">
           {isImmediate ? (
             <>
               <p className="text-ink-300">When you tap Execute:</p>
@@ -765,7 +765,7 @@ function ProposeView({ address }: { address: string }) {
               )}
               <ul className="space-y-1.5 max-h-[60vh] overflow-y-auto">
                 {filteredContacts.length === 0 && (
-                  <li className="text-xs text-ink-500 text-center py-4">
+                  <li className="text-xs text-ink-400 text-center py-4">
                     No contacts match "{contactSearch}".
                   </li>
                 )}
@@ -784,11 +784,11 @@ function ProposeView({ address }: { address: string }) {
                         <p className="text-sm font-medium text-ink-100 truncate">
                           {c.name || '(unnamed contact)'}
                         </p>
-                        <p className="font-mono text-[11px] text-ink-400 truncate">
+                        <p className="font-mono text-xs text-ink-400 truncate">
                           {shortenAddress(c.address, { start: 8, end: 6 })}
                         </p>
                         {c.note && (
-                          <p className="text-[10px] text-ink-500 truncate">
+                          <p className="text-xs text-ink-400 truncate">
                             {c.note}
                           </p>
                         )}

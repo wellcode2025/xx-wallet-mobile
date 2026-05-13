@@ -362,7 +362,7 @@ function ApproveView({
             <p className="text-sm text-ink-200">
               This proposal is no longer pending on chain.
             </p>
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-ink-400">
               It may have just executed, been cancelled, or been completed
               from another device.
             </p>
@@ -603,7 +603,7 @@ function ApproveView({
             <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               {multisig.localName}
             </p>
-            <span className="text-[10px] text-ink-500">
+            <span className="text-xs text-ink-400">
               · {multisig.threshold}-of-{multisig.signers.length}
             </span>
           </div>
@@ -618,7 +618,7 @@ function ApproveView({
           <div className="card space-y-2">
             <div className="flex items-center gap-2">
               <Key size={14} className="text-xx-500" strokeWidth={2.25} />
-              <p className="text-[10px] uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
                 Acting as
               </p>
             </div>
@@ -632,7 +632,7 @@ function ApproveView({
                   <p className="text-sm font-medium text-ink-100 truncate">
                     {eligibleSigners[0].name}
                   </p>
-                  <p className="font-mono text-[11px] text-ink-400 truncate">
+                  <p className="font-mono text-xs text-ink-400 truncate">
                     {eligibleSigners[0].address}
                   </p>
                 </div>
@@ -660,7 +660,7 @@ function ApproveView({
                 })}
               </select>
             )}
-            <p className="text-[10px] text-ink-500 leading-relaxed">
+            <p className="text-xs text-ink-400 leading-relaxed">
               The chosen account signs the approval and pays the
               extrinsic fee.
             </p>
@@ -697,7 +697,7 @@ function ApproveView({
         {/* Paste affordance */}
         {pasteOpen && (
           <div className="card space-y-2">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Paste call data
             </p>
             <textarea
@@ -717,7 +717,7 @@ function ApproveView({
               <Clipboard size={14} strokeWidth={2} />
               Verify and load
             </button>
-            <p className="text-[10px] text-ink-500 leading-relaxed">
+            <p className="text-xs text-ink-400 leading-relaxed">
               The wallet will hash this call data locally and confirm it
               matches the on-chain call hash before showing the decoded
               action. Call data that doesn't match is rejected, not displayed.
@@ -728,7 +728,7 @@ function ApproveView({
         {/* Proposal metadata: who proposed, when */}
         {proposal && (
           <div className="card space-y-2">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Proposal details
             </p>
             {/* Depositor row uses AddressLabel so we get the name +
@@ -783,7 +783,7 @@ function ApproveView({
                       {s.label ? (
                         <>
                           <span className="font-medium">{s.label}</span>{' '}
-                          <span className="font-mono text-[10px] text-ink-500">
+                          <span className="font-mono text-xs text-ink-400">
                             [{shortenAddress(s.address)}]
                           </span>
                         </>
@@ -792,7 +792,7 @@ function ApproveView({
                       )}
                     </span>
                     {s.address === proposal.depositor && (
-                      <span className="text-[9px] uppercase tracking-wider text-ink-500 ml-auto">
+                      <span className="text-xs uppercase tracking-wider text-ink-400 ml-auto">
                         depositor
                       </span>
                     )}
@@ -810,7 +810,7 @@ function ApproveView({
             onToggle={() => setBytesOpen((o) => !o)}
             label="Raw call data"
           >
-            <p className="font-mono text-[11px] text-ink-200 break-all leading-relaxed select-all">
+            <p className="font-mono text-xs text-ink-200 break-all leading-relaxed select-all">
               {callBytes}
             </p>
           </Collapsible>
@@ -832,7 +832,7 @@ function ApproveView({
                 label="Multisig address derives from your stored signers"
                 ok={addressVerified}
               />
-              <p className="font-mono text-[10px] text-ink-500 break-all pt-1">
+              <p className="font-mono text-xs text-ink-400 break-all pt-1">
                 On-chain call hash: {callHash}
               </p>
             </div>
@@ -888,7 +888,7 @@ function ApproveView({
                 <p className="text-xs font-medium text-amber-300">
                   Stale — pending for {formatAge(staleness.ageDays)}
                 </p>
-                <p className="text-[11px] text-ink-300 leading-snug">
+                <p className="text-xs text-ink-300 leading-snug">
                   Only the proposer ({shortenAddress(proposal.depositor)})
                   can cancel this. If it's no longer wanted, ask them to
                   cancel and reclaim the{' '}
@@ -922,7 +922,7 @@ function ApproveView({
                   </p>
                 )}
                 {proposal && (
-                  <p className="text-ink-500">
+                  <p className="text-ink-400">
                     Cancelling refunds the{' '}
                     <span className="text-ink-300 numeric">
                       {formatBalance(proposal.deposit)} XX
@@ -988,7 +988,7 @@ function ApproveView({
                           {transfer.symbol}
                         </span>
                       </p>
-                      <p className="font-mono text-[10px] text-ink-400 break-all leading-tight">
+                      <p className="font-mono text-xs text-ink-400 break-all leading-tight">
                         to {transfer.recipient}
                       </p>
                     </div>
@@ -1098,7 +1098,7 @@ function ApproveView({
             if (!transfer) return null;
             return (
               <div className="w-full p-4 rounded-2xl bg-xx-500/5 border border-xx-500/30 space-y-2 text-left">
-                <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
                   Sent
                 </p>
                 <div className="flex items-baseline gap-2 flex-wrap">
@@ -1110,7 +1110,7 @@ function ApproveView({
                   </span>
                 </div>
                 <div className="pt-1">
-                  <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+                  <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
                     To
                   </p>
                   <p className="font-mono text-xs text-ink-200 break-all leading-snug">
@@ -1355,7 +1355,7 @@ function DecodedDescriptionCard({
     <div className="card space-y-3 border border-xx-500/30 bg-xx-500/5">
       <div className="flex items-center gap-2">
         <ShieldCheck size={14} className="text-xx-500" strokeWidth={2.25} />
-        <p className="text-[10px] uppercase tracking-wider text-xx-500 font-medium">
+        <p className="text-xs uppercase tracking-wider text-xx-500 font-medium">
           Decoded by your wallet from verified call data
         </p>
       </div>
@@ -1369,7 +1369,7 @@ function DecodedDescriptionCard({
       {/* Source attribution — explains where the call data came from.
           Subtle, informational; the security gate is hash verification
           regardless of source, so this is for clarity not for trust. */}
-      <p className="text-[10px] text-ink-500 leading-snug pt-1 border-t border-ink-700/40">
+      <p className="text-xs text-ink-400 leading-snug pt-1 border-t border-ink-700/40">
         {source === 'self-proposed' ? (
           <>
             Source: <span className="text-ink-400">You proposed this from this wallet.</span> The
@@ -1408,7 +1408,7 @@ function TransferProminentDisplay({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
         Sending
       </p>
       <div className="flex items-baseline gap-2 flex-wrap">
@@ -1420,7 +1420,7 @@ function TransferProminentDisplay({
         </span>
       </div>
       <div className="pt-1 space-y-1">
-        <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+        <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
           To
         </p>
         {/* AddressLabel renders the name (own account / contact /
@@ -1428,7 +1428,7 @@ function TransferProminentDisplay({
             Always the fragment too — never just a name, per the
             decoder's no-misleading-substitution rule. */}
         <AddressLabel address={transfer.recipient} stacked />
-        <p className="font-mono text-[10px] text-ink-500 break-all leading-snug pt-1">
+        <p className="font-mono text-xs text-ink-400 break-all leading-snug pt-1">
           {transfer.recipient}
         </p>
       </div>
@@ -1445,7 +1445,7 @@ function FreeTextDescription({ decoded }: { decoded: DecodedCall }) {
         {description}
       </p>
       {!isFriendly && (
-        <p className="text-[11px] text-amber-300 leading-snug">
+        <p className="text-xs text-amber-300 leading-snug">
           This call type is not specifically recognized by the wallet —
           the description above is the literal pallet method and
           arguments. Read carefully before approving.
@@ -1464,8 +1464,8 @@ function DecodeErrorCard({ message }: { message: string }) {
           Could not decode call data
         </p>
       </div>
-      <p className="text-[11px] text-ink-300 leading-snug">{message}</p>
-      <p className="text-[10px] text-ink-500 leading-snug">
+      <p className="text-xs text-ink-300 leading-snug">{message}</p>
+      <p className="text-xs text-ink-400 leading-snug">
         The call data hashes to the right value but doesn't decode against
         the current chain runtime. This shouldn't normally happen unless
         there's a runtime version mismatch.
@@ -1483,7 +1483,7 @@ function HashMismatchCard({ onClear }: { onClear: () => void }) {
           Hash mismatch — refusing to render
         </p>
       </div>
-      <p className="text-[11px] text-ink-300 leading-snug">
+      <p className="text-xs text-ink-300 leading-snug">
         The cached call data for this proposal does not hash to the
         on-chain call hash. Either the call data was tampered with, the
         cache is stale, or someone sent the wrong call data. The wallet
@@ -1522,7 +1522,7 @@ function NoBytesCard({
           No call data available
         </p>
       </div>
-      <p className="text-[11px] text-ink-200 leading-relaxed">
+      <p className="text-xs text-ink-200 leading-relaxed">
         Your wallet cannot show what this proposal does. Approving
         without seeing the decoded action means trusting the proposer's
         description from another channel. Proceed only if you have
@@ -1535,7 +1535,7 @@ function NoBytesCard({
         <Clipboard size={14} strokeWidth={2} />
         {pasteOpen ? 'Hide paste field' : 'Paste call data'}
       </button>
-      <label className="flex items-start gap-2 text-[11px] text-ink-300 leading-snug cursor-pointer select-none">
+      <label className="flex items-start gap-2 text-xs text-ink-300 leading-snug cursor-pointer select-none">
         <input
           type="checkbox"
           checked={consciousAck}
@@ -1566,7 +1566,7 @@ function Collapsible({
     <div className="card">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between text-[10px] uppercase tracking-wider text-ink-500 font-medium"
+        className="w-full flex items-center justify-between text-xs uppercase tracking-wider text-ink-400 font-medium"
       >
         <span>{label}</span>
         {open ? (

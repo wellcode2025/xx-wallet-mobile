@@ -112,7 +112,7 @@ function MultisigView({ address }: { address: string }) {
             </span>
           </div>
           {balance && balance.reserved.gtn(0) && (
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-ink-400">
               {formatBalance(balance.reserved)} {XX_SYMBOL} reserved
               <span className="text-ink-600"> · multisig deposits</span>
             </p>
@@ -121,7 +121,7 @@ function MultisigView({ address }: { address: string }) {
 
         {/* Cosigners */}
         <div className="card space-y-3">
-          <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
             Signers ({multisig.threshold} required to execute)
           </p>
           <div className="space-y-2">
@@ -141,7 +141,7 @@ function MultisigView({ address }: { address: string }) {
         {pending.length > 0 && (
           <div className="card space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-wider text-amber-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-amber-400 font-medium">
                 Pending proposals ({pending.length})
               </p>
             </div>
@@ -192,7 +192,7 @@ function MultisigView({ address }: { address: string }) {
                           ? "You've approved"
                           : 'Awaiting other signers'}
                       </p>
-                      <p className="text-[11px] text-ink-400">
+                      <p className="text-xs text-ink-400">
                         {p.approvals.length} of {multisig.threshold} signed
                         {stale.ageDays > 0 && (
                           <> · {formatAge(stale.ageDays)} old</>
@@ -209,26 +209,26 @@ function MultisigView({ address }: { address: string }) {
         {/* Activity */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-wider text-ink-500 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
               Recent activity
             </p>
             {total > 0 && (
-              <span className="text-[10px] text-ink-500">
+              <span className="text-xs text-ink-400">
                 {total} executed
               </span>
             )}
           </div>
           {activityLoading && (
-            <p className="text-xs text-ink-500">Loading activity…</p>
+            <p className="text-xs text-ink-400">Loading activity…</p>
           )}
           {activityError && (
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-ink-400">
               Couldn't load activity. The multisig itself is fine — only the
               historical view is affected.
             </p>
           )}
           {!activityLoading && !activityError && activity.length === 0 && (
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-ink-400">
               No executed actions yet at this multisig.
             </p>
           )}
@@ -450,7 +450,7 @@ function ExportConfigSheet({
               <Download size={16} strokeWidth={2} />
               Download as file
             </button>
-            <p className="text-[10px] text-ink-500 leading-relaxed -mt-1 px-1">
+            <p className="text-xs text-ink-400 leading-relaxed -mt-1 px-1">
               Recommended. Saves <code>{fileName}</code> — share via any
               channel you trust.
             </p>
@@ -471,11 +471,11 @@ function ExportConfigSheet({
                     className="w-full max-w-[280px] h-auto"
                   />
                 ) : (
-                  <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-500 text-xs">
+                  <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-400 text-xs">
                     Generating…
                   </div>
                 )}
-                <p className="text-[10px] text-ink-700 text-center px-2 pb-1">
+                <p className="text-xs text-ink-700 text-center px-2 pb-1">
                   Have your cosigner scan this with their wallet.
                 </p>
               </div>
@@ -518,7 +518,7 @@ function SignerRow({ address, label }: { address: string; label?: string }) {
           // pair with the truncated address per design doc §7.3.
           <>
             <p className="text-sm font-medium text-ink-100 truncate">{label}</p>
-            <p className="font-mono text-[11px] text-ink-400 truncate">
+            <p className="font-mono text-xs text-ink-400 truncate">
               {shortenAddress(address)}
             </p>
           </>
@@ -555,7 +555,7 @@ function ActivityRow({ item }: { item: MultisigActivityItem }) {
           href={explorerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[11px] text-ink-500 active:text-ink-300"
+          className="inline-flex items-center gap-1 text-xs text-ink-400 active:text-ink-300"
           title="View block on explorer"
         >
           #{item.blockNumber.toLocaleString()}
@@ -565,7 +565,7 @@ function ActivityRow({ item }: { item: MultisigActivityItem }) {
       <p
         className={clsx(
           'text-sm leading-snug',
-          item.success ? 'text-ink-100' : 'text-ink-500'
+          item.success ? 'text-ink-100' : 'text-ink-400'
         )}
       >
         {action.kind === 'transfer' ? (
@@ -588,9 +588,9 @@ function ActivityRow({ item }: { item: MultisigActivityItem }) {
           <span className="text-danger text-xs ml-2">· failed</span>
         )}
       </p>
-      <p className="text-[10px] text-ink-500 truncate">
+      <p className="text-xs text-ink-400 truncate">
         finalized by{' '}
-        <AddressLabel address={item.signer} className="text-[10px]" />
+        <AddressLabel address={item.signer} className="text-xs" />
       </p>
     </div>
   );

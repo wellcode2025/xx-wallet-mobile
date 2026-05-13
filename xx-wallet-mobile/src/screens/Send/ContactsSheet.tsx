@@ -229,7 +229,7 @@ export function ContactsSheet({
             <UserCircle2 size={40} className="text-ink-600" strokeWidth={1.25} />
             <div>
               <p className="font-medium text-ink-300 text-sm">No contacts yet</p>
-              <p className="text-xs text-ink-500 mt-1 max-w-xs">
+              <p className="text-xs text-ink-400 mt-1 max-w-xs">
                 Save addresses you send to frequently so you don't have to type them each time.
               </p>
             </div>
@@ -275,11 +275,11 @@ export function ContactsSheet({
                       on-chain: {c.identity.display}
                     </p>
                   )}
-                  <p className="font-mono text-xs text-ink-500 truncate">
+                  <p className="font-mono text-xs text-ink-400 truncate">
                     {shortenAddress(c.address, { start: 8, end: 6 })}
                   </p>
                   {c.note && (
-                    <p className="text-xs text-ink-500 truncate">{c.note}</p>
+                    <p className="text-xs text-ink-400 truncate">{c.note}</p>
                   )}
                 </div>
               </button>

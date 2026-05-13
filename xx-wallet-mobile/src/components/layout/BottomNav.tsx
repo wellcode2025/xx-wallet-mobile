@@ -39,7 +39,7 @@ export function BottomNav() {
               }
             >
               <Icon size={22} strokeWidth={1.75} />
-              <span className="text-[10px] font-sans font-medium tracking-wide uppercase">
+              <span className="text-xs font-sans font-medium tracking-wide uppercase">
                 {label}
               </span>
             </NavLink>

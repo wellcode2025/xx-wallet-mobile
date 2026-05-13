@@ -109,7 +109,7 @@ export function App() {
             <p className="font-display font-medium text-xl tracking-tight text-ink-100">
               xx Wallet
             </p>
-            <p className="text-xs text-ink-500 animate-pulse-subtle">Loading…</p>
+            <p className="text-xs text-ink-400 animate-pulse-subtle">Loading…</p>
           </div>
         </div>
       </div>

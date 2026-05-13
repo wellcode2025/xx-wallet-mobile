@@ -221,7 +221,7 @@ export function ContactForm({
                   <BadgeCheck
                     size={15}
                     className={isVerifiedJudgement(contact.identity.judgement)
-                      ? 'text-xx-500' : 'text-ink-500'}
+                      ? 'text-xx-500' : 'text-ink-400'}
                     strokeWidth={2}
                   />
                   <p className="text-xs font-medium text-ink-100">
@@ -259,7 +259,7 @@ export function ContactForm({
 
             {/* Balance */}
             <div className="p-3 rounded-xl bg-ink-800 border border-ink-700/50 space-y-2">
-              <p className="text-[10px] uppercase tracking-wide text-ink-500 font-medium">Balance</p>
+              <p className="text-xs uppercase tracking-wide text-ink-400 font-medium">Balance</p>
               {contactBalanceLoading ? (
                 <div className="flex items-center gap-2 text-xs text-ink-400">
                   <Loader2 size={12} className="animate-spin" />
@@ -268,20 +268,20 @@ export function ContactForm({
               ) : contactBalance ? (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   <div>
-                    <p className="text-[10px] text-ink-500">Transferable</p>
+                    <p className="text-xs text-ink-400">Transferable</p>
                     <p className="text-sm font-medium font-mono text-ink-100">
                       {formatBalance(contactBalance.transferable, { decimals: 4 })} XX
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-ink-500">Total</p>
+                    <p className="text-xs text-ink-400">Total</p>
                     <p className="text-sm font-medium font-mono text-ink-100">
                       {formatBalance(contactBalance.total, { decimals: 4 })} XX
                     </p>
                   </div>
                   {contactBalance.reserved.gtn(0) && (
                     <div>
-                      <p className="text-[10px] text-ink-500">Reserved</p>
+                      <p className="text-xs text-ink-400">Reserved</p>
                       <p className="text-xs font-mono text-ink-300">
                         {formatBalance(contactBalance.reserved, { decimals: 4 })} XX
                       </p>
@@ -289,7 +289,7 @@ export function ContactForm({
                   )}
                   {contactBalance.frozen.gtn(0) && (
                     <div>
-                      <p className="text-[10px] text-ink-500">Frozen</p>
+                      <p className="text-xs text-ink-400">Frozen</p>
                       <p className="text-xs font-mono text-ink-300">
                         {formatBalance(contactBalance.frozen, { decimals: 4 })} XX
                       </p>
@@ -297,7 +297,7 @@ export function ContactForm({
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-ink-500">No balance found — account may be new.</p>
+                <p className="text-xs text-ink-400">No balance found — account may be new.</p>
               )}
             </div>
 
@@ -320,12 +320,12 @@ export function ContactForm({
             </div>
 
             <div className="border-t border-ink-700/50 pt-3">
-              <p className="text-[10px] uppercase tracking-wide text-ink-500 font-medium mb-2">
+              <p className="text-xs uppercase tracking-wide text-ink-400 font-medium mb-2">
                 Saved info
               </p>
               <div className="space-y-1">
                 <p className="text-xs text-ink-300">
-                  <span className="text-ink-500">Name: </span>
+                  <span className="text-ink-400">Name: </span>
                   {contact.name || <span className="italic text-ink-600">not set</span>}
                 </p>
                 <p className="text-xs font-mono text-ink-400 break-all">
@@ -333,7 +333,7 @@ export function ContactForm({
                 </p>
                 {contact.note && (
                   <p className="text-xs text-ink-400">
-                    <span className="text-ink-500">Note: </span>{contact.note}
+                    <span className="text-ink-400">Note: </span>{contact.note}
                   </p>
                 )}
               </div>
@@ -380,7 +380,7 @@ export function ContactForm({
             {/* Cached identity in edit mode */}
             {mode === 'edit' && contact?.identity && (
               <div className="flex items-center gap-2 p-2 rounded-lg bg-xx-500/5 border border-xx-500/20">
-                <BadgeCheck size={13} className={isVerifiedJudgement(contact.identity.judgement) ? 'text-xx-500' : 'text-ink-500'} />
+                <BadgeCheck size={13} className={isVerifiedJudgement(contact.identity.judgement) ? 'text-xx-500' : 'text-ink-400'} />
                 <p className="text-xs text-ink-300">
                   On-chain: {contact.identity.display ?? 'identity set'}
                   {isVerifiedJudgement(contact.identity.judgement) && (
@@ -392,7 +392,7 @@ export function ContactForm({
 
             <div>
               <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Name <span className="text-ink-500 normal-case font-normal">(optional)</span>
+                Name <span className="text-ink-400 normal-case font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -411,7 +411,7 @@ export function ContactForm({
             </div>
             <div>
               <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Note <span className="text-ink-500 normal-case font-normal">(optional)</span>
+                Note <span className="text-ink-400 normal-case font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -522,7 +522,7 @@ function IdentityPreviewCard({
             On-chain identity {verified && <span className="text-xx-500">verified</span>}
           </p>
           {jLabel && !verified && (
-            <p className="text-[10px] text-ink-400">Status: {jLabel}</p>
+            <p className="text-xs text-ink-400">Status: {jLabel}</p>
           )}
         </div>
       </div>
@@ -530,13 +530,13 @@ function IdentityPreviewCard({
       {identity.display && (
         <div className="flex items-center justify-between gap-2 pl-6">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wide text-ink-500">Display name</p>
+            <p className="text-xs uppercase tracking-wide text-ink-400">Display name</p>
             <p className="text-sm font-medium text-ink-100 truncate">{identity.display}</p>
           </div>
           {currentName.trim() !== identity.display && (
             <button
               onClick={() => onUseDisplayName(identity.display!)}
-              className="flex-shrink-0 text-[10px] font-medium text-xx-500 active:text-xx-600 px-2 py-1 rounded-lg bg-xx-500/10"
+              className="flex-shrink-0 text-xs font-medium text-xx-500 active:text-xx-600 px-2 py-1 rounded-lg bg-xx-500/10"
             >
               Use
             </button>
@@ -574,8 +574,8 @@ function IdentityField({
 }) {
   return (
     <div className="flex items-center gap-2 pl-6">
-      {icon && <span className="text-ink-500 flex-shrink-0">{icon}</span>}
-      <span className="text-[10px] uppercase tracking-wide text-ink-500 flex-shrink-0">
+      {icon && <span className="text-ink-400 flex-shrink-0">{icon}</span>}
+      <span className="text-xs uppercase tracking-wide text-ink-400 flex-shrink-0">
         {label}:
       </span>
       <span className="text-xs text-ink-200 truncate min-w-0">{value}</span>
