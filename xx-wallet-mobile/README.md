@@ -17,14 +17,15 @@ npm run preview -- --host    # Serve the production build locally
 
 ```
 src/
-├── api/         — @polkadot/api singleton, xx network constants, on-chain identity lookup
-├── keyring/     — Encrypted account storage; Sleeve WASM TS wrapper
-├── hooks/       — useApi, useBalance, useTransfers, useTx
-├── store/       — Zustand stores (accounts, contacts, settings, connection)
-├── components/  — Layout (TopBar, BottomNav, AppLayout) + UI primitives
-├── screens/     — Onboarding, Dashboard, Send, Receive, TransactionDetail, Settings
-├── utils/       — Address validation, balance formatting, clipboard fallback
-└── styles/      — Tailwind layer + xx network brand tokens
+├── api/             — @polkadot/api singleton, xx network constants (incl. XX_GENESIS_HASH), on-chain identity lookup
+├── keyring/         — Encrypted account storage (manual scrypt N=131072); Sleeve WASM TS wrapper; verifyPassword helper
+├── hooks/           — useApi, useBalance, useTransfers, useTx, useMultisigActivity, usePendingMultisigs, useStaleness, useAddressName
+├── store/           — Zustand stores (accounts, contacts, multisigs, pending bytes cache, settings, connection)
+├── notifications/   — Pluggable notification scaffold (types, sink, registry, useMultisigNotifications)
+├── components/      — Layout (TopBar, BottomNav, AppLayout) + UI primitives (AddressChip, AddressIcon, AddressLabel, ConnectionBadge, QrScanner, Sheet, TransactionItem)
+├── screens/         — Onboarding, Dashboard, Send, Receive, TransactionDetail, Settings, Multisig{Create,Detail,Import,Scan,Propose,Approve,Share}
+├── utils/           — bytesPackage, multisigConfig, decodeCall, chainScan, address validation, balance formatting, clipboard fallback
+└── styles/          — Tailwind layer + xx network brand tokens
 ```
 
 ## Sleeve WASM

@@ -10,9 +10,9 @@ Designed as a focused mobile companion to the official desktop-first [wallet.xx.
 
 ## Status
 
-Phase 1 — core wallet features complete. Validated end-to-end on real xx network with real transactions.
+Phase 2a — multisig + pluggable notification scaffold — complete (May 2026). Validated end-to-end on real xx network with real proposals, approvals, and cancellations against a foundation 2-of-N treasury multisig.
 
-Phase 2 (multisig) is the next major area of work.
+Phase 2b (read-only staking views) is the next major area of work.
 
 ---
 
@@ -55,7 +55,26 @@ Phase 2 (multisig) is the next major area of work.
 
 - RPC endpoint: xx Foundation, Dwellir, or any custom `wss://`/`ws://` URL.
 - Multi-account management: create new, import existing, rename, export keystore JSON, remove.
+- Batch export accounts as a polkadot.js-compatible array (cross-compat with the official xx desktop wallet's bulk import flow, with per-account password verification up front so backups are guaranteed openable).
+- Configurable stale-proposal threshold for multisigs (default 30 days).
 - Live chain info (chain name, current block).
+
+**Multisig (Phase 2a)**
+
+- Add a multisig via three paths: manual entry, JSON config import (file / QR / paste), or user-initiated chain scan against the indexer.
+- Local address derivation on every path — the wallet computes the multisig address from `(threshold, signers)` itself and refuses imports whose claimed address doesn't match.
+- Propose `balances.transferKeepAlive` calls from any multisig the user is a signer of. Per-account "signed by" picker so the user explicitly chooses which key signs.
+- Approve pending calls with hash + bytes verification gates — decoding is always derived from the actual call bytes, never from depositor-supplied text.
+- Cancel your own pending proposals (and reclaim the deposit).
+- Stale-proposal nudges past the configurable threshold.
+- Share call data with cosigners via file download, QR code, native share sheet, or paste — the wallet does not depend on any central notification service to function.
+- Address-book name substitution everywhere addresses appear, always paired with a truncated SS58 fragment so a familiar-looking nickname can't hide what is actually being signed.
+
+**Notification scaffold**
+
+- Pluggable interface in `src/notifications/`: typed `WalletEvent` discriminated union, `NotificationSink` consumer interface, and a registry with localStorage-persisted dedupe.
+- Ships with a no-op default sink — the wallet works fully in "no notification service connected" mode.
+- Plugins (Telegram channels, browser Notification API, downstream integrations like OpenClaw) plug in additively by registering a sink and switching on `event.kind`.
 
 **PWA**
 
@@ -90,13 +109,14 @@ xx-wallet/
 │   │   └── sleeve/             — Compiled Sleeve WASM + Go runtime helper
 │   ├── sleeve-wasm/            — Go source for the Sleeve WASM (built artifacts in public/sleeve/)
 │   ├── src/
-│   │   ├── api/                — @polkadot/api wrapper + xx-network constants
+│   │   ├── api/                — @polkadot/api wrapper + xx-network constants (incl. XX_GENESIS_HASH)
 │   │   ├── keyring/            — Encrypted local key storage + Sleeve TS wrapper
-│   │   ├── hooks/              — useApi, useBalance, useTx, useTransfers
-│   │   ├── store/              — Zustand stores
+│   │   ├── hooks/              — useApi, useBalance, useTx, useTransfers, useMultisigActivity, usePendingMultisigs, useStaleness, useAddressName
+│   │   ├── store/              — Zustand stores (accounts, address book, multisigs, pending bytes cache, settings)
+│   │   ├── notifications/      — Pluggable notification scaffold (types, sink, registry, useMultisigNotifications)
 │   │   ├── components/
-│   │   ├── screens/            — Onboarding, Dashboard, Send, Receive, TransactionDetail, Settings
-│   │   └── utils/
+│   │   ├── screens/            — Onboarding, Dashboard, Send, Receive, TransactionDetail, Settings, Multisig{Create,Detail,Import,Scan,Propose,Approve,Share}
+│   │   └── utils/              — bytesPackage, multisigConfig, decodeCall, chainScan, address/format helpers
 │   └── wrangler.toml           — Cloudflare Workers static-assets deploy config
 └── README.md                   — You are here
 ```
