@@ -14,14 +14,19 @@ const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
 /**
  * On-chain account roles as indexed by indexer.xx.network.
  *
- * NOTE (2026-05-04): currently unused in the UI. Kept as a seed for Phase 2b
- * (read-only staking views) and Phase 3 (active staking) per STRATEGY_UPDATE.
- * The indexer's `account` table direct queries for these fields returned empty
- * during Phase 1 attempts (HANDOFF Section 9) — the schema is correct, the
- * data population isn't reliable yet, which is why this is a seed rather than
- * a working feature. Revisit when Phase 2b starts; we'll be deep in the same
- * indexer surface anyway. Do not delete without re-validating that staking
- * role detection is unneeded.
+ * Each flag reflects *current* on-chain role, not history. An ex-validator
+ * who has chilled returns `validator: false`.
+ *
+ * NOTE (2026-05-13): currently unused in production; kept as a seed for
+ * Phase 2b (read-only staking views) and Phase 3 (active staking).
+ *
+ * The Phase 2b feasibility spike (scripts/spikes/staking-spike.mjs) confirmed
+ * these flags populate reliably for known role-holders. An earlier version
+ * of this code queried `where: { id: ... }` and silently 500'd because the
+ * indexer's primary key is `account_id`; the "data population isn't reliable"
+ * note from the Phase 1 era was an artifact of that schema-key bug. The
+ * aggregate-table fallback that masked it was also semantically wrong (it
+ * counted ever-was-a-validator, not currently-is) and has been removed.
  */
 export interface AccountRoles {
   validator: boolean;
@@ -34,8 +39,8 @@ export interface AccountRoles {
 
 const ACCOUNT_IDENTITY_QUERY = `
   query GetAccountIdentity($address: String!) {
-    account(where: { id: { _eq: $address } }, limit: 1) {
-      id
+    account(where: { account_id: { _eq: $address } }, limit: 1) {
+      account_id
       identity {
         display
         legal
@@ -53,23 +58,8 @@ const ACCOUNT_IDENTITY_QUERY = `
 
 const ACCOUNT_ROLES_QUERY = `
   query GetAccountRoles($address: String!) {
-    nominatorCount: nominator_stats_aggregate(
-      where: { stash_address: { _eq: $address } }
-    ) {
-      aggregate { count __typename }
-      __typename
-    }
-    validatorCount: validator_stats_aggregate(
-      where: { stash_address: { _eq: $address } }
-    ) {
-      aggregate { count __typename }
-      __typename
-    }
-    accountInfo: account(
-      where: { id: { _eq: $address } }
-      limit: 1
-    ) {
-      id
+    account(where: { account_id: { _eq: $address } }, limit: 1) {
+      account_id
       validator
       nominator
       council
@@ -81,12 +71,14 @@ const ACCOUNT_ROLES_QUERY = `
 `;
 
 /**
- * Fetch validator/nominator/council/etc. role flags for an address from the
- * indexer. Currently exported but unused — see the AccountRoles interface
- * comment above for the phase context. When Phase 2b lands, the role-badge
- * UI will consume this; the fallback path that derives roles from the
- * staking aggregate tables is here because the direct `account.validator`
- * etc. columns weren't reliable in Phase 1.
+ * Fetch validator/nominator/council/techcommit/special role flags for an
+ * address from the indexer. Returns null if the address has no row in the
+ * account table (e.g. a genesis-only address that's never transacted) or
+ * if the query fails.
+ *
+ * Currently exported but unused in production; Phase 2b consumes this for
+ * role badges. See AccountRoles for the currently-is vs has-ever-been
+ * distinction and the spike-finding context.
  */
 export async function fetchAccountRoles(address: string): Promise<AccountRoles | null> {
   try {
@@ -101,36 +93,20 @@ export async function fetchAccountRoles(address: string): Promise<AccountRoles |
     });
     if (!response.ok) return null;
     const json = await response.json();
-
     if (json.errors) {
-      console.warn('Account roles query errors (partial):', json.errors);
+      console.warn('Account roles query errors:', json.errors);
+      return null;
     }
 
-    const data = json?.data;
-    if (!data) return null;
-
-    // Try the direct account table first — most accurate
-    const acct = data.accountInfo?.[0];
-    if (acct) {
-      return {
-        validator: acct.validator ?? false,
-        nominator: acct.nominator ?? false,
-        council: acct.council ?? false,
-        techcommit: acct.techcommit ?? false,
-        special: acct.special ?? null,
-      };
-    }
-
-    // Fall back: derive roles from staking tables we know work
-    const nominatorCount = Number(data.nominatorCount?.aggregate?.count ?? 0);
-    const validatorCount = Number(data.validatorCount?.aggregate?.count ?? 0);
+    const acct = json?.data?.account?.[0];
+    if (!acct) return null;
 
     return {
-      validator: validatorCount > 0,
-      nominator: nominatorCount > 0,
-      council: false,
-      techcommit: false,
-      special: null,
+      validator: acct.validator ?? false,
+      nominator: acct.nominator ?? false,
+      council: acct.council ?? false,
+      techcommit: acct.techcommit ?? false,
+      special: acct.special ?? null,
     };
   } catch (err) {
     console.warn('Account roles fetch failed:', err);
