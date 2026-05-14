@@ -1,20 +1,21 @@
 import { NavLink } from 'react-router-dom';
-import { Wallet, Send, QrCode, Settings } from 'lucide-react';
+import { Wallet, Coins, Settings } from 'lucide-react';
 import clsx from 'clsx';
 
 /**
  * Fixed bottom tab bar — the primary navigation on mobile.
  * Sits above the home indicator on iOS via safe-area padding.
  *
- * Only 4 slots are shown in Phase 1. Staking and Governance will take
- * dedicated entries in later phases (and the bar will expand to 5 slots,
- * which is the max for comfortable thumb reach).
+ * Three top-level destinations. Send and Receive aren't tabs because
+ * they're per-action verbs reached from the Dashboard's quick-action
+ * buttons; bottom-nav is reserved for the top-level *categories*
+ * (Wallet / Staking / Settings). Governance will land here as a
+ * fourth slot in Phase 4.
  */
 export function BottomNav() {
   const tabs = [
     { to: '/', label: 'Wallet', icon: Wallet, end: true },
-    { to: '/send', label: 'Send', icon: Send },
-    { to: '/receive', label: 'Receive', icon: QrCode },
+    { to: '/staking', label: 'Staking', icon: Coins },
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
 
