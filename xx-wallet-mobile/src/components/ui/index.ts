@@ -4,4 +4,5 @@ export * from './AddressLabel';
 export * from './ConnectionBadge';
 export * from './QrScanner';
 export * from './Sheet';
+export * from './StakingStatusBadge';
 export * from './TransactionItem';

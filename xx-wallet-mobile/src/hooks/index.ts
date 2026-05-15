@@ -6,3 +6,5 @@ export * from './useMultisigActivity';
 export * from './usePendingMultisigs';
 export * from './useStaleness';
 export * from './useAddressName';
+export * from './useStakingPosition';
+export * from './useStakingRoles';
