@@ -30,6 +30,12 @@ interface AddressLabelProps {
   /** When true, omit the name's surrounding quotes. Used in places
    *  where the formatting is already differentiated by typography. */
   unquoted?: boolean;
+  /** Fallback name used only when the address isn't a known own
+   *  account / contact / multisig — e.g. a validator's on-chain
+   *  identity display. Still paired with the fragment per the §7.3
+   *  rule, so a self-set identity can't hide the real address. A known
+   *  local label always wins over this. */
+  nameOverride?: string;
 }
 
 export function AddressLabel({
@@ -37,8 +43,12 @@ export function AddressLabel({
   stacked = false,
   className,
   unquoted = false,
+  nameOverride,
 }: AddressLabelProps) {
-  const { name, fragment } = useAddressName(address);
+  const { name: localName, fragment } = useAddressName(address);
+  // A known local label (own / contact / multisig) always wins over an
+  // external override — the user's deliberate naming takes precedence.
+  const name = localName ?? (nameOverride?.trim() ? nameOverride : null);
 
   if (!name) {
     // No nickname — just render the truncated address. Monospace so
