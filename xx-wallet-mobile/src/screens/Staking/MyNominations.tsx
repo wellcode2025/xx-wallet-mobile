@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Coins } from 'lucide-react';
 import { useAccountsStore } from '@/store';
 import {
   useStakingPosition,
   useStakingRoles,
+  useRewardsHistory,
   type StakingPosition,
 } from '@/hooks';
 import type { AccountRoles } from '@/api';
@@ -71,14 +73,64 @@ export function MyNominations() {
         </div>
       )}
 
-      {position &&
-        !error &&
-        (position.isNominating ? (
-          <NominatingView position={position} />
-        ) : (
-          <EmptyState />
-        ))}
+      {position && !error && (
+        <>
+          {position.isNominating ? (
+            <NominatingView position={position} />
+          ) : (
+            <EmptyState />
+          )}
+          <RewardsSummaryCard address={activeAccount.address} />
+        </>
+      )}
     </div>
+  );
+}
+
+/**
+ * Rewards summary — shown below the nominating view (or empty state)
+ * whenever the active account has any reward history in the last 90
+ * eras. Taps through to the full Rewards screen.
+ */
+function RewardsSummaryCard({ address }: { address: string }) {
+  const { history } = useRewardsHistory(address);
+  // Hide until loaded, and hide when there's nothing to show — the
+  // empty state on the dedicated Rewards screen handles the no-history
+  // case there.
+  if (!history || history.eraCount === 0) return null;
+  return (
+    <Link
+      to="/staking/rewards"
+      className="card block active:bg-ink-800/40 transition-colors"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          Rewards · last 90 eras
+        </span>
+        <span className="text-xs text-xx-500">View all →</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+            Total earned
+          </p>
+          <p className="font-mono text-sm text-ink-100 numeric">
+            {formatBalance(history.totalOverWindow, {
+              decimals: 4,
+              withSymbol: true,
+            })}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+            Eras with rewards
+          </p>
+          <p className="font-mono text-sm text-ink-100 numeric">
+            {history.eraCount}
+          </p>
+        </div>
+      </div>
+    </Link>
   );
 }
 

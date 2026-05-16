@@ -10,3 +10,4 @@ export * from './useStakingPosition';
 export * from './useStakingRoles';
 export * from './useValidatorList';
 export * from './useValidatorDetail';
+export * from './useRewardsHistory';

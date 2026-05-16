@@ -17,7 +17,7 @@ import { Dashboard } from '@/screens/Dashboard';
 import { Send } from '@/screens/Send';
 import { Receive } from '@/screens/Receive';
 import { Settings } from '@/screens/Settings';
-import { StakingLayout, MyNominations, ValidatorList, ValidatorDetail } from '@/screens/Staking';
+import { StakingLayout, MyNominations, ValidatorList, ValidatorDetail, RewardsHistory } from '@/screens/Staking';
 import { TransactionDetail } from '@/screens/TransactionDetail';
 import { MultisigCreate } from '@/screens/MultisigCreate';
 import { MultisigDetail } from '@/screens/MultisigDetail';
@@ -150,6 +150,7 @@ export function App() {
             <Route path="/staking" element={<StakingLayout />}>
               <Route index element={<MyNominations />} />
               <Route path="validators" element={<ValidatorList />} />
+              <Route path="rewards" element={<RewardsHistory />} />
             </Route>
             <Route
               path="/staking/validators/:address"

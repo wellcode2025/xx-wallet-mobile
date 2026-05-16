@@ -8,13 +8,14 @@ import { TopBar } from '@/components/layout';
  * section's peer views; the active view renders through the Outlet.
  *
  * Sub-routes: index = My Nominations (account-scoped), /validators =
- * the network-wide Validator List. Rewards joins as a third segment in
- * slice 4; validator detail is a pushed drill-down, not a segment.
+ * the network-wide Validator List, /rewards = per-account rewards
+ * history. Validator detail is a pushed drill-down, not a segment.
  */
 
 const TABS = [
   { to: '/staking', label: 'My Nominations', end: true },
   { to: '/staking/validators', label: 'Validators', end: false },
+  { to: '/staking/rewards', label: 'Rewards', end: false },
 ];
 
 export function StakingLayout() {
