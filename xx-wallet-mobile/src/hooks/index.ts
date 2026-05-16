@@ -9,3 +9,4 @@ export * from './useAddressName';
 export * from './useStakingPosition';
 export * from './useStakingRoles';
 export * from './useValidatorList';
+export * from './useValidatorDetail';

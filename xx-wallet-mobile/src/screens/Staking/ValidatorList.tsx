@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, ArrowDown, ArrowUp } from 'lucide-react';
 import clsx from 'clsx';
 import { useValidatorList, type ValidatorListEntry } from '@/hooks';
 import { formatBalance } from '@/utils';
-import { AddressIcon, AddressLabel } from '@/components/ui';
+import { AddressIcon, AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
  * Staking section — Validator List sub-view (slice 2).
@@ -19,7 +20,7 @@ import { AddressIcon, AddressLabel } from '@/components/ui';
  * relative_performance) is deferred to the validator detail screen
  * (slice 3), where a historical-snapshot frame fits it.
  *
- * Rows aren't tappable yet — validator detail is slice 3.
+ * Rows tap through to /staking/validators/:address (slice 3 detail).
  */
 
 type SortKey = 'stake' | 'commission' | 'points';
@@ -118,7 +119,12 @@ export function ValidatorList() {
         })}
       </div>
 
-      {isLoading && <ValidatorListSkeleton />}
+      {isLoading && (
+        <>
+          <LoadingIndicator message="Loading validator list — this may take a moment..." />
+          <ValidatorListSkeleton />
+        </>
+      )}
 
       {error && !isLoading && (
         <div className="card">
@@ -160,44 +166,49 @@ export function ValidatorList() {
 
 function ValidatorRow({ validator }: { validator: ValidatorListEntry }) {
   return (
-    <li className="flex items-center gap-3 py-3 border-b border-ink-800/60 last:border-0">
-      <AddressIcon address={validator.address} size={36} />
-      <div className="flex-1 min-w-0">
-        <AddressLabel
-          address={validator.address}
-          nameOverride={validator.displayName ?? undefined}
-          stacked
-          className="text-sm"
-        />
-        {(validator.blocked || !validator.isActive) && (
-          <div className="flex flex-wrap gap-1.5 mt-1">
-            {validator.blocked && (
-              <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-ink-400 border border-ink-700/50">
-                Blocked
-              </span>
-            )}
-            {!validator.isActive && (
-              <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-warning border border-ink-700/50">
-                Inactive this era
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="text-right flex-shrink-0">
-        <p className="font-mono text-sm text-ink-100 numeric">
-          {validator.totalStake
-            ? formatBalance(validator.totalStake, {
-                decimals: 0,
-                withSymbol: true,
-              })
-            : '—'}
-        </p>
-        <p className="text-xs text-ink-400 mt-0.5 numeric">
-          {validator.commission.toFixed(0)}% ·{' '}
-          {validator.eraPoints.toLocaleString()} pts
-        </p>
-      </div>
+    <li className="border-b border-ink-800/60 last:border-0">
+      <Link
+        to={`/staking/validators/${validator.address}`}
+        className="flex items-center gap-3 py-3 -mx-3 px-3 rounded-xl active:bg-ink-800/40 transition-colors"
+      >
+        <AddressIcon address={validator.address} size={36} />
+        <div className="flex-1 min-w-0">
+          <AddressLabel
+            address={validator.address}
+            nameOverride={validator.displayName ?? undefined}
+            stacked
+            className="text-sm"
+          />
+          {(validator.blocked || !validator.isActive) && (
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {validator.blocked && (
+                <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-ink-400 border border-ink-700/50">
+                  Blocked
+                </span>
+              )}
+              {!validator.isActive && (
+                <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-warning border border-ink-700/50">
+                  Inactive this era
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="font-mono text-sm text-ink-100 numeric">
+            {validator.totalStake
+              ? formatBalance(validator.totalStake, {
+                  decimals: 0,
+                  withSymbol: true,
+                })
+              : '—'}
+          </p>
+          <p className="text-xs text-ink-400 mt-0.5 numeric">
+            {validator.commission.toFixed(0)}% ·{' '}
+            {validator.eraPoints.toLocaleString()} pts
+          </p>
+        </div>
+      </Link>
     </li>
   );
 }

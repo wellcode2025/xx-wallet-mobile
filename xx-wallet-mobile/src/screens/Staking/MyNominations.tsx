@@ -8,7 +8,7 @@ import {
 } from '@/hooks';
 import type { AccountRoles } from '@/api';
 import { formatBalance } from '@/utils';
-import { AddressLabel, StakingStatusBadge } from '@/components/ui';
+import { AddressLabel, LoadingIndicator, StakingStatusBadge } from '@/components/ui';
 
 /**
  * Staking section — My Nominations sub-view (slice 1).
@@ -55,7 +55,12 @@ export function MyNominations() {
         {roles && <RoleTags roles={roles} />}
       </div>
 
-      {!position && !error && <StakingSkeleton />}
+      {!position && !error && (
+        <>
+          <LoadingIndicator message="Loading your nominations..." />
+          <StakingSkeleton />
+        </>
+      )}
 
       {error && (
         <div className="card">

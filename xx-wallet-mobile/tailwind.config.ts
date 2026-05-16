@@ -74,6 +74,7 @@ export default {
         'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
         'slide-up': 'slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
         'fade-in': 'fade-in 0.2s ease-out',
+        'progress-slide': 'progress-slide 1.5s ease-in-out infinite',
       },
       keyframes: {
         'pulse-subtle': {
@@ -87,6 +88,10 @@ export default {
         'fade-in': {
           from: { opacity: '0' },
           to: { opacity: '1' },
+        },
+        'progress-slide': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(400%)' },
         },
       },
     },
