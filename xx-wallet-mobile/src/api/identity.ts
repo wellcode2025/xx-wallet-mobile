@@ -48,7 +48,7 @@ const ACCOUNT_IDENTITY_QUERY = `
         web
         twitter
         riot
-        judgement
+        judgements
         __typename
       }
       __typename
@@ -114,6 +114,25 @@ export async function fetchAccountRoles(address: string): Promise<AccountRoles |
   }
 }
 
+/**
+ * Fetch the on-chain identity record for an address from the indexer.
+ *
+ * NOTE (2026-05-15): the indexer's `identity` type has no `judgement`
+ * (singular) field — the real field is `judgements` (plural, a `json`
+ * column with the Substrate Vec<(RegistrarIndex, Judgement)> shape).
+ * An earlier fix-pass corrected the `id` → `account_id` schema-key bug
+ * but left the singular `judgement` field selected, which kept this
+ * function silently erroring (the query was invalid against the
+ * indexer schema) and falling back to fetchIdentityFromChain. This
+ * fix corrects the field name and parses the JSON-array judgements
+ * defensively via extractJudgement.
+ *
+ * On xx network specifically `judgements` is always [] (no on-chain
+ * registrar pallet) and `verified` is always false network-wide, so
+ * the judgement field this function returns is always undefined here.
+ * The parsing exists for parity with fetchIdentityFromChain on
+ * Substrate chains that do have a registrar.
+ */
 export async function fetchIdentityFromIndexer(
   address: string
 ): Promise<OnChainIdentity | null> {
@@ -143,7 +162,8 @@ export async function fetchIdentityFromIndexer(
     if (identity.web) cleaned.web = identity.web;
     if (identity.twitter) cleaned.twitter = identity.twitter;
     if (identity.riot) cleaned.riot = identity.riot;
-    if (identity.judgement) cleaned.judgement = identity.judgement;
+    const judgement = extractJudgement(identity.judgements);
+    if (judgement) cleaned.judgement = judgement;
 
     const hasAnyField = Object.keys(cleaned).length > 1;
     return hasAnyField ? cleaned : null;
@@ -242,6 +262,41 @@ export async function fetchIdentitiesBatch(
     Array.from({ length: Math.min(CONCURRENCY, addresses.length) }, () => worker())
   );
   return result;
+}
+
+/**
+ * Parse the indexer's `identity.judgements` JSON column into a single
+ * judgement-kind string, matching the shape fetchIdentityFromChain
+ * produces. The column follows the Substrate identity pallet's
+ * Vec<(RegistrarIndex, Judgement)> shape; we extract the kind of the
+ * first entry, since OnChainIdentity.judgement is a single string.
+ *
+ * Returns undefined when there are no judgements — the universal case
+ * on xx network (no on-chain registrar pallet, so the column is
+ * always []). Defensive across several plausible JSON shapes since we
+ * have no populated example on xx to nail down the canonical form.
+ */
+function extractJudgement(raw: unknown): string | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const first = raw[0];
+  // Common Substrate-JSON encodings:
+  //   "Reasonable"                  — just the kind
+  //   [0, "Reasonable"]             — [registrar, kind]
+  //   [0, {KnownGood: null}]        — [registrar, { kind: null }]
+  //   { judgement: "Reasonable" }   — object with named field
+  //   { kind: "Reasonable" }        — alt naming
+  if (typeof first === 'string') return first;
+  if (Array.isArray(first)) {
+    const k = first[1];
+    if (typeof k === 'string') return k;
+    if (k && typeof k === 'object') return Object.keys(k)[0];
+  }
+  if (first && typeof first === 'object') {
+    const obj = first as Record<string, unknown>;
+    if (typeof obj.judgement === 'string') return obj.judgement;
+    if (typeof obj.kind === 'string') return obj.kind;
+  }
+  return undefined;
 }
 
 function hexToString(hex: string): string | undefined {
