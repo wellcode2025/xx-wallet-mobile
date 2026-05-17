@@ -9,3 +9,5 @@ export { AddToStake } from './AddToStake';
 export { ChangeValidators } from './ChangeValidators';
 export { StopNominating } from './StopNominating';
 export { ManageStakeSheet } from './ManageStakeSheet';
+export { UnbondAmount } from './UnbondAmount';
+export { WithdrawUnbonded } from './WithdrawUnbonded';

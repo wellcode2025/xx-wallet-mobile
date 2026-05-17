@@ -37,6 +37,13 @@ import { xxApi } from '@/api';
  */
 export type NominationStatus = 'active' | 'not-earning' | 'inactive';
 
+export interface UnlockingChunk {
+  /** Era at which this chunk becomes redeemable. */
+  era: number;
+  /** Amount in raw planck. */
+  value: BN;
+}
+
 export interface BondedLedger {
   /** Total bonded — active stake plus anything currently unbonding. */
   total: BN;
@@ -44,6 +51,8 @@ export interface BondedLedger {
   active: BN;
   /** Number of unbonding chunks in flight. */
   unlockingCount: number;
+  /** Per-chunk unbonding detail (era + amount). Empty when nothing is unlocking. */
+  unlocking: UnlockingChunk[];
 }
 
 export interface StakingPosition {
@@ -110,10 +119,17 @@ export function useStakingPosition(
           const ledgerOpt: any = await api.query.staking.ledger(controller);
           if (ledgerOpt?.isSome) {
             const l = ledgerOpt.unwrap();
+            const unlocking: UnlockingChunk[] = (l.unlocking ?? []).map(
+              (chunk: any) => ({
+                era: chunk.era.toNumber(),
+                value: chunk.value.toBn(),
+              })
+            );
             ledger = {
               total: l.total.toBn(),
               active: l.active.toBn(),
               unlockingCount: l.unlocking.length,
+              unlocking,
             };
           }
         }

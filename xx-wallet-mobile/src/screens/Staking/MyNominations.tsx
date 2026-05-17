@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Coins, Settings2 } from 'lucide-react';
 import { useAccountsStore } from '@/store';
+import { BN } from '@polkadot/util';
 import {
   useStakingPosition,
   useStakingRoles,
   useRewardsHistory,
   type StakingPosition,
+  type UnlockingChunk,
 } from '@/hooks';
 import type { AccountRoles } from '@/api';
 import { formatBalance } from '@/utils';
@@ -218,11 +220,11 @@ function NominatingView({ position }: { position: StakingPosition }) {
             in elections until it's resubmitted.
           </p>
         )}
-        {ledger && ledger.unlockingCount > 0 && (
-          <p className="text-sm text-ink-400">
-            {ledger.unlockingCount} unbonding chunk
-            {ledger.unlockingCount === 1 ? '' : 's'} in progress.
-          </p>
+        {ledger && ledger.unlocking.length > 0 && (
+          <UnlockingSection
+            unlocking={ledger.unlocking}
+            activeEra={activeEra}
+          />
         )}
       </div>
 
@@ -283,6 +285,79 @@ function NominatingView({ position }: { position: StakingPosition }) {
 
       <ManageStakeSheet open={manageOpen} onClose={() => setManageOpen(false)} />
     </>
+  );
+}
+
+/**
+ * Per-chunk unlocking detail. Shown inside the Bonded summary card when
+ * the ledger has any unlocking chunks. Matured chunks (era ≤ activeEra)
+ * surface a Withdraw CTA at the top; in-progress chunks show a per-chunk
+ * countdown. At 24h/era on xx network, eras-remaining ≈ days-remaining.
+ */
+function UnlockingSection({
+  unlocking,
+  activeEra,
+}: {
+  unlocking: UnlockingChunk[];
+  activeEra: number | null;
+}) {
+  const matured = activeEra !== null
+    ? unlocking.filter((c) => c.era <= activeEra)
+    : [];
+  const pending = activeEra !== null
+    ? unlocking.filter((c) => c.era > activeEra)
+    : unlocking;
+  const maturedTotal = matured.reduce(
+    (acc, c) => acc.add(c.value),
+    new BN(0)
+  );
+  return (
+    <div className="pt-3 border-t border-ink-800/60 space-y-2">
+      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+        Unbonding
+      </p>
+      {matured.length > 0 && (
+        <Link
+          to="/staking/withdraw"
+          className="flex items-center justify-between gap-3 -mx-2 px-2 py-2 rounded-xl bg-xx-500/10 active:bg-xx-500/15 transition-colors"
+        >
+          <div>
+            <p className="text-sm text-ink-100">
+              Ready to withdraw
+            </p>
+            <p className="text-xs text-ink-400">
+              {matured.length} chunk{matured.length === 1 ? '' : 's'} matured
+            </p>
+          </div>
+          <span className="font-mono text-sm text-xx-500 numeric flex-shrink-0">
+            +{formatBalance(maturedTotal, { decimals: 4, withSymbol: true })} →
+          </span>
+        </Link>
+      )}
+      {pending.length > 0 && (
+        <ul className="space-y-1">
+          {pending.map((c, idx) => {
+            const erasLeft = activeEra !== null ? c.era - activeEra : null;
+            return (
+              <li
+                key={`${c.era}-${idx}`}
+                className="flex items-baseline justify-between gap-3 text-xs"
+              >
+                <span className="text-ink-400">
+                  Available in{' '}
+                  {erasLeft !== null
+                    ? `${erasLeft} day${erasLeft === 1 ? '' : 's'}`
+                    : `era ${c.era}`}
+                </span>
+                <span className="font-mono text-ink-200 numeric">
+                  {formatBalance(c.value, { decimals: 4, withSymbol: true })}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 

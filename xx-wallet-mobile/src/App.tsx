@@ -27,6 +27,8 @@ import {
   AddToStake,
   ChangeValidators,
   StopNominating,
+  UnbondAmount,
+  WithdrawUnbonded,
 } from '@/screens/Staking';
 import { TransactionDetail } from '@/screens/TransactionDetail';
 import { MultisigCreate } from '@/screens/MultisigCreate';
@@ -170,6 +172,8 @@ export function App() {
             <Route path="/staking/add" element={<AddToStake />} />
             <Route path="/staking/change" element={<ChangeValidators />} />
             <Route path="/staking/chill" element={<StopNominating />} />
+            <Route path="/staking/unbond" element={<UnbondAmount />} />
+            <Route path="/staking/withdraw" element={<WithdrawUnbonded />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
             <Route path="/multisig/import" element={<MultisigImport />} />

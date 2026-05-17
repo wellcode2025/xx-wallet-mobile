@@ -1,18 +1,28 @@
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Coins, RefreshCcw, StopCircle } from 'lucide-react';
+import {
+  ChevronRight,
+  Clock,
+  Coins,
+  RefreshCcw,
+  StopCircle,
+} from 'lucide-react';
 import { Sheet } from '@/components/ui';
 
 /**
- * Phase 3 slice 2 — Manage stake.
+ * Phase 3 slices 2 + 3 — Manage stake.
  *
  * Triggered from MyNominations when the active account is bonded
- * and nominating. Three actions, each routing to its own screen:
+ * and nominating. Four actions, each routing to its own screen:
  *
  *   - /staking/add    — staking.bondExtra (add to bonded amount)
  *   - /staking/change — staking.nominate (replace nominations)
  *   - /staking/chill  — staking.chill (stop nominating)
+ *   - /staking/unbond — staking.unbond (start 28-day clock for an
+ *                      amount; also chills automatically when
+ *                      unbonding the full active stake)
  *
- * Unbond + withdraw arrive in slice 3 and will live alongside these.
+ * Withdraw appears separately as a CTA on MyNominations when a
+ * matured unlocking chunk is ready.
  */
 export interface ManageStakeSheetProps {
   open: boolean;
@@ -50,10 +60,17 @@ export function ManageStakeSheet({ open, onClose }: ManageStakeSheetProps) {
             onTap={() => go('/staking/chill')}
             tone="warning"
           />
+          <ManageRow
+            icon={<Clock size={18} strokeWidth={1.75} />}
+            title="Unbond"
+            subtitle="Start the 28-day unbonding clock for some or all of your stake. Unbonded XX is locked until the clock expires."
+            onTap={() => go('/staking/unbond')}
+            tone="warning"
+          />
         </ul>
         <p className="text-xs text-ink-400 mt-3 px-1">
-          Unbond and withdraw flows arrive in the next slice. For now,
-          changes above are reversible and don't start any 28-day clocks.
+          Withdraw appears on My Nominations once an unbonded chunk
+          matures (28 days after you initiate unbond).
         </p>
       </div>
     </Sheet>
