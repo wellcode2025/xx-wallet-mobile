@@ -11,3 +11,4 @@ export { StopNominating } from './StopNominating';
 export { ManageStakeSheet } from './ManageStakeSheet';
 export { UnbondAmount } from './UnbondAmount';
 export { WithdrawUnbonded } from './WithdrawUnbonded';
+export { ValidatorSetup } from './ValidatorSetup';

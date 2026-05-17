@@ -402,6 +402,12 @@ function EmptyState({ isBonded }: { isBonded: boolean }) {
       >
         Start staking
       </Link>
+      <Link
+        to="/staking/validate"
+        className="text-xs text-ink-400 active:text-ink-200 transition-colors"
+      >
+        Running a validator? Set up here →
+      </Link>
     </div>
   );
 }

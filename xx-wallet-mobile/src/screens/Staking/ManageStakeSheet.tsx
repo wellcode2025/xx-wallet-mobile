@@ -4,6 +4,7 @@ import {
   Clock,
   Coins,
   RefreshCcw,
+  Server,
   StopCircle,
 } from 'lucide-react';
 import { Sheet } from '@/components/ui';
@@ -66,6 +67,12 @@ export function ManageStakeSheet({ open, onClose }: ManageStakeSheetProps) {
             subtitle="Start the 28-day unbonding clock for some or all of your stake. Unbonded XX is locked until the clock expires."
             onTap={() => go('/staking/unbond')}
             tone="warning"
+          />
+          <ManageRow
+            icon={<Server size={18} strokeWidth={1.75} />}
+            title="Run validator"
+            subtitle="Register this account as a validator, or update commission, cmixId, and accepting-nominators state. Requires a running cMix node."
+            onTap={() => go('/staking/validate')}
           />
         </ul>
         <p className="text-xs text-ink-400 mt-3 px-1">
