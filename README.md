@@ -10,9 +10,15 @@ Designed as a focused mobile companion to the official desktop-first [wallet.xx.
 
 ## Status
 
-Phase 2a — multisig + pluggable notification scaffold — complete (May 2026). Validated end-to-end on real xx network with real proposals, approvals, and cancellations against a foundation 2-of-N treasury multisig.
+Phase 2a (multisig + pluggable notification scaffold) shipped 2026-05-12. Validated end-to-end on real xx network against a foundation 2-of-N treasury multisig.
 
-Phase 2b (read-only staking views) is the next major area of work.
+Phase 2b (read-only staking views) shipped 2026-05-15 — My Nominations with per-target active/not-earning/inactive status, network-wide Validator List, per-validator drill-down with on-chain identity and history, rewards-history with a per-era chart.
+
+Phase 3 (active staking — full nominator action surface) shipped 2026-05-17 — bond + nominate in one signature, manage stake (bondExtra / change nominations / chill), unbond + withdraw with the 28-day-lock UX. Auto-recommend uses a foundation-Apache-2.0-ported sequential-Phragmén pass against current chain state.
+
+Phase 3.5 (validator surface + slash alerts) shipped 2026-05-17 — Validator setup screen (new bond + validate, nominator-to-validator conversion, prefs update with auto-detected mode), standalone setCmixId and transferCmixId for node-identity maintenance, slash alerts wired through the notification scaffold with an in-wallet sink + alerts banner.
+
+Phase 4 (governance — referenda / council / treasury) is the next major area of work.
 
 ---
 
@@ -72,9 +78,30 @@ Phase 2b (read-only staking views) is the next major area of work.
 
 **Notification scaffold**
 
-- Pluggable interface in `src/notifications/`: typed `WalletEvent` discriminated union, `NotificationSink` consumer interface, and a registry with localStorage-persisted dedupe.
-- Ships with a no-op default sink — the wallet works fully in "no notification service connected" mode.
+- Pluggable interface in `src/notifications/`: typed `WalletEvent` discriminated union (multisig proposal events, transfer events, slash events), `NotificationSink` consumer interface, registry with localStorage-persisted dedupe.
+- Ships with a no-op default sink AND a wallet-inline sink that surfaces slash alerts directly on My Nominations — the wallet works fully in "no notification service connected" mode and still keeps users informed about offences against their nominations.
 - Plugins (Telegram channels, browser Notification API, downstream integrations like OpenClaw) plug in additively by registering a sink and switching on `event.kind`.
+
+**Staking — read-only (Phase 2b)**
+
+- **My Nominations:** for the active account, whether it's nominating and the honest per-target status (active / not-earning / inactive), plus the bonded ledger, role pills (validator/council/techcommit/special), and per-chunk unlocking countdown with Withdraw CTA when matured.
+- **Validator List:** network-wide elected set with live commission, total stake, era points; searchable by name/address, sortable. Chain-first because the foundation indexer's `validator_stats` table froze 2025-09-01; identity display names come from the indexer.
+- **Validator Detail:** drill-down at `/staking/validators/:address` with on-chain identity, cMix node id (transformed locally from the staking ledger — bit-identical to the foundation indexer's recorded value), live commission and exposure, current backers, plus a 90-era points-history bar chart from the indexer framed neutrally as "As of \<date\>".
+- **Rewards History:** per-account staking rewards over the last 90 eras at `/staking/rewards` plus a summary card on My Nominations. Indexer-first against the `staking_reward` table (1-era lag from chain, current).
+
+**Staking — active (Phase 3)**
+
+- **Start staking** (`/staking/start`): bond + nominate in one signed transaction (`utility.batchAll([bond, nominate])`). Amount input with Max (reserves 0.1 XX for fee + ED). Auto-recommend selects the top 16 validators by projected return — chain reads + sequential Phragmén pass + scoring by `avgPerformance × (avgStake / backedStake) × (1 − commission)`. Hand-pick opens a multi-select sheet wrapping the Validator List, capped at 16. Pre-fetched on Staking-tab mount so the bond flow opens warm.
+- **Manage stake:** Add to stake (`bondExtra`), Change validators (re-nominate, hand-pick pre-seeded with current set), Stop nominating (`chill` — the 28-day clock does NOT start).
+- **Unbond + withdraw:** Unbond with the 28-day-lock warning front-loaded; auto-bundles a `chill` when unbonding the full active stake. Per-chunk countdown on My Nominations; Withdraw CTA appears when an unlocking chunk matures.
+- xx's `bond` signature is xx-custom — `bond(controller, value, cmixId: Option<H256>)` — not the standard Substrate `bond(value, payee)`. Nominator bond passes `null` for cmixId; validator bond carries the real H256.
+
+**Staking — validator surface (Phase 3.5)**
+
+- **Validator setup** (`/staking/validate`): auto-detects three states and renders the matching form. New (not bonded) — amount + cmixId + commission + blocked → `batchAll([bond, validate])`. Convert (bonded but not validating) — cmixId + commission + blocked → `batchAll([setCmixId, validate])`. Update (currently validating) — commission + blocked → `validate`.
+- **Standalone setCmixId / transferCmixId:** dedicated screens at `/staking/cmix` and `/staking/cmix/transfer` for node-identity maintenance without touching prefs.
+- **Slash alerts:** `useSlashNotifications` subscribes to chain `staking.SlashReported` / `staking.Slashed` events, filters for accounts the user owns or nominates, emits through the notification scaffold. An in-wallet sink pushes to a `RecentAlertsBanner` on My Nominations — warning treatment with days-until-applicable countdown and a one-tap link to change validators, so nominators can chill before the slash applies (xx's 27-era `slashDeferDuration` makes this a real actionable window).
+- xx-specific runtime quirk we document: `chill()` clears `ledger.cmixId` on xx (upstream Substrate doesn't). The wallet handles this correctly in the convert-mode flow.
 
 **PWA**
 
@@ -109,14 +136,15 @@ xx-wallet/
 │   │   └── sleeve/             — Compiled Sleeve WASM + Go runtime helper
 │   ├── sleeve-wasm/            — Go source for the Sleeve WASM (built artifacts in public/sleeve/)
 │   ├── src/
-│   │   ├── api/                — @polkadot/api wrapper + xx-network constants (incl. XX_GENESIS_HASH)
+│   │   ├── api/                — @polkadot/api wrapper + xx-network constants (incl. XX_GENESIS_HASH), identity lookup
 │   │   ├── keyring/            — Encrypted local key storage + Sleeve TS wrapper
-│   │   ├── hooks/              — useApi, useBalance, useTx, useTransfers, useMultisigActivity, usePendingMultisigs, useStaleness, useAddressName
-│   │   ├── store/              — Zustand stores (accounts, address book, multisigs, pending bytes cache, settings)
-│   │   ├── notifications/      — Pluggable notification scaffold (types, sink, registry, useMultisigNotifications)
+│   │   ├── staking/            — seq-Phragmén + auto-nominate selection (Apache-2.0 port from staking.xx.network)
+│   │   ├── hooks/              — useApi, useBalance, useTx, useTransfers, useMultisigActivity, usePendingMultisigs, useStaleness, useAddressName, useStakingPosition, useStakingRoles, useValidatorList, useValidatorDetail, useRewardsHistory, useAutoNominate
+│   │   ├── store/              — Zustand stores (accounts, address book, multisigs, pending bytes cache, settings, alerts)
+│   │   ├── notifications/      — Pluggable scaffold (types, sink, inlineSink, registry, useMultisigNotifications, useSlashNotifications)
 │   │   ├── components/
-│   │   ├── screens/            — Onboarding, Dashboard, Send, Receive, TransactionDetail, Settings, Multisig{Create,Detail,Import,Scan,Propose,Approve,Share}
-│   │   └── utils/              — bytesPackage, multisigConfig, decodeCall, chainScan, address/format helpers
+│   │   ├── screens/            — Onboarding, Dashboard, Send, Receive, TransactionDetail, Settings, Multisig{Create,Detail,Import,Scan,Propose,Approve,Share}, Staking (Layout / MyNominations / ValidatorList / ValidatorDetail / RewardsHistory / StartStaking / AddToStake / ChangeValidators / StopNominating / UnbondAmount / WithdrawUnbonded / ValidatorSetup / ChangeCmixId / TransferCmixId / ManageStakeSheet / ValidatorPickerSheet / RecentAlertsBanner)
+│   │   └── utils/              — bytesPackage, multisigConfig, decodeCall, chainScan, address/format helpers, password blocklist
 │   └── wrangler.toml           — Cloudflare Workers static-assets deploy config
 └── README.md                   — You are here
 ```

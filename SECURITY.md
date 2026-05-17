@@ -2,7 +2,7 @@
 
 ## Status
 
-xx Wallet Mobile is currently in **Phase 2a** — core wallet features and multisig support (proposal / approval / cancellation / cross-wallet bytes-package handoff / chain scan for discoverable multisigs) are complete and verified end-to-end against live xx network, including against a foundation 2-of-N treasury multisig. The codebase has not yet been independently audited by a third-party security firm. This document is intended for security researchers, integrators, and users who want to understand exactly what threats the wallet does and does not protect against.
+xx Wallet Mobile is currently in **Phase 3.5** (shipped 2026-05-17) — core wallet features, multisig support (proposal / approval / cancellation / cross-wallet bytes-package handoff / chain scan for discoverable multisigs), the full read-only and active staking surfaces (My Nominations / Validator List / Validator Detail / Rewards History / bond+nominate / bondExtra / change nominations / chill / unbond+withdraw), and validator-side operations (validate / setCmixId / transferCmixId) plus slash alerts through the notification scaffold are all complete and verified end-to-end against live xx network, including against a foundation 2-of-N treasury multisig and a freshly-bonded test account. The codebase has not yet been independently audited by a third-party security firm. This document is intended for security researchers, integrators, and users who want to understand exactly what threats the wallet does and does not protect against.
 
 If you find a vulnerability, please follow the responsible-disclosure process at the bottom of this document rather than opening a public issue.
 
