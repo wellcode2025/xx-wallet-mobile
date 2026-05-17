@@ -5,3 +5,7 @@ export { ValidatorDetail } from './ValidatorDetail';
 export { RewardsHistory } from './RewardsHistory';
 export { StartStaking } from './StartStaking';
 export { ValidatorPickerSheet } from './ValidatorPickerSheet';
+export { AddToStake } from './AddToStake';
+export { ChangeValidators } from './ChangeValidators';
+export { StopNominating } from './StopNominating';
+export { ManageStakeSheet } from './ManageStakeSheet';

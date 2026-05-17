@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Coins } from 'lucide-react';
+import { ChevronRight, Coins, Settings2 } from 'lucide-react';
 import { useAccountsStore } from '@/store';
 import {
   useStakingPosition,
@@ -11,6 +11,7 @@ import {
 import type { AccountRoles } from '@/api';
 import { formatBalance } from '@/utils';
 import { AddressLabel, LoadingIndicator, StakingStatusBadge } from '@/components/ui';
+import { ManageStakeSheet } from './ManageStakeSheet';
 
 /**
  * Staking section — My Nominations sub-view (slice 1).
@@ -168,6 +169,7 @@ function NominatingView({ position }: { position: StakingPosition }) {
     suppressed,
     activeEra,
   } = position;
+  const [manageOpen, setManageOpen] = useState(false);
   return (
     <>
       {/* Bonded summary */}
@@ -224,6 +226,29 @@ function NominatingView({ position }: { position: StakingPosition }) {
         )}
       </div>
 
+      {/* Manage stake */}
+      <button
+        onClick={() => setManageOpen(true)}
+        className="card w-full flex items-center gap-3 active:bg-ink-800/40 transition-colors text-left"
+      >
+        <div className="w-9 h-9 rounded-full bg-xx-500/10 text-xx-500 flex items-center justify-center flex-shrink-0">
+          <Settings2 size={18} strokeWidth={1.75} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-medium text-sm text-ink-100">
+            Manage stake
+          </p>
+          <p className="text-xs text-ink-400 mt-0.5">
+            Add to stake, change validators, or stop nominating.
+          </p>
+        </div>
+        <ChevronRight
+          size={16}
+          strokeWidth={1.75}
+          className="text-ink-500 flex-shrink-0"
+        />
+      </button>
+
       {/* Nomination targets */}
       <div className="card">
         <h3 className="font-display font-medium text-sm text-ink-200 mb-1">
@@ -255,6 +280,8 @@ function NominatingView({ position }: { position: StakingPosition }) {
           })}
         </ul>
       </div>
+
+      <ManageStakeSheet open={manageOpen} onClose={() => setManageOpen(false)} />
     </>
   );
 }

@@ -17,7 +17,17 @@ import { Dashboard } from '@/screens/Dashboard';
 import { Send } from '@/screens/Send';
 import { Receive } from '@/screens/Receive';
 import { Settings } from '@/screens/Settings';
-import { StakingLayout, MyNominations, ValidatorList, ValidatorDetail, RewardsHistory, StartStaking } from '@/screens/Staking';
+import {
+  StakingLayout,
+  MyNominations,
+  ValidatorList,
+  ValidatorDetail,
+  RewardsHistory,
+  StartStaking,
+  AddToStake,
+  ChangeValidators,
+  StopNominating,
+} from '@/screens/Staking';
 import { TransactionDetail } from '@/screens/TransactionDetail';
 import { MultisigCreate } from '@/screens/MultisigCreate';
 import { MultisigDetail } from '@/screens/MultisigDetail';
@@ -157,6 +167,9 @@ export function App() {
               element={<ValidatorDetail />}
             />
             <Route path="/staking/start" element={<StartStaking />} />
+            <Route path="/staking/add" element={<AddToStake />} />
+            <Route path="/staking/change" element={<ChangeValidators />} />
+            <Route path="/staking/chill" element={<StopNominating />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
             <Route path="/multisig/import" element={<MultisigImport />} />
