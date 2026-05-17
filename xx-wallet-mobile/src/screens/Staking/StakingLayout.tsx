@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
+import { useAccountsStore } from '@/store';
+import { useAutoNominate } from '@/hooks';
 
 /**
  * Staking section layout — shared chrome for the Phase 2b staking
@@ -9,7 +12,15 @@ import { TopBar } from '@/components/layout';
  *
  * Sub-routes: index = My Nominations (account-scoped), /validators =
  * the network-wide Validator List, /rewards = per-account rewards
- * history. Validator detail is a pushed drill-down, not a segment.
+ * history. Validator detail and the Start-staking bond flow are
+ * pushed drill-downs, not segments.
+ *
+ * Pre-fetch — when the user enters the Staking section, fire the
+ * auto-nominate selection in the background so the bond flow opens
+ * with a warm cache. Phase 3 spike clocked this at ~40s in-browser,
+ * which is fine while the user is reading My Nominations / browsing
+ * Validators but jarring as on-screen wait time. The hook is a no-op
+ * if a fresh cache already exists for this address.
  */
 
 const TABS = [
@@ -19,6 +30,14 @@ const TABS = [
 ];
 
 export function StakingLayout() {
+  const { accounts, activeAddress } = useAccountsStore();
+  const activeAccount = useMemo(
+    () => accounts.find((a) => a.address === activeAddress) ?? accounts[0],
+    [accounts, activeAddress]
+  );
+  // Fire-and-forget pre-fetch — result is consumed by the bond flow.
+  useAutoNominate(activeAccount?.address ?? null, { mode: 'prefetch' });
+
   return (
     <>
       <TopBar title="Staking" />

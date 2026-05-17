@@ -78,7 +78,7 @@ export function MyNominations() {
           {position.isNominating ? (
             <NominatingView position={position} />
           ) : (
-            <EmptyState />
+            <EmptyState isBonded={position.ledger !== null} />
           )}
           <RewardsSummaryCard address={activeAccount.address} />
         </>
@@ -259,9 +259,29 @@ function NominatingView({ position }: { position: StakingPosition }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ isBonded }: { isBonded: boolean }) {
+  if (isBonded) {
+    // Bonded but not nominating — chilled, freshly bonded, or validating-only.
+    // Phase 3 slice 2 will surface a "Resume nominating" action here.
+    return (
+      <div className="card flex flex-col items-center text-center gap-3 py-8">
+        <div className="w-14 h-14 rounded-full bg-ink-800 border border-ink-700 flex items-center justify-center">
+          <Coins size={24} strokeWidth={1.5} className="text-ink-400" />
+        </div>
+        <div className="space-y-1 max-w-xs">
+          <p className="font-display font-medium text-sm text-ink-100">
+            Bonded, not nominating
+          </p>
+          <p className="text-sm text-ink-400">
+            This account is bonded but isn't nominating any validators.
+            Nominate-from-bonded arrives later in Phase 3.
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="card flex flex-col items-center text-center gap-3 py-8">
+    <div className="card flex flex-col items-center text-center gap-4 py-8">
       <div className="w-14 h-14 rounded-full bg-ink-800 border border-ink-700 flex items-center justify-center">
         <Coins size={24} strokeWidth={1.5} className="text-ink-400" />
       </div>
@@ -270,10 +290,16 @@ function EmptyState() {
           Not nominating
         </p>
         <p className="text-sm text-ink-400">
-          This account isn't nominating any validators. Bonding and
-          nominating arrive in Phase 3 — for now, Staking is read-only.
+          Earn staking rewards by bonding XX and nominating validators.
+          xx unbonding takes 28 days.
         </p>
       </div>
+      <Link
+        to="/staking/start"
+        className="px-5 py-2.5 rounded-full bg-xx-500 text-ink-950 text-sm font-medium active:opacity-80 transition-opacity"
+      >
+        Start staking
+      </Link>
     </div>
   );
 }

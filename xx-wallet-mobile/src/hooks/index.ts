@@ -11,3 +11,4 @@ export * from './useStakingRoles';
 export * from './useValidatorList';
 export * from './useValidatorDetail';
 export * from './useRewardsHistory';
+export * from './useAutoNominate';
