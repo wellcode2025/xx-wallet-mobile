@@ -4,3 +4,4 @@ export * from './settings';
 export * from './addressBook';
 export * from './multisigs';
 export * from './pendingBytes';
+export * from './alerts';

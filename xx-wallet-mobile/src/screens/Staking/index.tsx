@@ -12,3 +12,4 @@ export { ManageStakeSheet } from './ManageStakeSheet';
 export { UnbondAmount } from './UnbondAmount';
 export { WithdrawUnbonded } from './WithdrawUnbonded';
 export { ValidatorSetup } from './ValidatorSetup';
+export { RecentAlertsBanner } from './RecentAlertsBanner';

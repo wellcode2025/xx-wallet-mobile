@@ -39,7 +39,17 @@ import { MultisigPropose } from '@/screens/MultisigPropose';
 import { MultisigShare } from '@/screens/MultisigShare';
 import { MultisigImport } from '@/screens/MultisigImport';
 import { MultisigScan } from '@/screens/MultisigScan';
-import { useMultisigNotifications } from '@/notifications';
+import {
+  inlineSink,
+  registerSink,
+  useMultisigNotifications,
+  useSlashNotifications,
+} from '@/notifications';
+
+// Register the wallet-inline sink at module load. Pushes slash events
+// into useAlertsStore so RecentAlertsBanner can render them without
+// any plugin sink configured.
+registerSink(inlineSink);
 
 /**
  * Resets scroll to the top on forward navigation (PUSH/REPLACE). Without
@@ -74,6 +84,7 @@ function RequireAccount() {
   // Hook order: call before the conditional return so React's hook
   // rules don't trip when the user is in the onboarding redirect path.
   useMultisigNotifications();
+  useSlashNotifications();
   if (accounts.length === 0) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
   }

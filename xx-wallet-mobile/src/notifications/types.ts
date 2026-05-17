@@ -122,6 +122,54 @@ export interface TransferSentEvent extends BaseWalletEvent {
 }
 
 /**
+ * The chain reported an offence against a validator the user nominates
+ * (or against the user's own validator stash). Fires when xx's
+ * `staking.SlashReported` event lands on chain, BEFORE the
+ * slashDeferDuration (27 eras) expires. The actionable window: the
+ * user can chill their nominations of this validator to avoid the
+ * slash entirely.
+ *
+ * Fires once per (validator, slashEra) tuple.
+ */
+export interface StakingSlashReportedEvent extends BaseWalletEvent {
+  kind: 'staking.slash.reported';
+  /** The validator with the reported offence. */
+  validatorAddress: string;
+  /** Perbill (0..1e9). 1e9 = 100% of stake slashed. */
+  fraction: number;
+  /** Era the offence was committed in. */
+  slashEra: number;
+  /** Era the slash will apply if not deferred-out. Equals
+   *  slashEra + slashDeferDuration. Currently 27 eras = 27 days on xx. */
+  applicableEra: number;
+  /** Block number this event was emitted in. */
+  blockNumber: number;
+  /** Which of the user's accounts has exposure to this validator —
+   *  either equal to validatorAddress (the user IS the validator) or
+   *  the stash of a nominator-of-validator user account. Helps the UI
+   *  show which account to chill from. */
+  affectedUserAddress: string;
+  /** True if the user is the validator (own stash). False if the user
+   *  is a nominator of the validator. */
+  isOwnValidator: boolean;
+}
+
+/**
+ * The chain finally applied a slash to one of the user's accounts
+ * (either as validator or as nominator backing a slashed validator).
+ * Fires once per (account, blockNumber) tuple. Post-mortem signal —
+ * the slash has already been deducted from the bonded ledger.
+ */
+export interface StakingSlashedEvent extends BaseWalletEvent {
+  kind: 'staking.slashed';
+  /** The user account that took the slash. */
+  stakerAddress: string;
+  /** Raw planck deducted from this account's bonded total. */
+  amount: string;
+  blockNumber: number;
+}
+
+/**
  * Discriminated union of all wallet events. Sinks should `switch`
  * on `event.kind` for type-safe access to per-event fields.
  */
@@ -132,6 +180,8 @@ export type WalletEvent =
   | MultisigProposalCanceledEvent
   | MultisigProposalStaleEvent
   | TransferReceivedEvent
-  | TransferSentEvent;
+  | TransferSentEvent
+  | StakingSlashReportedEvent
+  | StakingSlashedEvent;
 
 export type WalletEventKind = WalletEvent['kind'];

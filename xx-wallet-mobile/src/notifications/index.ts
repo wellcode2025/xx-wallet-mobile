@@ -24,10 +24,13 @@ export type {
   MultisigProposalStaleEvent,
   TransferReceivedEvent,
   TransferSentEvent,
+  StakingSlashReportedEvent,
+  StakingSlashedEvent,
 } from './types';
 
 export type { NotificationSink } from './sink';
 export { noopSink } from './sink';
+export { inlineSink } from './inlineSink';
 
 export {
   registerSink,
@@ -38,3 +41,4 @@ export {
 } from './registry';
 
 export { useMultisigNotifications } from './useMultisigNotifications';
+export { useSlashNotifications } from './useSlashNotifications';

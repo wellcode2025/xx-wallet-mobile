@@ -14,6 +14,7 @@ import type { AccountRoles } from '@/api';
 import { formatBalance } from '@/utils';
 import { AddressLabel, LoadingIndicator, StakingStatusBadge } from '@/components/ui';
 import { ManageStakeSheet } from './ManageStakeSheet';
+import { RecentAlertsBanner } from './RecentAlertsBanner';
 
 /**
  * Staking section — My Nominations sub-view (slice 1).
@@ -59,6 +60,13 @@ export function MyNominations() {
         </div>
         {roles && <RoleTags roles={roles} />}
       </div>
+
+      {/* Slash alerts — rendered at top so users see them before they
+          scroll to nomination state. Hidden when no active alerts. */}
+      <RecentAlertsBanner
+        activeEra={position?.activeEra ?? null}
+        forAddress={activeAccount.address}
+      />
 
       {!position && !error && (
         <>
