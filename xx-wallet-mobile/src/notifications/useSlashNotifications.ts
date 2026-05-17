@@ -70,8 +70,11 @@ export function useSlashNotifications(): void {
         );
         unsubHeads = () => headSub();
 
-        // Subscribe to events.
-        const eventsSub = await api.query.system.events((events: any) => {
+        // Subscribe to events. The subscription overload of
+        // api.query.system.events returns Promise<UnsubscribeFn>, but
+        // polkadot.js's typed API resolves to Codec by default — cast
+        // through unknown to access the actual returned unsubscribe.
+        const eventsSub = (await api.query.system.events((events: any) => {
           // events is a Vec<EventRecord>; iterate using forEach since
           // Codec arrays support it directly.
           events.forEach((record: any) => {
@@ -110,8 +113,8 @@ export function useSlashNotifications(): void {
               emitEvent(ev);
             }
           });
-        });
-        unsubEvents = () => eventsSub();
+        })) as unknown as () => void;
+        unsubEvents = eventsSub;
       } catch (err) {
         if (!cancelled) {
           console.warn(

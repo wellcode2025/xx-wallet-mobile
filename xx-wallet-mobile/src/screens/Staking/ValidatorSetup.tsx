@@ -7,7 +7,6 @@ import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useAccountsStore } from '@/store';
 import {
   useBalance,
-  useStakingPosition,
   useTx,
   invalidateAutoNominateCache,
 } from '@/hooks';
@@ -75,7 +74,6 @@ export function ValidatorSetup() {
   );
 
   const { balance } = useBalance(activeAccount?.address);
-  const { position } = useStakingPosition(activeAccount?.address ?? null);
   const { submit, status, error: txError } = useTx();
 
   const [validatorState, setValidatorState] = useState<ValidatorState | null>(
