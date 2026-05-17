@@ -13,3 +13,5 @@ export { UnbondAmount } from './UnbondAmount';
 export { WithdrawUnbonded } from './WithdrawUnbonded';
 export { ValidatorSetup } from './ValidatorSetup';
 export { RecentAlertsBanner } from './RecentAlertsBanner';
+export { ChangeCmixId } from './ChangeCmixId';
+export { TransferCmixId } from './TransferCmixId';

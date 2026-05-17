@@ -30,6 +30,8 @@ import {
   UnbondAmount,
   WithdrawUnbonded,
   ValidatorSetup,
+  ChangeCmixId,
+  TransferCmixId,
 } from '@/screens/Staking';
 import { TransactionDetail } from '@/screens/TransactionDetail';
 import { MultisigCreate } from '@/screens/MultisigCreate';
@@ -187,6 +189,8 @@ export function App() {
             <Route path="/staking/unbond" element={<UnbondAmount />} />
             <Route path="/staking/withdraw" element={<WithdrawUnbonded />} />
             <Route path="/staking/validate" element={<ValidatorSetup />} />
+            <Route path="/staking/cmix" element={<ChangeCmixId />} />
+            <Route path="/staking/cmix/transfer" element={<TransferCmixId />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
             <Route path="/multisig/import" element={<MultisigImport />} />

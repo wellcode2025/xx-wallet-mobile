@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BN } from '@polkadot/util';
 import clsx from 'clsx';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -528,6 +528,32 @@ export function ValidatorSetup() {
             >
               {submitLabel(status, validatorState.mode)}
             </button>
+
+            {validatorState.mode === 'update' && (
+              <div className="card space-y-2">
+                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                  Node maintenance
+                </p>
+                <p className="text-xs text-ink-400">
+                  Rotate or transfer the cMix node id without changing
+                  validator prefs — useful when migrating to new hardware.
+                </p>
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <Link
+                    to="/staking/cmix"
+                    className="text-xs text-xx-500 active:opacity-70"
+                  >
+                    Change cmixId →
+                  </Link>
+                  <Link
+                    to="/staking/cmix/transfer"
+                    className="text-xs text-xx-500 active:opacity-70"
+                  >
+                    Transfer cmixId to another account →
+                  </Link>
+                </div>
+              </div>
+            )}
           </>
         )}
 
