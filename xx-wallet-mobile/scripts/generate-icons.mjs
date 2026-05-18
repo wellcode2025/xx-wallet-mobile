@@ -110,21 +110,27 @@ async function main() {
   await mkdir(resolve(REPO_ROOT, 'public/icons'), { recursive: true });
 
   // Apple touch icon — full-bleed, ~70% logo, no pre-rounding.
+  // iOS doesn't mask aggressively (just rounds corners), so 70%
+  // reads well on the iPhone home screen.
   const appleSvg = makeMasterSvg({ logoCanvasPct: 0.70 });
   await rasterise(appleSvg, resolve(REPO_ROOT, 'public/apple-touch-icon.png'), 180);
 
-  // Manifest icons (any-purpose). Same composition as Apple touch.
-  await rasterise(appleSvg, resolve(REPO_ROOT, 'public/icons/icon-192.png'), 192);
-  await rasterise(appleSvg, resolve(REPO_ROOT, 'public/icons/icon-512.png'), 512);
+  // Manifest icons (any-purpose). 55% logo to favour Android — many
+  // launchers (Vivaldi-as-PWA-host, custom launchers, even stock with
+  // theme packs) use the "any" icon for home-screen rendering and
+  // apply their own subtle mask on top. At 70% the logo ended up
+  // visually filling ~85% of the masked area and looked oversized
+  // next to typical system icons. At 55% it sits comfortably inside
+  // any launcher mask while keeping the teal background edge-to-edge.
+  const androidAnySvg = makeMasterSvg({ logoCanvasPct: 0.55 });
+  await rasterise(androidAnySvg, resolve(REPO_ROOT, 'public/icons/icon-192.png'), 192);
+  await rasterise(androidAnySvg, resolve(REPO_ROOT, 'public/icons/icon-512.png'), 512);
 
-  // Maskable icon — logo at 55% of canvas. Android masks shrink the
-  // visible icon area to ~78% of the source PNG, which means a 65%
-  // logo (our first pass) ended up visually filling ~83% of what
-  // launchers render and looked oversized next to typical system
-  // icons (Vivaldi etc. sit around 55%). 55% gives the logo room to
-  // breathe inside any launcher mask shape while staying comfortably
-  // inside the 80% safe zone. Teal background still extends
-  // edge-to-edge so the mask frames a solid color, not transparent.
+  // Maskable icon — same 55% logo. Composition identical to the
+  // any-purpose icons so the install dialog and the home-screen
+  // render look consistent regardless of which purpose the launcher
+  // picks. Logo is well inside Android's 80% safe zone so any mask
+  // shape (circle, squircle, rounded square) frames cleanly.
   const maskableSvg = makeMasterSvg({ logoCanvasPct: 0.55 });
   await rasterise(
     maskableSvg,
