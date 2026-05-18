@@ -115,23 +115,22 @@ async function main() {
   const appleSvg = makeMasterSvg({ logoCanvasPct: 0.70 });
   await rasterise(appleSvg, resolve(REPO_ROOT, 'public/apple-touch-icon.png'), 180);
 
-  // Manifest icons (any-purpose). 55% logo to favour Android — many
-  // launchers (Vivaldi-as-PWA-host, custom launchers, even stock with
-  // theme packs) use the "any" icon for home-screen rendering and
-  // apply their own subtle mask on top. At 70% the logo ended up
-  // visually filling ~85% of the masked area and looked oversized
-  // next to typical system icons. At 55% it sits comfortably inside
-  // any launcher mask while keeping the teal background edge-to-edge.
-  const androidAnySvg = makeMasterSvg({ logoCanvasPct: 0.55 });
+  // Manifest icons (any-purpose). 45% logo — dialed in across two
+  // real-device test rounds. 70% (first pass) was clearly oversized.
+  // 55% (second pass) still read large next to typical Android system
+  // icons. 45% matches the visual weight of stock apps like Vivaldi
+  // and feels intentional in the launcher grid. Logo still well
+  // inside Android's 80% safe zone, teal background still extends
+  // edge-to-edge for clean mask framing.
+  const androidAnySvg = makeMasterSvg({ logoCanvasPct: 0.45 });
   await rasterise(androidAnySvg, resolve(REPO_ROOT, 'public/icons/icon-192.png'), 192);
   await rasterise(androidAnySvg, resolve(REPO_ROOT, 'public/icons/icon-512.png'), 512);
 
-  // Maskable icon — same 55% logo. Composition identical to the
+  // Maskable icon — same 45% logo. Composition identical to the
   // any-purpose icons so the install dialog and the home-screen
   // render look consistent regardless of which purpose the launcher
-  // picks. Logo is well inside Android's 80% safe zone so any mask
-  // shape (circle, squircle, rounded square) frames cleanly.
-  const maskableSvg = makeMasterSvg({ logoCanvasPct: 0.55 });
+  // picks.
+  const maskableSvg = makeMasterSvg({ logoCanvasPct: 0.45 });
   await rasterise(
     maskableSvg,
     resolve(REPO_ROOT, 'public/icons/icon-512-maskable.png'),
