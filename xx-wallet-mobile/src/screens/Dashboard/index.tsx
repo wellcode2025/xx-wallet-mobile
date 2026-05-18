@@ -3,13 +3,16 @@ import { useMemo, useState } from 'react';
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  BookUser,
+  ChevronDown,
+  ChevronRight,
+  Download,
   Eye,
   EyeOff,
-  ChevronDown,
-  Download,
   Loader2,
   Plus,
   Search,
+  UserPlus,
   Users,
 } from 'lucide-react';
 import { useAccountsStore, useMultisigsStore, useSettingsStore } from '@/store';
@@ -35,6 +38,11 @@ export function Dashboard() {
   // Chooser sheet for "+ Add multisig" — Path A (manual) vs Path B
   // (import from JSON). Path C (chain scan) joins this in slice 6.
   const [addChooserOpen, setAddChooserOpen] = useState(false);
+  // Chooser sheet for "+ Add account" — Create new (Sleeve) vs
+  // Import existing (mnemonic or keystore). Mirrors the Add multisig
+  // chooser pattern; reaches the same /onboarding/create and
+  // /onboarding/import flows users can already get to from Settings.
+  const [addAccountChooserOpen, setAddAccountChooserOpen] = useState(false);
 
   const activeAccount = useMemo(
     () => accounts.find((a) => a.address === activeAddress) ?? accounts[0],
@@ -46,14 +54,10 @@ export function Dashboard() {
   const { pending: pendingProposals } = useAllPendingMultisigs();
   const stalenessOf = useStaleness();
 
-  // The switcher is useful whenever the user has more than one entity to
-  // navigate between — multiple accounts OR any multisigs (since multisigs
-  // are reachable from this picker), OR if there's anything in the
-  // Pending actions list that needs the user's attention.
-  const hasMoreThanOneEntity =
-    accounts.length > 1 ||
-    multisigs.length > 0 ||
-    pendingProposals.length > 0;
+  // The switcher sheet always opens — even for a fresh user with one
+  // account and zero multisigs, it surfaces the 'Add multisig' CTA which
+  // is the entry point into the multisig flow. (Previously gated on
+  // hasMoreThanOneEntity, which trapped single-account users.)
 
   const { balance, isLoading } = useBalance(activeAccount?.address ?? null);
   const { transfers, isLoading: txLoading, error: txError, total: txTotal } = useTransfers(activeAccount?.address ?? null);
@@ -94,7 +98,7 @@ export function Dashboard() {
             shoving a banner in their face. The badge disappears when
             there's nothing pending. Per design doc §6.1 (Option C). */}
         <button
-          onClick={() => hasMoreThanOneEntity && setSwitcherOpen(true)}
+          onClick={() => setSwitcherOpen(true)}
           className="relative w-full flex items-center gap-3 p-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800"
         >
           {pendingProposals.length > 0 && (
@@ -117,9 +121,10 @@ export function Dashboard() {
               {activeAccount.address.slice(-6)}
             </p>
           </div>
-          {hasMoreThanOneEntity && (
-            <ChevronDown size={18} className="text-ink-400 flex-shrink-0" />
-          )}
+          {/* Always show the chevron — the sheet is always useful, even
+              for fresh single-account users (they reach 'Add multisig'
+              from inside it). */}
+          <ChevronDown size={18} className="text-ink-400 flex-shrink-0" />
         </button>
 
         {/* Balance hero */}
@@ -346,26 +351,16 @@ export function Dashboard() {
             <ul className="space-y-2">
               {accounts.map((acct) => (
                 <li key={acct.address}>
-                  <button
+                  <AccountSwitcherRow
+                    address={acct.address}
+                    name={acct.name}
+                    isActive={acct.address === activeAccount.address}
+                    hideBalances={hideBalances}
                     onClick={() => {
                       setActive(acct.address);
                       setSwitcherOpen(false);
                     }}
-                    className={clsx(
-                      'w-full flex items-center gap-3 p-3 rounded-2xl border transition-colors',
-                      acct.address === activeAccount.address
-                        ? 'bg-xx-500/10 border-xx-500/40'
-                        : 'bg-ink-800 border-ink-700/50 active:bg-ink-700'
-                    )}
-                  >
-                    <AddressIcon address={acct.address} size={36} />
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="font-medium text-sm truncate">{acct.name}</p>
-                      <p className="font-mono text-xs text-ink-400 truncate">
-                        {acct.address.slice(0, 12)}…
-                      </p>
-                    </div>
-                  </button>
+                  />
                 </li>
               ))}
             </ul>
@@ -405,11 +400,28 @@ export function Dashboard() {
             </div>
           )}
 
-          {/* Add multisig affordance — opens a chooser sheet rather
-              than going straight to one path, so the user can pick
-              between creating new (Path A) and importing from JSON
-              (Path B). */}
-          <div className="pt-1 border-t border-ink-800/60">
+          {/* Add affordances — Account and Multisig grouped together as
+              the 'create entity' actions in this sheet. */}
+          <div className="pt-1 border-t border-ink-800/60 space-y-2">
+            <button
+              onClick={() => {
+                setSwitcherOpen(false);
+                setAddAccountChooserOpen(true);
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl border border-dashed border-ink-700 active:bg-ink-800 text-ink-300"
+            >
+              <div className="w-9 h-9 rounded-full bg-ink-800 border border-ink-700 flex items-center justify-center">
+                <UserPlus size={16} strokeWidth={2} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium">Add account</p>
+                <p className="text-sm text-ink-300 mt-0.5">
+                  {accounts.length === 1
+                    ? 'Create or import another account'
+                    : 'Create or import another account'}
+                </p>
+              </div>
+            </button>
             <button
               onClick={() => {
                 setSwitcherOpen(false);
@@ -428,6 +440,37 @@ export function Dashboard() {
                     : 'Add another multi-signature account'}
                 </p>
               </div>
+            </button>
+          </div>
+
+          {/* Contacts — surfaces the address book so users can find it
+              without diving into Send. Below the Add affordances because
+              this is navigational (existing surface) rather than a
+              creation action. */}
+          <div className="pt-1">
+            <button
+              onClick={() => {
+                setSwitcherOpen(false);
+                navigate('/send', { state: { openContacts: true } });
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
+            >
+              <div className="w-9 h-9 rounded-full bg-xx-500/10 text-xx-500 flex items-center justify-center flex-shrink-0">
+                <BookUser size={16} strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="font-display font-medium text-sm text-ink-100">
+                  Contacts
+                </p>
+                <p className="text-xs text-ink-400 mt-0.5">
+                  Address book and saved addresses
+                </p>
+              </div>
+              <ChevronRight
+                size={16}
+                strokeWidth={1.75}
+                className="text-ink-500 flex-shrink-0"
+              />
             </button>
           </div>
         </div>
@@ -511,6 +554,61 @@ export function Dashboard() {
           </button>
         </div>
       </Sheet>
+
+      {/* Add account chooser — mirrors Add multisig. Create-new uses
+          the Sleeve onboarding flow; Import uses the mnemonic /
+          keystore-JSON path. Same routes Settings → Add already uses,
+          just reached from the Dashboard dropdown. */}
+      <Sheet
+        open={addAccountChooserOpen}
+        onClose={() => setAddAccountChooserOpen(false)}
+        title="Add account"
+      >
+        <div className="space-y-3">
+          <button
+            onClick={() => {
+              setAddAccountChooserOpen(false);
+              navigate('/onboarding/create');
+            }}
+            className="w-full flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-ink-900 border border-ink-700 flex items-center justify-center flex-shrink-0">
+              <Plus size={16} strokeWidth={2} className="text-xx-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-100">
+                Create new
+              </p>
+              <p className="text-sm text-ink-300 leading-snug mt-0.5">
+                Generate a fresh account with Sleeve quantum-secure
+                recovery phrases. Same flow you used for your first
+                account.
+              </p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              setAddAccountChooserOpen(false);
+              navigate('/onboarding/import');
+            }}
+            className="w-full flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-ink-900 border border-ink-700 flex items-center justify-center flex-shrink-0">
+              <Download size={16} strokeWidth={2} className="text-xx-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-100">
+                Import existing
+              </p>
+              <p className="text-sm text-ink-300 leading-snug mt-0.5">
+                Restore an account from a recovery phrase or a
+                wallet.xx.network keystore JSON file.
+              </p>
+            </div>
+          </button>
+        </div>
+      </Sheet>
     </>
   );
 }
@@ -552,6 +650,61 @@ function BalanceRow({
  * at the api layer so the cost stays modest. If multisig counts ever
  * grow past ~20 we'd want to switch to a batched query.
  */
+/**
+ * Single row in the accounts list inside the dashboard switcher.
+ * Renders name + truncated address + live balance, mirroring
+ * MultisigSwitcherRow so the at-a-glance treatment is symmetric across
+ * accounts and multisigs. Respects the hide-balances privacy flag.
+ *
+ * Per-row useBalance is acceptable: typical wallets have 1-10
+ * accounts; polkadot.js caches system.account queries at the api
+ * layer so the cost stays modest.
+ */
+function AccountSwitcherRow({
+  address,
+  name,
+  isActive,
+  hideBalances,
+  onClick,
+}: {
+  address: string;
+  name: string;
+  isActive: boolean;
+  hideBalances: boolean;
+  onClick: () => void;
+}) {
+  const { balance } = useBalance(address);
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'w-full flex items-center gap-3 p-3 rounded-2xl border transition-colors',
+        isActive
+          ? 'bg-xx-500/10 border-xx-500/40'
+          : 'bg-ink-800 border-ink-700/50 active:bg-ink-700'
+      )}
+    >
+      <AddressIcon address={address} size={36} />
+      <div className="flex-1 min-w-0 text-left">
+        <p className="font-medium text-sm truncate">{name}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="font-mono text-xs text-ink-400 truncate">
+            {address.slice(0, 10)}…
+          </p>
+          <span className="text-ink-600">·</span>
+          <p className="font-mono text-xs text-ink-300 numeric flex-shrink-0">
+            {hideBalances
+              ? '••••'
+              : balance
+                ? `${formatBalance(balance.free, { decimals: 4 })} ${XX_SYMBOL}`
+                : '—'}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function MultisigSwitcherRow({
   address,
   localName,

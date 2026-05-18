@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import BigNumber from 'bignumber.js';
 import {
   AlertTriangle,
@@ -45,6 +45,7 @@ const EXISTENTIAL_DEPOSIT = new BigNumber('1000000'); // 0.001 XX in planck
  */
 export function Send() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { accounts, activeAddress } = useAccountsStore();
   const { contacts, removeContact } = useAddressBook();
@@ -67,6 +68,21 @@ export function Send() {
   // Contacts coordination state (shared across ContactsSheet, ContactForm, and
   // the local Delete-confirmation Sheet)
   const [contactsOpen, setContactsOpen] = useState(false);
+
+  // Auto-open the contacts sheet when navigated here from the Dashboard
+  // dropdown's Contacts row (which passes { openContacts: true } in
+  // location state). Clear the state after consuming so a back-then-
+  // forward navigation doesn't re-trigger.
+  useEffect(() => {
+    const state = location.state as { openContacts?: boolean } | null;
+    if (state?.openContacts) {
+      setContactsOpen(true);
+      navigate(location.pathname + location.search, {
+        replace: true,
+        state: null,
+      });
+    }
+  }, [location.state, location.pathname, location.search, navigate]);
   const [contactFormMode, setContactFormMode] = useState<ContactFormMode>(null);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactFormPrefill, setContactFormPrefill] = useState<string | undefined>(undefined);
