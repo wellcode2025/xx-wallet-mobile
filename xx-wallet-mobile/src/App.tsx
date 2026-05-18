@@ -18,7 +18,7 @@ import {
 } from '@/store';
 import { xxApi } from '@/api';
 import { AppLayout, OnboardingLayout } from '@/components/layout';
-import { IOSInstallBanner } from '@/components/ui';
+import { IOSInstallBanner, UpdateBanner, WhatsNewSheet } from '@/components/ui';
 import { Welcome, CreateWallet, ImportWallet } from '@/screens/Onboarding';
 import { Dashboard } from '@/screens/Dashboard';
 import { Send } from '@/screens/Send';
@@ -201,6 +201,15 @@ export function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      {/* PWA lifecycle UI — all three are top-level so they render
+          regardless of route. UpdateBanner shows when a new SW is
+          waiting; WhatsNewSheet shows on the first launch after a
+          version bump in src/release/version.ts; IOSInstallBanner
+          shows on pre-install Safari sessions. In practice
+          UpdateBanner and IOSInstallBanner don't overlap (one is
+          for installed PWAs, the other for non-installed Safari). */}
+      <UpdateBanner />
+      <WhatsNewSheet />
       <IOSInstallBanner />
       <Routes>
         {/* Onboarding flow */}
