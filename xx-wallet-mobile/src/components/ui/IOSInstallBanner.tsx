@@ -82,9 +82,14 @@ export function IOSInstallBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 px-4 animate-slide-up"
+      // Top-anchored banner — matches iOS's native smart-app-banner
+      // pattern, and avoids overlapping the Welcome screen's
+      // 'Create new wallet' / 'Import existing wallet' CTAs which sit
+      // at the bottom of OnboardingLayout. Padding respects the iPhone
+      // notch / dynamic island via env(safe-area-inset-top).
+      className="fixed inset-x-0 top-0 z-40 px-4 animate-fade-in"
       style={{
-        paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+        paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
       }}
     >
       <div className="card border border-xx-500/40 bg-ink-900/95 backdrop-blur-md shadow-2xl">
