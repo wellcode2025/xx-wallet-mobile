@@ -119,6 +119,7 @@ export function App() {
 
   useEffect(() => {
     (async () => {
+      const startedAt = Date.now();
       // Initialize crypto + keyring before anything else
       await xxKeyring.init();
       refreshAccounts();
@@ -127,6 +128,21 @@ export function App() {
       xxApi.connect(endpoint).catch((err) => {
         console.error('Initial API connection failed', err);
       });
+
+      // Hold the loading state for a minimum perceptible duration so
+      // the launch feels deliberate rather than flashing-by. On fast
+      // devices xxKeyring.init() completes in <100ms which makes the
+      // brand-splash + loading state nearly invisible. On slower
+      // devices init takes longer than MIN_LOADING_MS so this is a
+      // no-op there. The wait fires AFTER the work completes so we're
+      // never blocking the user — just smoothing the perception.
+      const MIN_LOADING_MS = 1200;
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_LOADING_MS) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, MIN_LOADING_MS - elapsed)
+        );
+      }
 
       setInitialized(true);
     })();
