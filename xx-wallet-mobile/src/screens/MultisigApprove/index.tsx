@@ -21,7 +21,7 @@
  * See  §6.4.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   Users,
@@ -32,6 +32,8 @@ import {
   ChevronUp,
   Check,
   Key,
+  ScanLine,
+  Upload,
   X,
   Loader2,
 } from 'lucide-react';
@@ -42,6 +44,7 @@ import {
   AddressChip,
   AddressIcon,
   AddressLabel,
+  QrScanner,
   Sheet,
 } from '@/components/ui';
 import {
@@ -62,6 +65,7 @@ import {
   formatBalance,
   multisigAddressMatches,
   normalizeCallBytes,
+  parseBytesPackage,
   shortenAddress,
   verifyCallHash,
   type DecodedCall,
@@ -167,6 +171,8 @@ function ApproveView({
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasted, setPasted] = useState('');
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Conscious-acknowledgement checkbox for the no-bytes path
   const [consciousAck, setConsciousAck] = useState(false);
@@ -411,13 +417,79 @@ function ApproveView({
     );
   }
 
-  const handlePaste = () => {
+  /**
+   * Unified input handler for paste / scan / file. Accepts either:
+   *   - A full bytes-package JSON (the canonical format MultisigShare
+   *     exports via file, QR, share-sheet, and copy-to-clipboard), OR
+   *   - Raw call data hex (the lower-level format — power users who
+     *     already extracted callData manually).
+   *
+   * Hash + address verification happens regardless of which format
+   * arrives; the call bytes are only stored if they hash to the
+   * on-chain call hash for THIS proposal and target THIS multisig.
+   * Rejecting cross-proposal pastes (e.g., a package for a different
+   * multisig or a different proposal) is part of the trust-
+   * minimisation contract — the wallet refuses to render an
+   * unverifiable approval.
+   */
+  const handleInput = (raw: string) => {
     setPasteError(null);
-    const trimmed = pasted.trim();
+    const trimmed = raw.trim();
     if (!trimmed) {
-      setPasteError('Paste the call data (0x-prefixed hex).');
+      setPasteError(
+        'Paste call data hex or the full bytes-package JSON.'
+      );
       return;
     }
+
+    // Try as bytes-package JSON first.
+    let parsedJson: unknown = null;
+    try {
+      parsedJson = JSON.parse(trimmed);
+    } catch {
+      // Not JSON; fall through to the raw-hex path.
+    }
+    if (parsedJson !== null) {
+      const result = parseBytesPackage(parsedJson);
+      if (result.ok) {
+        const pkg = result.package;
+        if (pkg.multisigAddress !== address) {
+          setPasteError(
+            `This bytes-package is for a different multisig (${shortenAddress(
+              pkg.multisigAddress
+            )}). This proposal is for ${shortenAddress(address)}.`
+          );
+          return;
+        }
+        if (pkg.callHash.toLowerCase() !== callHash.toLowerCase()) {
+          setPasteError(
+            'This bytes-package is for a different proposal — its call ' +
+              'hash does not match this proposal. (parseBytesPackage already ' +
+              'verified the package internally, but the hash inside does not ' +
+              "match what's on chain here.)"
+          );
+          return;
+        }
+        putBytes({
+          multisigAddress: address,
+          callHash,
+          callBytes: pkg.callData,
+          source: 'received',
+          receivedAt: Date.now(),
+        });
+        setPasted('');
+        setPasteOpen(false);
+        setScannerOpen(false);
+        return;
+      }
+      // Valid JSON but not a valid package — surface the reason.
+      setPasteError(
+        `This is JSON but not a valid bytes-package: ${result.reason}`
+      );
+      return;
+    }
+
+    // Fallback: raw call-data hex.
     const normalized = normalizeCallBytes(trimmed);
     if (!verifyCallHash(normalized, callHash)) {
       setPasteError(
@@ -436,6 +508,27 @@ function ApproveView({
     });
     setPasted('');
     setPasteOpen(false);
+    setScannerOpen(false);
+  };
+
+  const handlePaste = () => handleInput(pasted);
+
+  const handleScan = (result: string) => handleInput(result);
+
+  const handleFile = (file: File) => {
+    setPasteError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        setPasteError('Could not read file contents as text.');
+        return;
+      }
+      handleInput(result);
+    };
+    reader.onerror = () =>
+      setPasteError('Could not read the selected file.');
+    reader.readAsText(file);
   };
 
   const handleApprove = () => {
@@ -690,20 +783,38 @@ function ApproveView({
             consciousAck={consciousAck}
             onAckChange={setConsciousAck}
             onOpenPaste={() => setPasteOpen((o) => !o)}
+            onOpenScanner={() => setScannerOpen(true)}
+            onOpenFile={() => fileInputRef.current?.click()}
             pasteOpen={pasteOpen}
           />
         )}
+
+        {/* Hidden file input — opened by the "Open file" button in the
+            NoBytesCard. Accepts the bytes-package JSON file that
+            MultisigShare exports via Save / Download. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+            // Reset so picking the same file again still fires onChange.
+            e.target.value = '';
+          }}
+        />
 
         {/* Paste affordance */}
         {pasteOpen && (
           <div className="card space-y-2">
             <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
-              Paste call data
+              Paste call data or bytes-package
             </p>
             <textarea
               value={pasted}
               onChange={(e) => setPasted(e.target.value)}
-              placeholder="0x..."
+              placeholder={'0x… or {"format":"xx-wallet-multisig-bytes-package",…}'}
               rows={4}
               className="w-full bg-ink-900 border border-ink-700 rounded-md px-3 py-2 font-mono text-xs text-ink-100 focus:outline-none focus:border-xx-500 resize-none"
             />
@@ -718,9 +829,11 @@ function ApproveView({
               Verify and load
             </button>
             <p className="text-xs text-ink-400 leading-relaxed">
-              The wallet will hash this call data locally and confirm it
-              matches the on-chain call hash before showing the decoded
-              action. Call data that doesn't match is rejected, not displayed.
+              Accepts either raw call-data hex or the full bytes-package
+              JSON the proposer shared. The wallet will hash the call
+              data locally and confirm it matches the on-chain call hash
+              before showing the decoded action. Anything that doesn't
+              match is rejected, not displayed.
             </p>
           </div>
         )}
@@ -1297,6 +1410,17 @@ function ApproveView({
           </button>
         </div>
       </Sheet>
+
+      {/* QR scanner full-screen takeover — opened from the NoBytesCard's
+          Scan QR button. Scans the bytes-package QR that MultisigShare
+          generates; the same handleInput pipeline validates and stores
+          the result. */}
+      {scannerOpen && (
+        <QrScanner
+          onScan={handleScan}
+          onClose={() => setScannerOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -1503,11 +1627,15 @@ function NoBytesCard({
   consciousAck,
   onAckChange,
   onOpenPaste,
+  onOpenScanner,
+  onOpenFile,
   pasteOpen,
 }: {
   consciousAck: boolean;
   onAckChange: (v: boolean) => void;
   onOpenPaste: () => void;
+  onOpenScanner: () => void;
+  onOpenFile: () => void;
   pasteOpen: boolean;
 }) {
   return (
@@ -1525,16 +1653,34 @@ function NoBytesCard({
       <p className="text-xs text-ink-200 leading-relaxed">
         Your wallet cannot show what this proposal does. Approving
         without seeing the decoded action means trusting the proposer's
-        description from another channel. Proceed only if you have
-        independently confirmed what this call does.
+        description from another channel. Get the call-data bytes
+        package from the proposer (file, QR, or paste) and load it
+        below — the wallet will verify it matches this proposal's
+        on-chain call hash before showing the decoded action.
       </p>
-      <button
-        onClick={onOpenPaste}
-        className="btn-secondary w-full text-sm"
-      >
-        <Clipboard size={14} strokeWidth={2} />
-        {pasteOpen ? 'Hide paste field' : 'Paste call data'}
-      </button>
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          onClick={onOpenFile}
+          className="btn-secondary text-xs flex-col py-3"
+        >
+          <Upload size={16} strokeWidth={2} />
+          Open file
+        </button>
+        <button
+          onClick={onOpenScanner}
+          className="btn-secondary text-xs flex-col py-3"
+        >
+          <ScanLine size={16} strokeWidth={2} />
+          Scan QR
+        </button>
+        <button
+          onClick={onOpenPaste}
+          className="btn-secondary text-xs flex-col py-3"
+        >
+          <Clipboard size={16} strokeWidth={2} />
+          {pasteOpen ? 'Hide paste' : 'Paste'}
+        </button>
+      </div>
       <label className="flex items-start gap-2 text-xs text-ink-300 leading-snug cursor-pointer select-none">
         <input
           type="checkbox"
