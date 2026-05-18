@@ -117,10 +117,15 @@ async function main() {
   await rasterise(appleSvg, resolve(REPO_ROOT, 'public/icons/icon-192.png'), 192);
   await rasterise(appleSvg, resolve(REPO_ROOT, 'public/icons/icon-512.png'), 512);
 
-  // Maskable icon — logo at slightly tighter 65% so it sits well within
-  // Android's center-80% safe zone for ANY mask shape (circle, squircle,
-  // rounded square). Teal background still extends edge-to-edge.
-  const maskableSvg = makeMasterSvg({ logoCanvasPct: 0.65 });
+  // Maskable icon — logo at 55% of canvas. Android masks shrink the
+  // visible icon area to ~78% of the source PNG, which means a 65%
+  // logo (our first pass) ended up visually filling ~83% of what
+  // launchers render and looked oversized next to typical system
+  // icons (Vivaldi etc. sit around 55%). 55% gives the logo room to
+  // breathe inside any launcher mask shape while staying comfortably
+  // inside the 80% safe zone. Teal background still extends
+  // edge-to-edge so the mask frames a solid color, not transparent.
+  const maskableSvg = makeMasterSvg({ logoCanvasPct: 0.55 });
   await rasterise(
     maskableSvg,
     resolve(REPO_ROOT, 'public/icons/icon-512-maskable.png'),
