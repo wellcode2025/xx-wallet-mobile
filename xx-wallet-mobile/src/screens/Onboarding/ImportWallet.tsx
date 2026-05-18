@@ -4,7 +4,7 @@ import { FileText, Upload, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { xxKeyring } from '@/keyring';
 import { useAccountsStore } from '@/store';
 import { TopBar } from '@/components/layout';
-import { isCommonPassword } from '@/utils';
+import { isCommonPassword, parseMultisigConfig } from '@/utils';
 import clsx from 'clsx';
 
 type Method = 'mnemonic' | 'json';
@@ -184,6 +184,41 @@ export function ImportWallet() {
       setError('The selected file is not a valid JSON keystore.');
       return;
     }
+
+    // Guard against the user picking a multisig CONFIG JSON during
+    // onboarding. Those don't have a password (the config is plaintext)
+    // AND can't function as a first wallet — a multisig is reachable
+    // only when one of its signers exists locally. Detect and route
+    // the user to the right place.
+    const asMultisig = parseMultisigConfig(parsed);
+    if (asMultisig.ok) {
+      setError(
+        'This looks like a multisig config, not a keystore. Finish ' +
+          'setting up your first account here, then use "Add multisig" ' +
+          'from the Dashboard.'
+      );
+      return;
+    }
+
+    // Basic shape check — a polkadot.js v3 keystore has `encoded` and
+    // `encoding` at minimum. Reject early with a friendly message
+    // instead of letting xxKeyring.importFromJson throw a cryptic
+    // decode error.
+    const looksLikeKeystore =
+      parsed &&
+      typeof parsed === 'object' &&
+      typeof parsed.encoded === 'string' &&
+      typeof parsed.encoding === 'object' &&
+      typeof parsed.address === 'string';
+    if (!looksLikeKeystore) {
+      setError(
+        "This doesn't look like a wallet keystore. Expecting a JSON " +
+          'file exported from xx Wallet, wallet.xx.network, or ' +
+          'polkadot.js — with an encoded key and an address field.'
+      );
+      return;
+    }
+
     setImporting(true);
     try {
       await xxKeyring.importFromJson({
