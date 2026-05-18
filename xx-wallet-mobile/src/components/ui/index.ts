@@ -2,6 +2,7 @@ export * from './AddressChip';
 export * from './AddressIcon';
 export * from './AddressLabel';
 export * from './ConnectionBadge';
+export * from './IOSInstallBanner';
 export * from './LoadingIndicator';
 export * from './QrScanner';
 export * from './Sheet';

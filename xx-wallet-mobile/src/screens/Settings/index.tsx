@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Check,
   Download,
+  DownloadCloud,
   Loader2,
   Package,
   Trash2,
@@ -25,6 +26,7 @@ import {
   STALE_THRESHOLD_DAYS_MIN,
   useAccountsStore,
   useConnectionStore,
+  useInstallStore,
   useMultisigsStore,
   useSettingsStore,
 } from '@/store';
@@ -45,6 +47,29 @@ export function Settings() {
   const setConnectionEndpoint = useConnectionStore((s) => s.setEndpoint);
   const chainName = useConnectionStore((s) => s.chainName);
   const blockNumber = useConnectionStore((s) => s.blockNumber);
+
+  // Captured Chrome install prompt (Android). Hook into the same store
+  // App.tsx writes the beforeinstallprompt event into.
+  const deferredPrompt = useInstallStore((s) => s.deferredPrompt);
+  const setDeferredPrompt = useInstallStore((s) => s.setDeferredPrompt);
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    try {
+      await deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
+      // Whether accepted or dismissed, the captured event is single-use.
+      setDeferredPrompt(null);
+      // Optional: log accept/dismiss outcome for debugging.
+      if (result.outcome === 'accepted') {
+        // No-op; the appinstalled listener in App.tsx also clears the
+        // prompt, but this branch covers the immediate state update.
+      }
+    } catch {
+      // User dismissed the system prompt — drop the deferred event so
+      // we don't re-show the button until Chrome refires.
+      setDeferredPrompt(null);
+    }
+  };
 
   const [endpointOpen, setEndpointOpen] = useState(false);
   const [toRemove, setToRemove] = useState<string | null>(null);
@@ -140,6 +165,21 @@ export function Settings() {
       <TopBar title="Settings" />
 
       <div className="px-5 py-4 space-y-6 max-w-md mx-auto">
+        {/* Install xx Wallet — visible only when Chrome has captured an
+            install prompt. iOS users get a separate banner; this row is
+            specifically for Android Chrome users whose auto-prompt
+            heuristic didn't fire. */}
+        {deferredPrompt && (
+          <Section title="App">
+            <Row
+              icon={<DownloadCloud size={18} className="text-xx-500" />}
+              label="Install xx Wallet"
+              value="To home screen"
+              onClick={handleInstall}
+            />
+          </Section>
+        )}
+
         {/* Network section */}
         <Section title="Network">
           <Row

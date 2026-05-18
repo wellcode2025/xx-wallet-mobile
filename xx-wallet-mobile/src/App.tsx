@@ -9,9 +9,16 @@ import {
   useNavigationType,
 } from 'react-router-dom';
 import { xxKeyring } from '@/keyring';
-import { useAccountsStore, useConnectionStore, useSettingsStore } from '@/store';
+import {
+  useAccountsStore,
+  useConnectionStore,
+  useInstallStore,
+  useSettingsStore,
+  type BeforeInstallPromptEvent,
+} from '@/store';
 import { xxApi } from '@/api';
 import { AppLayout, OnboardingLayout } from '@/components/layout';
+import { IOSInstallBanner } from '@/components/ui';
 import { Welcome, CreateWallet, ImportWallet } from '@/screens/Onboarding';
 import { Dashboard } from '@/screens/Dashboard';
 import { Send } from '@/screens/Send';
@@ -130,6 +137,30 @@ export function App() {
     return initConnection();
   }, [initialized, initConnection]);
 
+  // Capture Chrome's beforeinstallprompt event so Settings can offer a
+  // manual Install button for users whose Chrome didn't auto-prompt.
+  // iOS Safari doesn't fire this event — the iOSInstallBanner component
+  // handles that path separately.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      useInstallStore
+        .getState()
+        .setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    // Also clear the captured prompt once the PWA is installed —
+    // Chrome fires 'appinstalled' on successful install.
+    const onInstalled = () => {
+      useInstallStore.getState().setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+
   if (!initialized) {
     return (
       <div className="min-h-screen bg-ink-950 flex items-center justify-center">
@@ -154,6 +185,7 @@ export function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <IOSInstallBanner />
       <Routes>
         {/* Onboarding flow */}
         <Route element={<OnboardingLayout />}>
