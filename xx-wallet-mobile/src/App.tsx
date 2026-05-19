@@ -41,6 +41,7 @@ import {
   TransferCmixId,
 } from '@/screens/Staking';
 import { TransactionDetail } from '@/screens/TransactionDetail';
+import { GovernanceIndex } from '@/screens/Governance';
 import { MultisigCreate } from '@/screens/MultisigCreate';
 import { MultisigDetail } from '@/screens/MultisigDetail';
 import { MultisigApprove } from '@/screens/MultisigApprove';
@@ -248,6 +249,7 @@ export function App() {
             <Route path="/staking/validate" element={<ValidatorSetup />} />
             <Route path="/staking/cmix" element={<ChangeCmixId />} />
             <Route path="/staking/cmix/transfer" element={<TransferCmixId />} />
+            <Route path="/governance" element={<GovernanceIndex />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
             <Route path="/multisig/import" element={<MultisigImport />} />

@@ -359,7 +359,66 @@ function formatDestAddress(dest: unknown): string {
   return '(unrecognized destination form)';
 }
 
-// ---------- Convenience: hex helpers ----------
+// ---------- Safe-decode wrapper (Phase 4: preimages) ----------
+
+/**
+ * The canonical failure copy. Used everywhere a decode is attempted on
+ * potentially-orphaned bytes (preimages noted against an older runtime,
+ * for instance) and we need to render the failure rather than crash.
+ *
+ * **This string is load-bearing for the trust model.** When decode fails
+ * the UI must show this exact wording — never invent a softer-sounding
+ * fallback like "Couldn't read this proposal" that downplays the failure.
+ * The web wallet uses this exact phrasing on its Preimages page; staying
+ * verbatim means xx users see consistent UX regardless of which wallet
+ * they happen to be looking at.
+ */
+export const DECODE_FAILURE_LABEL =
+  'Unable to decode preimage bytes into a valid Call';
+
+/**
+ * Discriminated-union result of a non-throwing decode attempt.
+ *
+ * `safeDecodeCall` wraps `decodeCall` for surfaces (preimages page,
+ * governance referendum detail) that need to render *something* even
+ * when the bytes don't decode. Multisig approval still uses the
+ * throwing `decodeCall` directly — there, a decode failure is a
+ * security event that must propagate and block the approval, not
+ * become a soft-failed UI state.
+ */
+export type SafeDecodeResult =
+  | { ok: true; decoded: DecodedCall }
+  | { ok: false; error: string; rawHex: string };
+
+/**
+ * Attempt to decode call bytes; return a discriminated result instead of
+ * throwing. Use this on read-only surfaces (preimage list, referendum
+ * detail) where a decode failure should render the canonical
+ * "Unable to decode" banner rather than crash the screen.
+ *
+ * The `rawHex` field carries the canonical hex form so the UI can show
+ * the bytes (and let users copy them out for external inspection)
+ * alongside the failure message. The `error` is the upstream Error's
+ * message, useful for debug-mode rendering but never the user-facing
+ * label — that's always `DECODE_FAILURE_LABEL`.
+ */
+export function safeDecodeCall(
+  bytes: string | Uint8Array,
+  api: ApiPromise
+): SafeDecodeResult {
+  try {
+    const decoded = decodeCall(bytes, api);
+    return { ok: true, decoded };
+  } catch (e) {
+    const rawHex = normalizeCallBytes(bytes);
+    const err = e as Error;
+    return {
+      ok: false,
+      error: err?.message ?? String(e),
+      rawHex,
+    };
+  }
+}
 
 // ---------- Display extraction helpers ----------
 

@@ -1,0 +1,1 @@
+export { GovernanceIndex } from './GovernanceIndex';

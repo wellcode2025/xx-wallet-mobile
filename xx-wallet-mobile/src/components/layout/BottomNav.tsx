@@ -1,22 +1,26 @@
 import { NavLink } from 'react-router-dom';
-import { Wallet, Coins, Settings } from 'lucide-react';
+import { Wallet, Coins, Landmark, Settings } from 'lucide-react';
 import clsx from 'clsx';
 
 /**
  * Fixed bottom tab bar — the primary navigation on mobile.
  * Sits above the home indicator on iOS via safe-area padding.
  *
- * Three top-level destinations. Send and Receive aren't tabs because
- * they're per-action verbs reached from the Dashboard's quick-action
- * buttons; bottom-nav is reserved for the top-level *categories*
- * (Wallet / Staking / Settings). Governance will land here as a
- * fourth slot in Phase 4.
+ * Four top-level destinations: Wallet / Staking / Governance / Settings.
+ * Send and Receive aren't tabs because they're per-action verbs reached
+ * from the Dashboard's quick-action buttons; bottom-nav is reserved for
+ * the top-level *categories*. Governance landed in Phase 4 (Slice 0).
+ *
+ * The label `text-xs` is 12 px per the mobile text floor; on the smallest
+ * iPhone SE size four 22-px Lucide icons + caps labels still fit with
+ * room for the active-state color (xx-500) to read cleanly.
  */
 export function BottomNav() {
   const tabs = [
     { to: '/', label: 'Wallet', icon: Wallet, end: true },
-    { to: '/staking', label: 'Staking', icon: Coins },
-    { to: '/settings', label: 'Settings', icon: Settings },
+    { to: '/staking', label: 'Staking', icon: Coins, end: false },
+    { to: '/governance', label: 'Governance', icon: Landmark, end: false },
+    { to: '/settings', label: 'Settings', icon: Settings, end: false },
   ];
 
   return (
@@ -40,7 +44,7 @@ export function BottomNav() {
               }
             >
               <Icon size={22} strokeWidth={1.75} />
-              <span className="text-xs font-sans font-medium tracking-wide uppercase">
+              <span className="text-xs font-sans font-medium tracking-wide uppercase truncate max-w-full">
                 {label}
               </span>
             </NavLink>

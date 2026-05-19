@@ -125,3 +125,87 @@ describe('normalizeCallBytes', () => {
     expect(normalizeCallBytes(u8)).toBe('0xab12cdef');
   });
 });
+
+// ---------------------------------------------------------------------------
+// safeDecodeCall — the non-throwing wrapper used by Phase 4's preimage page.
+//
+// We can't drive the real registry path without a connected ApiPromise (the
+// throwing path is integration-tested manually, per the file-level note).
+// What we CAN unit-test here is the wrapper's contract: when the registry
+// throws, safeDecodeCall returns { ok: false } with the canonical rawHex,
+// surfacing the throw's message without swallowing it. We synthesize a
+// stub registry that always throws — exactly the failure mode the orphaned
+// 3,896-byte preimage at 0xa2652f1879c182… produced in the Phase 4 spike
+// ("Unable to find Call with index [35, 35]").
+// ---------------------------------------------------------------------------
+
+import { DECODE_FAILURE_LABEL, safeDecodeCall } from './decodeCall';
+
+type AnyApi = Parameters<typeof safeDecodeCall>[1];
+
+function apiThatThrows(message: string): AnyApi {
+  return {
+    registry: {
+      createType: () => {
+        throw new Error(message);
+      },
+    },
+  } as unknown as AnyApi;
+}
+
+describe('safeDecodeCall', () => {
+  it('returns ok:false with the canonical rawHex when the registry throws', () => {
+    const api = apiThatThrows(
+      'createType(Call):: findMetaCall: Unable to find Call with index [35, 35]/[35,35]'
+    );
+    // Reproduces the orphaned-preimage failure from the Phase 4 spike at
+    // hash 0xa2652f1879c182… — call index bytes that don't map to any
+    // registered call in xxnetwork v206 metadata.
+    const result = safeDecodeCall('0x2323deadbeef', api);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.rawHex).toBe('0x2323deadbeef');
+    expect(result.error).toContain('Unable to find Call with index');
+  });
+
+  it('canonicalises rawHex for unprefixed input', () => {
+    const api = apiThatThrows('boom');
+    const result = safeDecodeCall('AB12CD', api);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.rawHex).toBe('0xab12cd');
+  });
+
+  it('preserves the error message verbatim for debug display', () => {
+    const api = apiThatThrows('some specific decoder error');
+    const result = safeDecodeCall('0x00', api);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.error).toBe('some specific decoder error');
+  });
+
+  it('does not silently swallow non-Error throws', () => {
+    const api: AnyApi = {
+      registry: {
+        createType: () => {
+          // eslint-disable-next-line no-throw-literal
+          throw 'string-not-Error';
+        },
+      },
+    } as unknown as AnyApi;
+    const result = safeDecodeCall('0x00', api);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.error).toBe('string-not-Error');
+  });
+});
+
+describe('DECODE_FAILURE_LABEL', () => {
+  it('matches the official xx web wallet copy verbatim', () => {
+    // Keeping this in lockstep with the web wallet is a UX contract —
+    // see the file-level note on safeDecodeCall.
+    expect(DECODE_FAILURE_LABEL).toBe(
+      'Unable to decode preimage bytes into a valid Call'
+    );
+  });
+});
