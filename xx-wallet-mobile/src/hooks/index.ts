@@ -12,3 +12,6 @@ export * from './useValidatorList';
 export * from './useValidatorDetail';
 export * from './useRewardsHistory';
 export * from './useAutoNominate';
+export * from './bountyStatus';
+export * from './useBounties';
+export * from './useBountyDetail';

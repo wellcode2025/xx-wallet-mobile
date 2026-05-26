@@ -41,7 +41,11 @@ import {
   TransferCmixId,
 } from '@/screens/Staking';
 import { TransactionDetail } from '@/screens/TransactionDetail';
-import { GovernanceIndex } from '@/screens/Governance';
+import {
+  GovernanceIndex,
+  BountiesList,
+  BountyDetail,
+} from '@/screens/Governance';
 import { MultisigCreate } from '@/screens/MultisigCreate';
 import { MultisigDetail } from '@/screens/MultisigDetail';
 import { MultisigApprove } from '@/screens/MultisigApprove';
@@ -250,6 +254,11 @@ export function App() {
             <Route path="/staking/cmix" element={<ChangeCmixId />} />
             <Route path="/staking/cmix/transfer" element={<TransferCmixId />} />
             <Route path="/governance" element={<GovernanceIndex />} />
+            <Route path="/governance/bounties" element={<BountiesList />} />
+            <Route
+              path="/governance/bounties/:id"
+              element={<BountyDetail />}
+            />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
             <Route path="/multisig/import" element={<MultisigImport />} />

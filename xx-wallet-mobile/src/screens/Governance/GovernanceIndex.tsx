@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import {
   Banknote,
   Building2,
+  ChevronRight,
   ExternalLink,
   Landmark,
   ScrollText,
@@ -34,7 +36,10 @@ interface Row {
   title: string;
   subtitle: string;
   icon: typeof Landmark;
-  comingIn: string;
+  /** Internal route when the slice is shipped; null when still "Coming". */
+  to: string | null;
+  /** Coming-soon label (e.g. "Slice 2"). Ignored when `to` is non-null. */
+  comingIn?: string;
   forumPath: string;
 }
 
@@ -43,13 +48,14 @@ const ROWS: Row[] = [
     title: 'Bounties',
     subtitle: 'Active grants, curators, payout deadlines',
     icon: Banknote,
-    comingIn: 'Slice 1',
+    to: '/governance/bounties',
     forumPath: '/c/governance/bounties',
   },
   {
     title: 'Democracy',
     subtitle: 'Referenda, public proposals, preimages',
     icon: Vote,
+    to: null,
     comingIn: 'Slice 2',
     forumPath: '/c/governance/democracy',
   },
@@ -57,6 +63,7 @@ const ROWS: Row[] = [
     title: 'Council',
     subtitle: 'Members, motions, technical committee',
     icon: Building2,
+    to: null,
     comingIn: 'Slice 3',
     forumPath: '/c/governance/council',
   },
@@ -64,6 +71,7 @@ const ROWS: Row[] = [
     title: 'Treasury',
     subtitle: 'Spending proposals and tips',
     icon: ScrollText,
+    to: null,
     comingIn: 'Slice 4',
     forumPath: '/c/governance/treasury',
   },
@@ -71,6 +79,7 @@ const ROWS: Row[] = [
     title: 'My governance',
     subtitle: 'Your votes, delegations, and bonds',
     icon: UserCog,
+    to: null,
     comingIn: 'Slice 5',
     forumPath: '',
   },
@@ -117,6 +126,40 @@ function GovernanceRow({ row }: { row: Row }) {
   const forumHref = row.forumPath
     ? `https://forum.xx.network${row.forumPath}`
     : null;
+
+  // Shipped slice — render as a tappable Link with chevron, no
+  // "Coming" badge, no nested forum link (the detail screen carries
+  // forum links per-bounty).
+  if (row.to) {
+    return (
+      <li>
+        <Link
+          to={row.to}
+          className="block rounded-2xl border border-ink-800 bg-ink-900/40 p-4 active:bg-ink-800/40 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 w-9 h-9 rounded-xl bg-xx-500/10 text-xx-500 flex items-center justify-center">
+              <Icon size={18} strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-base text-ink-100 truncate">
+                {row.title}
+              </h2>
+              <p className="mt-0.5 text-sm text-ink-300">{row.subtitle}</p>
+            </div>
+            <ChevronRight
+              size={18}
+              strokeWidth={1.75}
+              className="shrink-0 text-ink-400"
+            />
+          </div>
+        </Link>
+      </li>
+    );
+  }
+
+  // Coming-soon slice — neutral chrome, "Coming · Slice N" badge, optional
+  // forum link as the only tappable affordance.
   return (
     <li className="rounded-2xl border border-ink-800 bg-ink-900/40 p-4">
       <div className="flex items-start gap-3">
@@ -128,9 +171,11 @@ function GovernanceRow({ row }: { row: Row }) {
             <h2 className="font-display text-base text-ink-100 truncate">
               {row.title}
             </h2>
-            <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-ink-800 text-ink-300 font-sans uppercase tracking-wide">
-              Coming · {row.comingIn}
-            </span>
+            {row.comingIn && (
+              <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-ink-800 text-ink-300 font-sans uppercase tracking-wide">
+                Coming · {row.comingIn}
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-sm text-ink-300">{row.subtitle}</p>
           {forumHref && (
