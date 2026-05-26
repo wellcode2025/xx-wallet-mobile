@@ -26,7 +26,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { BN } from '@polkadot/util';
+import { BN } from '@polkadot/util';
 import { xxApi } from '@/api';
 import { safeDecodeCall, type SafeDecodeResult } from '@/utils';
 import { resolveIdentitiesBatch } from '@/governance';
@@ -165,66 +165,115 @@ export function usePreimages(): UsePreimagesResult {
 
 /**
  * Pull depositor + length + (where applicable) count from a RequestStatus
- * codec. Defensive across the two known shapes (older `len` as plain
- * number on `Requested`, newer Option<u32> shape).
+ * codec.
+ *
+ * Parses `statusCodec.toJSON()` directly rather than the codec-level
+ * `.isUnrequested` / `.asUnrequested` accessors. The Phase 4 spike
+ * confirmed the JSON shape:
+ *
+ *   {"unrequested": {"deposit": [accountId, balance], "len": 199}}
+ *   {"requested":   {"deposit": [accountId, balance], "count": 1, "len": 3896}}
+ *
+ * Empirically the runtime's codec accessor names DON'T match what
+ * polkadot-codec would auto-derive (Slice 2 shipped with that bug —
+ * `.isUnrequested` returned false for all 8 entries and the screen
+ * showed an empty list). The JSON keys are stable and lowercase,
+ * which makes JSON-based parsing the more portable choice.
  */
-function readStatus(statusCodec: any): {
+/**
+ * Exported for testing — see usePreimages.test.ts. Don't import
+ * from outside the hook in production code.
+ */
+export function readStatus(statusCodec: any): {
   kind: PreimageStatusKind;
   count: number;
   length: number;
   depositor: string;
   deposit: BN | null;
 } | null {
-  const asNum = (raw: any): number => {
-    if (raw == null) return 0;
-    if (typeof raw === 'number') return raw;
-    if (typeof raw.toNumber === 'function') return raw.toNumber();
-    const n = Number(raw.toString?.() ?? raw);
-    return Number.isFinite(n) ? n : 0;
-  };
+  let json: any;
   try {
-    if (statusCodec.isUnrequested) {
-      const inner = statusCodec.asUnrequested;
-      const [accCodec, balCodec] = readDeposit(inner.deposit);
-      return {
-        kind: 'unrequested',
-        count: 0,
-        length: asNum(inner.len),
-        depositor: accCodec?.toString?.() ?? '',
-        deposit: balCodec?.toBn?.() ?? null,
-      };
-    }
-    if (statusCodec.isRequested) {
-      const inner = statusCodec.asRequested;
-      const [accCodec, balCodec] = readDeposit(inner.deposit ?? inner.maybeTicket);
-      return {
-        kind: 'requested',
-        count: asNum(inner.count),
-        length: asNum(inner.len ?? inner.maybeLen),
-        depositor: accCodec?.toString?.() ?? '',
-        deposit: balCodec?.toBn?.() ?? null,
-      };
-    }
+    json = statusCodec?.toJSON?.();
   } catch {
     return null;
+  }
+  if (!json || typeof json !== 'object') return null;
+
+  if ('unrequested' in json) {
+    const inner = (json as any).unrequested ?? {};
+    const [depositor, deposit] = parseDeposit(inner.deposit);
+    return {
+      kind: 'unrequested',
+      count: 0,
+      length: asNum(inner.len),
+      depositor,
+      deposit,
+    };
+  }
+  if ('requested' in json) {
+    const inner = (json as any).requested ?? {};
+    // Some runtimes use `deposit` (a tuple), others `maybeTicket` (an
+    // Option<tuple>). toJSON renders Option as either null or the
+    // inner value, so both paths handle to the same parseDeposit call.
+    const [depositor, deposit] = parseDeposit(inner.deposit ?? inner.maybeTicket);
+    return {
+      kind: 'requested',
+      count: asNum(inner.count),
+      length: asNum(inner.len ?? inner.maybeLen),
+      depositor,
+      deposit,
+    };
   }
   return null;
 }
 
 /**
- * Unwrap a deposit tuple from either a raw `(AccountId, Balance)` tuple
- * or an `Option<(AccountId, Balance)>`. Returns [null, null] on absence.
+ * Coerce a JSON-encoded number-like value to a JS number.
+ *
+ * polkadot-js's toJSON returns small integers as JS numbers and big
+ * integers as 0x-prefixed hex strings. For preimage lengths the value
+ * is always small (a u32) so JS-number form is overwhelmingly common,
+ * but we handle the hex case too in case a runtime ever emits one.
  */
-function readDeposit(d: any): [any, any] {
-  if (d == null) return [null, null];
-  try {
-    if (typeof d.isSome === 'boolean') {
-      if (!d.isSome) return [null, null];
-      const inner = d.unwrap();
-      return [inner[0], inner[1]];
+function asNum(raw: any): number {
+  if (raw == null) return 0;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string') {
+    if (raw.startsWith('0x')) {
+      const n = parseInt(raw, 16);
+      return Number.isFinite(n) ? n : 0;
     }
-    return [d[0], d[1]];
-  } catch {
-    return [null, null];
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
   }
+  return 0;
+}
+
+/**
+ * Parse the JSON-encoded deposit tuple `[AccountId, Balance]` into a
+ * `[depositor, BN]` pair. Returns `['', null]` for absent (Option::None
+ * renders as JSON null) or for unrecognised shapes.
+ *
+ * Balances may come back as JS numbers (small values) or as
+ * `0x...`-prefixed hex strings (large values that exceed safe integer
+ * range). BN handles both.
+ */
+function parseDeposit(d: any): [string, BN | null] {
+  if (!d) return ['', null];
+  if (!Array.isArray(d)) return ['', null];
+  const depositor = typeof d[0] === 'string' ? d[0] : String(d[0] ?? '');
+  let deposit: BN | null = null;
+  const bal = d[1];
+  try {
+    if (typeof bal === 'number') {
+      deposit = new BN(bal);
+    } else if (typeof bal === 'string') {
+      deposit = bal.startsWith('0x')
+        ? new BN(bal.slice(2), 16)
+        : new BN(bal, 10);
+    }
+  } catch {
+    deposit = null;
+  }
+  return [depositor, deposit];
 }
