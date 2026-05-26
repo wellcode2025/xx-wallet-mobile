@@ -45,6 +45,7 @@ import {
   GovernanceIndex,
   BountiesList,
   BountyDetail,
+  DemocracyOverview,
 } from '@/screens/Governance';
 import { MultisigCreate } from '@/screens/MultisigCreate';
 import { MultisigDetail } from '@/screens/MultisigDetail';
@@ -258,6 +259,10 @@ export function App() {
             <Route
               path="/governance/bounties/:id"
               element={<BountyDetail />}
+            />
+            <Route
+              path="/governance/democracy"
+              element={<DemocracyOverview />}
             />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />

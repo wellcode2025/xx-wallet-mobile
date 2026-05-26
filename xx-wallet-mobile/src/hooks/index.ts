@@ -15,3 +15,5 @@ export * from './useAutoNominate';
 export * from './bountyStatus';
 export * from './useBounties';
 export * from './useBountyDetail';
+export * from './useDemocracy';
+export * from './usePreimages';

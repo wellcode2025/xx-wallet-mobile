@@ -1,0 +1,1 @@
+export { DemocracyOverview } from './DemocracyOverview';

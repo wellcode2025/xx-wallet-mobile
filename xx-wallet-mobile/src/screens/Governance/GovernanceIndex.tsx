@@ -55,8 +55,7 @@ const ROWS: Row[] = [
     title: 'Democracy',
     subtitle: 'Referenda, public proposals, preimages',
     icon: Vote,
-    to: null,
-    comingIn: 'Slice 2',
+    to: '/governance/democracy',
     forumPath: '/c/governance/democracy',
   },
   {
