@@ -10,3 +10,4 @@
 export * from './identity';
 export * from './forumLink';
 export * from './timer';
+export * from './cycleProgress';

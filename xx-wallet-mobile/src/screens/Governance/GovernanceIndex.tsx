@@ -62,8 +62,7 @@ const ROWS: Row[] = [
     title: 'Council',
     subtitle: 'Members, motions, technical committee',
     icon: Building2,
-    to: null,
-    comingIn: 'Slice 3',
+    to: '/governance/council',
     forumPath: '/c/governance/council',
   },
   {

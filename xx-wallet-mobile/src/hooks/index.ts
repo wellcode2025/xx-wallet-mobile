@@ -17,3 +17,4 @@ export * from './useBounties';
 export * from './useBountyDetail';
 export * from './useDemocracy';
 export * from './usePreimages';
+export * from './useCouncil';

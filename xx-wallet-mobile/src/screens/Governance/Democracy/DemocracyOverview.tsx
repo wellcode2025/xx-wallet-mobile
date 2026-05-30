@@ -4,9 +4,9 @@ import { TopBar } from '@/components/layout';
 import { LoadingIndicator } from '@/components/ui';
 import { useDemocracy, usePreimages } from '@/hooks';
 import { useConnectionStore } from '@/store';
+import { cycleProgress } from '@/governance';
 import { OverviewTab } from './OverviewTab';
 import { PreimagesTab } from './PreimagesTab';
-import { launchProgress } from './launchProgress';
 
 /**
  * Phase 4 Slice 2 — Democracy + Preimages screen.
@@ -41,7 +41,7 @@ export function DemocracyOverview() {
   // blockNumber subscription, so this re-renders every ~6 seconds.
   const launchInfo =
     blockNumber != null && democracy.periods.launchPeriod > 0
-      ? launchProgress(blockNumber, democracy.periods.launchPeriod)
+      ? cycleProgress(blockNumber, democracy.periods.launchPeriod, 'launch')
       : null;
 
   return (
