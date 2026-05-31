@@ -69,8 +69,7 @@ const ROWS: Row[] = [
     title: 'Treasury',
     subtitle: 'Spending proposals and tips',
     icon: ScrollText,
-    to: null,
-    comingIn: 'Slice 4',
+    to: '/governance/treasury',
     forumPath: '/c/governance/treasury',
   },
   {
