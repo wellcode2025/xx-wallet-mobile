@@ -256,9 +256,23 @@ function optAddress(codec: any): string | null {
 }
 
 /**
- * Decode a Vec<(AccountId, Balance)> into a typed list. Used for
- * elections.members / runnersUp / candidates, all of which share this
- * tuple shape.
+ * Decode an elections-pallet "list of holders with stake" into a typed
+ * list. Used for elections.members / runnersUp / candidates.
+ *
+ * Two shapes coexist across pallet versions:
+ *   - Vec<SeatHolder { who, stake, deposit }>  — modern (members + runnersUp)
+ *   - Vec<(AccountId, Balance)>                — legacy (and candidates,
+ *                                                 still a tuple in modern)
+ *
+ * xx mainnet uses the SeatHolder struct for members + runnersUp. Slice 3
+ * shipped assuming the tuple shape — the destructure `[acc, bal] = entry`
+ * walked the struct's *field-name pairs* instead of its values, so
+ * `acc.toString()` produced "who,6Va…fTVT" instead of "6Va…fTVT" and
+ * every member rendered as a mangled string. Caught on phone-test.
+ *
+ * The fix: read SeatHolder by named field (`entry.who`, `entry.stake`)
+ * with a tuple-destructure fallback for chains still on the legacy
+ * shape.
  */
 function decodeStakedList(
   vecCodec: any
@@ -266,17 +280,48 @@ function decodeStakedList(
   if (!vecCodec || !Array.isArray(vecCodec)) return [];
   const out: { address: string; stake: import('@polkadot/util').BN | null }[] = [];
   for (const entry of vecCodec) {
-    try {
-      // entry is a Codec tuple — destructure as [account, balance].
-      const [accCodec, balCodec] = entry;
-      const address = accCodec.toString();
-      const stake = balCodec?.toBn?.() ?? null;
-      out.push({ address, stake });
-    } catch {
-      /* skip malformed */
-    }
+    const parsed = parseStakedEntry(entry);
+    if (parsed) out.push(parsed);
   }
   return out;
+}
+
+/**
+ * Exported for testing — see useCouncil.test.ts.
+ *
+ * Returns null for malformed / unrecognised entries so the row is
+ * skipped rather than rendered with garbage. Handles both the modern
+ * SeatHolder struct shape and the legacy tuple shape on a single
+ * code path.
+ */
+export function parseStakedEntry(
+  entry: any
+): { address: string; stake: import('@polkadot/util').BN | null } | null {
+  if (entry == null) return null;
+  try {
+    // Modern SeatHolder struct: { who, stake, deposit }
+    if (entry.who !== undefined && entry.who?.toString) {
+      const address = entry.who.toString();
+      // Defensive — only accept addresses that look like SS58 (start with 6).
+      // A SeatHolder struct's `who` is an AccountId, so this is just a
+      // belt-and-braces check against the Slice-3 mangle bug.
+      if (!address.startsWith('6')) return null;
+      const stake = entry.stake?.toBn?.() ?? null;
+      return { address, stake };
+    }
+    // Legacy tuple: [AccountId, Balance]
+    if (Array.isArray(entry) || typeof entry[Symbol.iterator] === 'function') {
+      const [accCodec, balCodec] = entry;
+      if (!accCodec?.toString) return null;
+      const address = accCodec.toString();
+      if (!address.startsWith('6')) return null;
+      const stake = balCodec?.toBn?.() ?? null;
+      return { address, stake };
+    }
+  } catch {
+    /* fall through */
+  }
+  return null;
 }
 
 function decodeMotionHashes(vecCodec: any): CouncilMotion[] {
