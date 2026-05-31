@@ -20,7 +20,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   Users,
   ExternalLink,
-  Plus,
+  ArrowUpRight,
   Clock,
   Check,
   Clipboard,
@@ -118,6 +118,22 @@ function MultisigView({ address }: { address: string }) {
             </p>
           )}
         </div>
+
+        {/* Quick action — primary entry into the propose flow. Mirrors
+            Dashboard's Send affordance (right under the balance hero) so
+            the multisig surface has the same discoverable shape as a
+            regular account. Previously this entry lived at the bottom of
+            the screen below Cosigners / Pending / Activity, where users
+            had to scroll past everything to find it. */}
+        {userIsSigner && (
+          <button
+            onClick={() => navigate(`/multisig/${address}/propose`)}
+            className="btn-primary w-full"
+          >
+            <ArrowUpRight size={18} strokeWidth={2} />
+            Propose
+          </button>
+        )}
 
         {/* Cosigners */}
         <div className="card space-y-3">
@@ -241,27 +257,18 @@ function MultisigView({ address }: { address: string }) {
           )}
         </div>
 
-        {/* Action row: Propose (primary, signers only) + Export config
-            (secondary, anyone — even watch-only viewers can re-share
-            the config to bring others onto the same multisig). */}
-        <div className="space-y-2">
-          {userIsSigner && (
-            <button
-              onClick={() => navigate(`/multisig/${address}/propose`)}
-              className="btn-primary w-full"
-            >
-              <Plus size={16} strokeWidth={2} />
-              Propose new call
-            </button>
-          )}
-          <button
-            onClick={() => setExportOpen(true)}
-            className="btn-secondary w-full"
-          >
-            <Share2 size={16} strokeWidth={2} />
-            Export config to share with cosigners
-          </button>
-        </div>
+        {/* Action row: Export config. The Propose entry now lives as a
+            quick-action right under the balance hero; keeping it here
+            too would just be a duplicate entry point. Export remains
+            available to all viewers — even watch-only — so they can
+            re-share the config to bring others onto the same multisig. */}
+        <button
+          onClick={() => setExportOpen(true)}
+          className="btn-secondary w-full"
+        >
+          <Share2 size={16} strokeWidth={2} />
+          Export config to share with cosigners
+        </button>
       </div>
 
       {/* Export sheet — produces a config JSON that other signers can
