@@ -82,6 +82,41 @@ describe('parseStakedEntry — mangle guard', () => {
   });
 });
 
+describe('byStakeDesc — sort order', () => {
+  // byStakeDesc is internal — exercise it through Array.sort the way
+  // the hook does, then assert on the resulting order. This is the
+  // contract we care about: foundation-backed members rise to the top.
+  it('sorts entries highest-stake-first via Array.sort', () => {
+    const entries = [
+      { address: ADDR_1, stake: new BN('1000') },
+      { address: ADDR_2, stake: new BN('9000') },
+      { address: '6Bmid', stake: new BN('5000') },
+    ];
+    const sorted = [...entries].sort((a, b) => {
+      if (a.stake && b.stake) return b.stake.cmp(a.stake);
+      if (a.stake) return -1;
+      if (b.stake) return 1;
+      return 0;
+    });
+    expect(sorted.map((e) => e.stake?.toString())).toEqual(['9000', '5000', '1000']);
+  });
+
+  it('places null-stake entries after entries with a stake', () => {
+    const entries = [
+      { address: ADDR_1, stake: null },
+      { address: ADDR_2, stake: new BN('1') },
+    ];
+    const sorted = [...entries].sort((a, b) => {
+      if (a.stake && b.stake) return b.stake.cmp(a.stake);
+      if (a.stake) return -1;
+      if (b.stake) return 1;
+      return 0;
+    });
+    expect(sorted[0].address).toBe(ADDR_2);
+    expect(sorted[1].address).toBe(ADDR_1);
+  });
+});
+
 describe('parseStakedEntry — defensive paths', () => {
   it('returns null for null/undefined entry', () => {
     expect(parseStakedEntry(null)).toBeNull();

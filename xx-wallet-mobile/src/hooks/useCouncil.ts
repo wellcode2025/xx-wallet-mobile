@@ -160,14 +160,20 @@ export function useCouncil(): UseCouncilResult {
 
         const members: CouncilMember[] = decodeStakedList(
           electionsMembersCodec
-        ).map((entry) => ({
-          address: entry.address,
-          stake: entry.stake,
-          isPrime: !!primeAddress && entry.address === primeAddress,
-        }));
+        )
+          .map((entry) => ({
+            address: entry.address,
+            stake: entry.stake,
+            isPrime: !!primeAddress && entry.address === primeAddress,
+          }))
+          .sort(byStakeDesc);
 
-        const runnersUp: CouncilCandidate[] = decodeStakedList(runnersUpCodec);
-        const candidates: CouncilCandidate[] = decodeStakedList(candidatesCodec);
+        const runnersUp: CouncilCandidate[] = decodeStakedList(
+          runnersUpCodec
+        ).sort(byStakeDesc);
+        const candidates: CouncilCandidate[] = decodeStakedList(
+          candidatesCodec
+        ).sort(byStakeDesc);
 
         const councilMotions = decodeMotionHashes(councilMotionsCodec);
         const councilProposalCount = councilProposalCountCodec
@@ -322,6 +328,26 @@ export function parseStakedEntry(
     /* fall through */
   }
   return null;
+}
+
+/**
+ * Sort comparator: backing-stake descending. Null stakes sort to the
+ * end (rare — would only happen on legacy-tuple runtimes where stake
+ * came back without a `.toBn` accessor).
+ *
+ * Used to order Members + Runners-up + Candidates top-down by who has
+ * the most XX backing them, matching the official xx web wallet's
+ * default. Foundation members rise to the top because they're backed
+ * by the foundation's bonded treasury.
+ */
+function byStakeDesc(
+  a: { stake: import('@polkadot/util').BN | null },
+  b: { stake: import('@polkadot/util').BN | null }
+): number {
+  if (a.stake && b.stake) return b.stake.cmp(a.stake);
+  if (a.stake) return -1;
+  if (b.stake) return 1;
+  return 0;
 }
 
 function decodeMotionHashes(vecCodec: any): CouncilMotion[] {
