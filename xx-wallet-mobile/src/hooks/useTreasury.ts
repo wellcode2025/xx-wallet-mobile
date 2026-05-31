@@ -118,13 +118,21 @@ export function useTreasury(): UseTreasuryResult {
           }
         }
 
-        // Parallel reads.
+        // Independent fetches via Promise.allSettled — a failure in any
+        // one branch leaves the others available. Without this, an
+        // exception decoding the proposals storage shape (the
+        // feedback_chain_enum_decoding class of bug) would blank the
+        // entire screen, including the pot balance which lives on a
+        // completely different code path.
+        //
+        // Each branch logs its own error so phone-test inspection of
+        // the deployed build narrows down which call actually failed.
         const [
-          accountInfo,
-          proposalCountCodec,
-          approvalsCodec,
-          proposalEntries,
-        ] = await Promise.all([
+          accountInfoResult,
+          proposalCountResult,
+          approvalsResult,
+          proposalEntriesResult,
+        ] = await Promise.allSettled([
           treasuryAddress
             ? api.query.system.account(treasuryAddress)
             : Promise.resolve(null),
@@ -134,23 +142,10 @@ export function useTreasury(): UseTreasuryResult {
         ]);
         if (cancelled) return;
 
-        const potBalance =
-          accountInfo && (accountInfo as any).data?.free
-            ? (accountInfo as any).data.free.toBn()
-            : null;
-        const proposalCountHistorical = (proposalCountCodec as any).toNumber();
-        const approvalsQueue: number[] = ((approvalsCodec as any) ?? []).map(
-          (id: any) => id.toNumber()
-        );
-
-        const pendingProposals: TreasuryProposal[] = [];
-        for (const [key, opt] of proposalEntries as any[]) {
-          if (!opt.isSome) continue;
-          const parsed = parseProposal(key, opt.unwrap());
-          if (parsed) pendingProposals.push(parsed);
-        }
-        // Sort newest first by id.
-        pendingProposals.sort((a, b) => b.id - a.id);
+        const potBalance = readPotBalance(accountInfoResult);
+        const proposalCountHistorical = readProposalCount(proposalCountResult);
+        const approvalsQueue = readApprovalsQueue(approvalsResult);
+        const pendingProposals = readPendingProposals(proposalEntriesResult);
 
         // Identity prefetch.
         const ids = new Set<string>();
@@ -177,6 +172,10 @@ export function useTreasury(): UseTreasuryResult {
           proposalBondMinimum,
           proposalBondMaximum,
           isLoading: false,
+          // The error field stays null here even on partial failure —
+          // it's reserved for the unrecoverable case (api itself
+          // wouldn't connect, exception in the outer try). Branch
+          // failures degrade gracefully through the readers above.
           error: null,
         });
       } catch (err) {
@@ -201,6 +200,88 @@ function numFromConst(c: any): number {
   if (c == null) return 0;
   if (typeof c.toNumber === 'function') return c.toNumber();
   return Number(c.toString());
+}
+
+// ---- Per-branch readers for the Promise.allSettled fan-out ----
+//
+// Each one accepts a PromiseSettledResult. Successes get decoded into
+// the typed value; rejections get logged with a recognisable prefix
+// and the default returned. The console-log discipline matters because
+// it gives the next phone-test a way to narrow down which call failed
+// (open Chrome remote-debug → console, see "[useTreasury] proposals
+// fetch failed: …" or similar).
+
+function readPotBalance(
+  result: PromiseSettledResult<unknown>
+): BN | null {
+  if (result.status === 'rejected') {
+    console.warn('[useTreasury] pot balance fetch failed:', result.reason);
+    return null;
+  }
+  const accountInfo: any = result.value;
+  if (!accountInfo?.data?.free?.toBn) return null;
+  try {
+    return accountInfo.data.free.toBn();
+  } catch (e) {
+    console.warn('[useTreasury] pot balance decode failed:', e);
+    return null;
+  }
+}
+
+function readProposalCount(result: PromiseSettledResult<unknown>): number {
+  if (result.status === 'rejected') {
+    console.warn('[useTreasury] proposalCount fetch failed:', result.reason);
+    return 0;
+  }
+  try {
+    return (result.value as any).toNumber();
+  } catch (e) {
+    console.warn('[useTreasury] proposalCount decode failed:', e);
+    return 0;
+  }
+}
+
+function readApprovalsQueue(result: PromiseSettledResult<unknown>): number[] {
+  if (result.status === 'rejected') {
+    console.warn('[useTreasury] approvals fetch failed:', result.reason);
+    return [];
+  }
+  const codec: any = result.value;
+  if (!codec) return [];
+  try {
+    return [...codec].map((id: any) => id.toNumber());
+  } catch (e) {
+    console.warn('[useTreasury] approvals decode failed:', e);
+    return [];
+  }
+}
+
+function readPendingProposals(
+  result: PromiseSettledResult<unknown>
+): TreasuryProposal[] {
+  if (result.status === 'rejected') {
+    console.warn(
+      '[useTreasury] proposals.entries fetch failed:',
+      result.reason
+    );
+    return [];
+  }
+  const entries: any = result.value;
+  if (!entries) return [];
+  const out: TreasuryProposal[] = [];
+  try {
+    for (const [key, opt] of entries as any[]) {
+      if (!opt?.isSome) continue;
+      const parsed = parseProposal(key, opt.unwrap());
+      if (parsed) out.push(parsed);
+    }
+  } catch (e) {
+    console.warn('[useTreasury] proposals.entries decode failed:', e);
+    return [];
+  }
+  // Sort newest first by id.
+  out.sort((a, b) => b.id - a.id);
+  return out;
 }
 
 /**
