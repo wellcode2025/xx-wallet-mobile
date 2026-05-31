@@ -125,6 +125,15 @@ export function useTreasury(): UseTreasuryResult {
         // entire screen, including the pot balance which lives on a
         // completely different code path.
         //
+        // Each branch is wrapped in an async IIFE so that synchronous
+        // throws inside the query (e.g. calling `.entries()` on a
+        // storage type that doesn't expose it) become rejected
+        // promises instead of escaping past Promise.allSettled into
+        // the outer catch. Without this, Slice 4.1's allSettled did
+        // nothing — the sync throw escaped before allSettled was even
+        // invoked, and the whole hook still error-stated. Slice 4.2
+        // fix.
+        //
         // Each branch logs its own error so phone-test inspection of
         // the deployed build narrows down which call actually failed.
         const [
@@ -133,12 +142,24 @@ export function useTreasury(): UseTreasuryResult {
           approvalsResult,
           proposalEntriesResult,
         ] = await Promise.allSettled([
-          treasuryAddress
-            ? api.query.system.account(treasuryAddress)
-            : Promise.resolve(null),
-          api.query.treasury.proposalCount(),
-          api.query.treasury.approvals(),
-          api.query.treasury.proposals.entries(),
+          (async () =>
+            treasuryAddress
+              ? api.query.system.account(treasuryAddress)
+              : null)(),
+          (async () => api.query.treasury.proposalCount())(),
+          (async () => api.query.treasury.approvals())(),
+          (async () => {
+            // Some runtimes don't expose .entries on this storage type;
+            // calling it would throw TypeError synchronously. Guard
+            // explicitly so the rejection is informative.
+            const q: any = api.query.treasury?.proposals;
+            if (!q?.entries) {
+              throw new Error(
+                'api.query.treasury.proposals.entries is not available on this runtime'
+              );
+            }
+            return q.entries();
+          })(),
         ]);
         if (cancelled) return;
 
