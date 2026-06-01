@@ -5,3 +5,4 @@ export { SecondSheet } from './SecondSheet';
 export { DelegateSheet } from './DelegateSheet';
 export { RemoveVoteSheet } from './RemoveVoteSheet';
 export { UndelegateSheet } from './UndelegateSheet';
+export { UnlockSheet } from './UnlockSheet';

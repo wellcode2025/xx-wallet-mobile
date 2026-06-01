@@ -138,7 +138,7 @@ function ReferendumRow({ ref_ }: { ref_: OngoingReferendum }) {
         </div>
         <p className="mt-2 text-xs text-ink-400">
           Ends in <span className="text-ink-200">{end.label}</span>
-          <span className="text-ink-500"> (block #{ref_.end.toLocaleString()})</span>
+          <span className="text-ink-400"> (block #{ref_.end.toLocaleString()})</span>
         </p>
       </Link>
     </li>
@@ -161,7 +161,7 @@ function TallyCell({
           trim: true,
           grouping: true,
         })}
-        <span className="text-ink-500"> XX</span>
+        <span className="text-ink-400"> XX</span>
       </p>
     </div>
   );

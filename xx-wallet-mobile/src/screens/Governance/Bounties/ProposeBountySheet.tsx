@@ -158,7 +158,7 @@ export function ProposeBountySheet({ open, onClose }: ProposeBountySheetProps) {
               <span className="text-ink-400">XX</span>
             </p>
             {consts && (
-              <p className="text-xs text-ink-500">
+              <p className="text-xs text-ink-400">
                 {formatBalance(consts.depositBase, {
                   decimals: 4,
                   trim: true,
@@ -233,7 +233,7 @@ function ValueInput({
         </span>
       </div>
       {minimum && (
-        <p className="text-xs text-ink-500">
+        <p className="text-xs text-ink-400">
           Minimum:{' '}
           <span className="font-mono">
             {formatBalance(minimum, {
@@ -273,7 +273,7 @@ function DescriptionInput({
         <label className="text-xs text-ink-400">Description</label>
         <span
           className={`text-xs font-mono ${
-            tooLong ? 'text-danger' : 'text-ink-500'
+            tooLong ? 'text-danger' : 'text-ink-400'
           }`}
         >
           {byteCount} / {maxBytes} bytes
@@ -288,7 +288,7 @@ function DescriptionInput({
           tooLong ? 'border-danger/50' : 'border-ink-800'
         }`}
       />
-      <p className="text-xs text-ink-500">
+      <p className="text-xs text-ink-400">
         Foundation convention: wrap a forum.xx.network thread in an
         HTML anchor so the bounty list can link out cleanly.
       </p>

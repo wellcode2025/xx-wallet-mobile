@@ -116,7 +116,7 @@ export function DelegateSheet({
               })}{' '}
               <span className="text-ink-400">XX</span>
             </p>
-            <p className="text-xs text-ink-500 mt-1">
+            <p className="text-xs text-ink-400 mt-1">
               = {formatBalance(amountBn, {
                 decimals: 4,
                 trim: true,
@@ -212,7 +212,7 @@ function BalanceInput({
           XX
         </span>
       </div>
-      <p className="text-xs text-ink-500">
+      <p className="text-xs text-ink-400">
         Available:{' '}
         <span className="font-mono text-ink-300">
           {formatBalance(available, {

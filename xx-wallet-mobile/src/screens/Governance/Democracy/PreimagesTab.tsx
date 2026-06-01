@@ -118,7 +118,7 @@ function PreimageRow({ entry }: { entry: PreimageEntry }) {
             Submitted by{' '}
             <span className="text-ink-300">{name.primary}</span>
             {name.secondary && (
-              <span className="text-ink-500 font-mono"> {name.secondary}</span>
+              <span className="text-ink-400 font-mono"> {name.secondary}</span>
             )}
           </p>
         </div>

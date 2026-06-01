@@ -47,7 +47,7 @@ export function UndelegateSheet({
             Stop delegating to{' '}
             <span className="text-ink-100">{targetName.primary}</span>
             {targetName.secondary && (
-              <span className="text-ink-500 font-mono"> {targetName.secondary}</span>
+              <span className="text-ink-400 font-mono"> {targetName.secondary}</span>
             )}
           </p>
           <p className="text-xs text-ink-400">

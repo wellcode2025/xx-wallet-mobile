@@ -97,7 +97,7 @@ function TipRow({ tip }: { tip: TipEntry }) {
           <p className="text-xs text-ink-400">Tipped</p>
           <p className="text-sm text-ink-100 truncate">{whoName.primary}</p>
           {whoName.secondary && (
-            <p className="text-xs text-ink-500 font-mono truncate">
+            <p className="text-xs text-ink-400 font-mono truncate">
               {whoName.secondary}
             </p>
           )}
@@ -107,7 +107,7 @@ function TipRow({ tip }: { tip: TipEntry }) {
         Finder:{' '}
         <span className="text-ink-300">{finderName.primary}</span>
         {finderName.secondary && (
-          <span className="text-ink-500 font-mono ml-1">
+          <span className="text-ink-400 font-mono ml-1">
             {finderName.secondary}
           </span>
         )}

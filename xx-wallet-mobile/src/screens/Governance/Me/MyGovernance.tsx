@@ -7,10 +7,12 @@ import { useAccountsStore } from '@/store';
 import { useMyGovernance, type MyDemocracyVoting } from '@/hooks';
 import { displayName, useIdentity } from '@/governance';
 import { formatBalance } from '@/utils';
+import { useConnectionStore } from '@/store';
 import {
   DelegateSheet,
   RemoveVoteSheet,
   UndelegateSheet,
+  UnlockSheet,
 } from '../Democracy';
 
 /**
@@ -104,7 +106,7 @@ function ActiveAccountCard({
           {localName || name.primary}
         </p>
         {name.secondary && (
-          <p className="text-xs text-ink-500 font-mono truncate">
+          <p className="text-xs text-ink-400 font-mono truncate">
             {name.secondary}
           </p>
         )}
@@ -299,19 +301,45 @@ function PriorLockRow({
   unlockAt: number;
   amount: import('@polkadot/util').BN;
 }) {
+  const blockNumber = useConnectionStore((s) => s.blockNumber);
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const releasable = blockNumber != null && blockNumber >= unlockAt;
+
   return (
-    <p className="text-xs text-ink-400">
-      Prior lock:{' '}
-      <span className="font-mono text-ink-300">
-        {formatBalance(amount, {
-          decimals: 4,
-          trim: true,
-          grouping: true,
-        })}{' '}
-        XX
-      </span>{' '}
-      until block #{unlockAt.toLocaleString()}
-    </p>
+    <>
+      <p className="text-xs text-ink-400">
+        Prior lock:{' '}
+        <span className="font-mono text-ink-300">
+          {formatBalance(amount, {
+            decimals: 4,
+            trim: true,
+            grouping: true,
+          })}{' '}
+          XX
+        </span>{' '}
+        {releasable ? (
+          <span className="text-xx-500 font-medium">ready to release</span>
+        ) : (
+          <>until block #{unlockAt.toLocaleString()}</>
+        )}
+      </p>
+      {releasable && (
+        <button
+          onClick={() => setUnlockOpen(true)}
+          className="mt-1 text-xs text-xx-500 active:text-xx-400 font-medium"
+        >
+          Release lock
+        </button>
+      )}
+      {releasable && (
+        <UnlockSheet
+          open={unlockOpen}
+          onClose={() => setUnlockOpen(false)}
+          amount={amount}
+          unlockAt={unlockAt}
+        />
+      )}
+    </>
   );
 }
 

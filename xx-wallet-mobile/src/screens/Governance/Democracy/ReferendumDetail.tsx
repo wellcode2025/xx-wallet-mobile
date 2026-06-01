@@ -120,7 +120,7 @@ export function ReferendumDetail() {
                 <span className="text-ink-200">
                   {blocksToHuman(blockNumber, referendum.end).label}
                 </span>
-                <span className="text-ink-500">
+                <span className="text-ink-400">
                   {' '}
                   (block #{referendum.end.toLocaleString()})
                 </span>
@@ -190,7 +190,7 @@ export function ReferendumDetail() {
             )}
 
             {activeAddress && (
-              <p className="text-xs text-ink-500 text-center">
+              <p className="text-xs text-ink-400 text-center">
                 Voting as {shortenAddress(activeAddress)}
               </p>
             )}
@@ -260,7 +260,7 @@ function TallyCell({
           trim: true,
           grouping: true,
         })}
-        <span className="text-ink-500"> XX</span>
+        <span className="text-ink-400"> XX</span>
       </p>
     </div>
   );

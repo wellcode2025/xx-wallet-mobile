@@ -59,9 +59,9 @@ export function MemberRow({
               trim: true,
               grouping: true,
             })}{' '}
-            <span className="text-ink-500">XX</span>
+            <span className="text-ink-400">XX</span>
           </p>
-          <p className="text-xs text-ink-500">backing</p>
+          <p className="text-xs text-ink-400">backing</p>
         </div>
       )}
     </li>

@@ -98,7 +98,7 @@ export function ProposeSpendSheet({ open, onClose }: ProposeSpendSheetProps) {
               })}{' '}
               <span className="text-ink-400">XX</span>
             </p>
-            <p className="text-xs text-ink-500">
+            <p className="text-xs text-ink-400">
               {formatBondRule(
                 treasury.proposalBondPerMill,
                 treasury.proposalBondMinimum,
@@ -160,7 +160,7 @@ function ValueInput({
           XX
         </span>
       </div>
-      <p className="text-xs text-ink-500">
+      <p className="text-xs text-ink-400">
         Amount to be paid out from the treasury pot if approved.
       </p>
     </div>

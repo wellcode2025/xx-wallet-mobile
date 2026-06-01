@@ -137,7 +137,7 @@ function PersonInline({
         <p className="text-sm text-ink-200 truncate">
           {name.primary}
           {name.secondary && (
-            <span className="text-ink-500 font-mono ml-1.5">{name.secondary}</span>
+            <span className="text-ink-400 font-mono ml-1.5">{name.secondary}</span>
           )}
         </p>
       </div>
