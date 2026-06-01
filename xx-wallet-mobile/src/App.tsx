@@ -61,6 +61,7 @@ import { MultisigScan } from '@/screens/MultisigScan';
 import {
   inlineSink,
   registerSink,
+  useGovernanceNotifications,
   useMultisigNotifications,
   useSlashNotifications,
 } from '@/notifications';
@@ -104,6 +105,7 @@ function RequireAccount() {
   // rules don't trip when the user is in the onboarding redirect path.
   useMultisigNotifications();
   useSlashNotifications();
+  useGovernanceNotifications();
   if (accounts.length === 0) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
   }

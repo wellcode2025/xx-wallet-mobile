@@ -26,6 +26,9 @@ export type {
   TransferSentEvent,
   StakingSlashReportedEvent,
   StakingSlashedEvent,
+  DemocracyReferendumEndingEvent,
+  DemocracyLockReleasableEvent,
+  BountyCuratorUpdateOverdueEvent,
 } from './types';
 
 export type { NotificationSink } from './sink';
@@ -42,3 +45,9 @@ export {
 
 export { useMultisigNotifications } from './useMultisigNotifications';
 export { useSlashNotifications } from './useSlashNotifications';
+export {
+  useGovernanceNotifications,
+  useReferendumEndingNotifications,
+  useConvictionLockReleaseNotifications,
+  useBountyCuratorUpdateOverdueNotifications,
+} from './useGovernanceNotifications';

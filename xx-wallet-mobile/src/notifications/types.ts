@@ -170,6 +170,56 @@ export interface StakingSlashedEvent extends BaseWalletEvent {
 }
 
 /**
+ * A democracy referendum the user has voted on (or any active referendum
+ * if the user hasn't voted) is within the configured threshold of its
+ * end block. Default threshold: 24 hours (14,400 blocks at 6 s/block).
+ *
+ * Fires once per refIndex per threshold-crossing — if the user reloads
+ * the wallet on the last day the registry's persisted dedupe set
+ * prevents a re-emit.
+ */
+export interface DemocracyReferendumEndingEvent extends BaseWalletEvent {
+  kind: 'democracy.referendum.ending';
+  refIndex: number;
+  endBlock: number;
+  /** Blocks remaining when the alert fires. */
+  blocksRemaining: number;
+  /** True iff the user has cast a vote on this referendum. */
+  userHasVoted: boolean;
+}
+
+/**
+ * A conviction lock from a past democracy vote or delegation has
+ * reached its unlockAt block — the locked balance can now be released
+ * by calling `democracy.unlock(target)`.
+ *
+ * Fires once per (account, unlockAt) pair.
+ */
+export interface DemocracyLockReleasableEvent extends BaseWalletEvent {
+  kind: 'democracy.lock.releasable';
+  accountAddress: string;
+  unlockAt: number;
+  /** Raw planck amount that's now releasable. */
+  amount: string;
+}
+
+/**
+ * A bounty the user curates is past its `updateDue` block — the curator
+ * is expected to post a status update on the forum. Failure to update
+ * can lead to the bounty being closed and the curator deposit forfeit.
+ *
+ * Fires once per (bountyId, updateDue) pair.
+ */
+export interface BountyCuratorUpdateOverdueEvent extends BaseWalletEvent {
+  kind: 'bounty.curator.update_overdue';
+  bountyId: number;
+  curator: string;
+  updateDue: number;
+  /** Blocks past the updateDue at observation. */
+  blocksOverdue: number;
+}
+
+/**
  * Discriminated union of all wallet events. Sinks should `switch`
  * on `event.kind` for type-safe access to per-event fields.
  */
@@ -182,6 +232,9 @@ export type WalletEvent =
   | TransferReceivedEvent
   | TransferSentEvent
   | StakingSlashReportedEvent
-  | StakingSlashedEvent;
+  | StakingSlashedEvent
+  | DemocracyReferendumEndingEvent
+  | DemocracyLockReleasableEvent
+  | BountyCuratorUpdateOverdueEvent;
 
 export type WalletEventKind = WalletEvent['kind'];
