@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Plus } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { LoadingIndicator } from '@/components/ui';
 import { useBounties } from '@/hooks';
 import { formatBalance } from '@/utils';
 import { BountyRow } from './BountyRow';
+import { ProposeBountySheet } from './ProposeBountySheet';
 
 /**
  * Phase 4 Slice 1 — Bounties list screen.
@@ -36,6 +37,7 @@ export function BountiesList() {
   const { bounties, totalCount, pastCount, childCount, isLoading, error } =
     useBounties();
   const [tab, setTab] = useState<Tab>('active');
+  const [proposeOpen, setProposeOpen] = useState(false);
 
   const activeValueTotal = useMemo(
     () => bounties.reduce((acc, b) => acc + BigInt(b.value.toString()), 0n),
@@ -93,6 +95,16 @@ export function BountiesList() {
           />
         </div>
 
+        {tab === 'active' && (
+          <button
+            onClick={() => setProposeOpen(true)}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-sm text-xx-500 font-medium active:bg-ink-800 transition-colors"
+          >
+            <Plus size={14} strokeWidth={2} />
+            Propose bounty
+          </button>
+        )}
+
         {/* Loading + error states share across tabs (data is one fetch) */}
         {isLoading && (
           <>
@@ -148,6 +160,11 @@ export function BountiesList() {
           </>
         )}
       </div>
+
+      <ProposeBountySheet
+        open={proposeOpen}
+        onClose={() => setProposeOpen(false)}
+      />
     </>
   );
 }

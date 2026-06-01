@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import clsx from 'clsx';
+import { Plus } from 'lucide-react';
 import { BN } from '@polkadot/util';
 import { TopBar } from '@/components/layout';
 import { LoadingIndicator } from '@/components/ui';
@@ -9,6 +10,7 @@ import { cycleProgress } from '@/governance';
 import { formatBalance } from '@/utils';
 import { ProposalsTab } from './ProposalsTab';
 import { TipsTab } from './TipsTab';
+import { ProposeSpendSheet } from './ProposeSpendSheet';
 
 /**
  * Phase 4 Slice 4 — Treasury + Tips screen.
@@ -35,6 +37,7 @@ export function TreasuryOverview() {
   const tips = useTips();
   const blockNumber = useConnectionStore((s) => s.blockNumber);
   const [tab, setTab] = useState<Tab>('proposals');
+  const [proposeOpen, setProposeOpen] = useState(false);
 
   const spendInfo =
     blockNumber != null && treasury.spendPeriod > 0
@@ -117,6 +120,16 @@ export function TreasuryOverview() {
         </div>
 
         {tab === 'proposals' && (
+          <button
+            onClick={() => setProposeOpen(true)}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-sm text-xx-500 font-medium active:bg-ink-800 transition-colors"
+          >
+            <Plus size={14} strokeWidth={2} />
+            Propose spend
+          </button>
+        )}
+
+        {tab === 'proposals' && (
           treasury.isLoading ? (
             <LoadingIndicator message="Loading treasury proposals..." />
           ) : treasury.error ? (
@@ -150,6 +163,11 @@ export function TreasuryOverview() {
           )
         )}
       </div>
+
+      <ProposeSpendSheet
+        open={proposeOpen}
+        onClose={() => setProposeOpen(false)}
+      />
     </>
   );
 }
