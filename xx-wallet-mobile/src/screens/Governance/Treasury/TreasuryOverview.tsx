@@ -124,6 +124,9 @@ export function TreasuryOverview() {
               <p className="text-sm text-danger">
                 Couldn't load treasury state — check your connection and try again.
               </p>
+              <p className="mt-2 text-xs text-ink-400 font-mono break-all">
+                {treasury.error.message || String(treasury.error)}
+              </p>
             </div>
           ) : (
             <ProposalsTab treasury={treasury} />
@@ -137,6 +140,9 @@ export function TreasuryOverview() {
             <div className="card">
               <p className="text-sm text-danger">
                 Couldn't load tips — check your connection and try again.
+              </p>
+              <p className="mt-2 text-xs text-ink-400 font-mono break-all">
+                {tips.error.message || String(tips.error)}
               </p>
             </div>
           ) : (
