@@ -18,7 +18,7 @@ import { AddressLabel, LoadingIndicator } from '@/components/ui';
 import { ValidatorPickerSheet } from './ValidatorPickerSheet';
 
 /**
- * Phase 3 slice 1 — Start staking (bond + nominate, one signature).
+ * Start staking (bond + nominate, one signature).
  *
  * The auto-nominate path uses the wallet's port of the foundation's
  * sequential Phragmén pass to score every elected validator and

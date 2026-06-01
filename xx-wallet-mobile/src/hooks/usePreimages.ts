@@ -2,7 +2,7 @@
  * usePreimages — list of every preimage stored on chain, decoded where
  * possible and surfaced honestly where not.
  *
- * Phase 4 Slice 2. Two-step fetch:
+ * Two-step fetch:
  *
  *   1. preimage.statusFor.entries() — yields (hash, RequestStatus) for
  *      every noted preimage. Both Unrequested and Requested variants
@@ -168,14 +168,14 @@ export function usePreimages(): UsePreimagesResult {
  * codec.
  *
  * Parses `statusCodec.toJSON()` directly rather than the codec-level
- * `.isUnrequested` / `.asUnrequested` accessors. The Phase 4 spike
- * confirmed the JSON shape:
+ * `.isUnrequested` / `.asUnrequested` accessors. Confirmed against the
+ * live chain, the JSON shape is:
  *
  *   {"unrequested": {"deposit": [accountId, balance], "len": 199}}
  *   {"requested":   {"deposit": [accountId, balance], "count": 1, "len": 3896}}
  *
  * Empirically the runtime's codec accessor names DON'T match what
- * polkadot-codec would auto-derive (Slice 2 shipped with that bug —
+ * polkadot-codec would auto-derive (an earlier bug hit exactly this —
  * `.isUnrequested` returned false for all 8 entries and the screen
  * showed an empty list). The JSON keys are stable and lowercase,
  * which makes JSON-based parsing the more portable choice.

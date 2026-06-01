@@ -6,8 +6,8 @@ import { MotionsSection } from './MotionsSection';
  * CommitteeTab — the Technical Committee half of /governance/council.
  *
  * On xx the 4 tech-comm members are a strict subset of the 13 council
- * members (RICHARD CARBACK, BERNIE, KEITH, BALTASAR observed in the
- * spike). The web wallet shows them on a separate Tech. comm. page;
+ * members (RICHARD CARBACK, BERNIE, KEITH, BALTASAR observed live on
+ * chain). The web wallet shows them on a separate Tech. comm. page;
  * we collapse it under Council since the mobile bottom-nav has finite
  * tab space and this section is small.
  *

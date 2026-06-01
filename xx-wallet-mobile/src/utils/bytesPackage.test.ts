@@ -19,7 +19,7 @@ import {
   type BytesPackage,
 } from './bytesPackage';
 
-// Real xx network addresses (from the spike data — same fixtures as the
+// Real xx network addresses (from live chain data — same fixtures as the
 // multisig.test.ts and decodeCall.test.ts files).
 const ADDR_MULTISIG = '6ZihnXBA64KAFFGfdYHxKWeWKLpw28pxPANjuSWsPp1HnU8M';
 const ADDR_DEPOSITOR = '6WwjYDmMb3MuoXvWHN357UzHY9VsJpFbJYbgQ1Vz1aY2PojL';

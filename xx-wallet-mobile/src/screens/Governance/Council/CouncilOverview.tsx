@@ -9,7 +9,7 @@ import { MembersTab } from './MembersTab';
 import { CommitteeTab } from './CommitteeTab';
 
 /**
- * Phase 4 Slice 3 — Council + Technical Committee screen.
+ * Council + Technical Committee screen.
  *
  * `/governance/council`. Mirrors the official xx web wallet's Council
  * page, with Tech. comm. consolidated as a second tab (the 4

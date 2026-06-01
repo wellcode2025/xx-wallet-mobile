@@ -1,5 +1,5 @@
 /**
- * Bond / deposit preview math for Phase 4b Slice 8 propose flows.
+ * Bond / deposit preview math for the propose flows.
  *
  * Two pallets, two slightly different shapes — both must be
  * accurately previewed in the UI so users see what they'll lock up
@@ -11,7 +11,7 @@
  *                proposalBondMinimum,
  *                proposalBondMaximum)
  *
- *   On xx v206 (spike-observed):
+ *   On xx v206 (observed live on chain):
  *     proposalBondPerMill   = 50_000   (5%)
  *     proposalBondMinimum   = 100 XX
  *     proposalBondMaximum   = 500 XX   (Option::Some)
@@ -20,11 +20,11 @@
  *
  *   deposit = bountyDepositBase + (description.bytes × dataDepositPerByte)
  *
- *   On xx v206 (spike-observed):
+ *   On xx v206 (observed live on chain):
  *     bountyDepositBase     = 1 XX
  *     dataDepositPerByte    = 0.01 XX
  *
- * Pure functions. Tested with the spike-observed constants so the
+ * Pure functions. Tested with the chain-observed constants so the
  * preview math is wired to chain reality, not a documented assumption.
  */
 

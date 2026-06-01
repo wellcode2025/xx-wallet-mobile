@@ -226,8 +226,8 @@ function ShareView({
   };
 
   // Defensive: if we lost the cached bytes (e.g., browser data cleared
-  // mid-flow), bounce back to the multisig detail. Slice 3.5 may add
-  // recovery via re-fetching, but for now we just return.
+  // mid-flow), bounce back to the multisig detail. Recovery via re-fetching
+  // could be added later, but for now we just return.
   if (!cachedEntry) {
     return (
       <>

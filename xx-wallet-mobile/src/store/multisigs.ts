@@ -25,7 +25,8 @@
  *   - Cosigner identities authoritatively — the signer set IS the
  *     authoritative cosigner record, derived from the address parameters.
  *
- * See  §5 for the data model rationale.
+ * This is the known-multisigs half of the multisig data model (the other
+ * half being the cached call bytes for pending proposals).
  */
 
 import { create } from 'zustand';

@@ -16,18 +16,18 @@ import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Phase 3 slice 2 — Add to stake (bondExtra).
+ * Add to stake (bondExtra).
  *
  * Increases the user's already-bonded amount. Doesn't touch validators.
  * Doesn't restart anything; the added stake earns rewards from the next
  * era boundary forward.
  *
- * Compared to slice 1 StartStaking this drops the validator-selection
+ * Compared to StartStaking this drops the validator-selection
  * section entirely (existing nominations stand) and the call is
  * `staking.bondExtra(value)` rather than the bond+nominate batch.
  */
 
-/** Reserve for fee + ED on Max calculation. Matches slice 1. */
+/** Reserve for fee + ED on Max calculation. Matches StartStaking. */
 const MIN_FEE_BUFFER = new BN('100000000'); // 0.1 XX in planck
 
 export function AddToStake() {

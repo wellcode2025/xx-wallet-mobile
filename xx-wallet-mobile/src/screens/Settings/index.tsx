@@ -294,7 +294,7 @@ export function Settings() {
           <div className="px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 space-y-3">
             <div>
               <p className="text-sm font-medium text-ink-200">xx Wallet Mobile</p>
-              <p className="text-xs text-ink-400">Version 0.1.0 · Phase 1</p>
+              <p className="text-xs text-ink-400">Version 0.1.0</p>
               <p className="text-xs text-ink-400 pt-1">
                 Open source, non-custodial. Your keys stay on this device.
               </p>

@@ -13,8 +13,8 @@
  * where we are inside the current cycle plus a human countdown
  * suitable for a progress bar's "X until next NOUN" label.
  *
- * Refactored from the per-screen launchProgress helper that originally
- * shipped with Slice 2 (Democracy). Council (Slice 3) reuses it for
+ * Generalised from the per-screen launchProgress helper that originally
+ * shipped with the Democracy screen. The Council screen reuses it for
  * term-progress with `noun: 'election'`.
  */
 

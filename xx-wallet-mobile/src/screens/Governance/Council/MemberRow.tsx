@@ -15,8 +15,8 @@ import { formatBalance } from '@/utils';
  *   - Backing stake on the right (council members + runners-up have
  *     this; tech-comm members don't)
  *
- * No tap-through in Slice 3 — clicking a member is a no-op for now.
- * A future slice may add a per-member detail screen with vote history.
+ * No tap-through — clicking a member is a no-op for now. A future
+ * iteration may add a per-member detail screen with vote history.
  */
 export function MemberRow({
   address,

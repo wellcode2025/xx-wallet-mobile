@@ -7,20 +7,20 @@ import { formatBalance } from '@/utils';
 import { AddressIcon, AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Staking section — Validator List sub-view (slice 2).
+ * Staking section — Validator List sub-view.
  *
  * The network-wide validator set with live commission, total stake,
  * and era points. Searchable by name/address, sortable by stake /
  * commission / era points.
  *
- * Data comes from useValidatorList: chain-first (the slice-2 spike
- * found the indexer's validator_stats lags ~255 eras, so it can't
- * carry the live set), with the indexer supplying only identity
- * display names. The xx-specific enrichment (location,
- * relative_performance) is deferred to the validator detail screen
- * (slice 3), where a historical-snapshot frame fits it.
+ * Data comes from useValidatorList: chain-first (the indexer's
+ * validator_stats lags ~255 eras, so it can't carry the live set),
+ * with the indexer supplying only identity display names. The
+ * xx-specific enrichment (location, relative_performance) is deferred
+ * to the validator detail screen, where a historical-snapshot frame
+ * fits it.
  *
- * Rows tap through to /staking/validators/:address (slice 3 detail).
+ * Rows tap through to /staking/validators/:address (the detail view).
  */
 
 type SortKey = 'stake' | 'commission' | 'points';

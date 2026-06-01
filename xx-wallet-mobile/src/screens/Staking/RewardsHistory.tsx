@@ -11,11 +11,12 @@ import {
 } from '@/components/ui';
 
 /**
- * Staking section — Rewards History sub-view (slice 4).
+ * Staking section — Rewards History sub-view.
  *
  * Per-account staking rewards over the last 90 eras. Indexer-first —
- * the spike confirmed `staking_reward` tracks chain liveness (1-era
- * lag), so this view shows live-quality data with no staleness frame.
+ * confirmed against the live chain: `staking_reward` tracks chain
+ * liveness (1-era lag), so this view shows live-quality data with no
+ * staleness frame.
  *
  * Account-scoped to the active wallet account. useRewardsHistory is
  * account-agnostic; the multisig detail screen can reuse it later by
@@ -209,8 +210,7 @@ function Empty() {
         </p>
         <p className="text-sm text-ink-400">
           This account hasn't earned staking rewards in the visible
-          window. Start nominating to earn rewards — bonding arrives in
-          Phase 3.
+          window. Bond and nominate to start earning rewards.
         </p>
       </div>
     </div>

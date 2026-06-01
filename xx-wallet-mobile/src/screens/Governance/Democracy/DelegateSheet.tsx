@@ -16,7 +16,7 @@ import { isValidXxAddress } from '@/utils/address';
 import { parseAmount } from './VoteSheet';
 
 /**
- * Phase 4b Slice 7 — Delegate voting power to another account.
+ * Delegate voting power to another account.
  *
  * Submits `democracy.delegate(target: MultiAddress, conviction: Conviction,
  * balance: u128)`. The target votes on the delegator's behalf at the

@@ -2,18 +2,18 @@
  * useMyGovernance — account-specific governance state for
  * /governance/me.
  *
- * First (and only) Phase 4a slice that pulls per-account storage rather
- * than chain-wide queries:
+ * Pulls per-account storage rather than chain-wide queries:
  *
  *   - democracy.votingOf(account)     → Voting enum (Direct or Delegating)
  *   - elections.voting(account)       → Voter struct (council vote slate)
  *   - tips.tips.entries() filtered    → tip endorsements by this user
  *
- * Defensive throughout — Promise.allSettled + async-IIFE wrap per the
- * Slice 4.4 pattern. Errors from any one branch leave the others
- * intact. The hook never wholesale-errors; partial state always
- * renders. The screen uses the surface-error-message pattern from
- * feedback_surface_error_message_on_screen for any genuinely-failed
+ * Defensive throughout — Promise.allSettled + async-IIFE wrap so a
+ * synchronous throw inside any one query becomes a rejected promise
+ * instead of escaping the fan-out. Errors from any one branch leave the
+ * others intact. The hook never wholesale-errors; partial state always
+ * renders. The screen surfaces the underlying error message on the error
+ * UI (mobile browsers have no easy console) for any genuinely-failed
  * reads.
  *
  * Treasury proposer bonds and bounty proposer / curator bonds are

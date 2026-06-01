@@ -1,14 +1,14 @@
 /**
  * Tests for parseStakedEntry — the elections-pallet list decoder.
  *
- * Background: Slice 3 shipped with `decodeStakedList` assuming
+ * Background: an earlier version of `decodeStakedList` assumed
  * elections.members returns Vec<(AccountId, Balance)> tuples. On the
  * xx mainnet v206 runtime it actually returns Vec<SeatHolder>, a
  * struct with named fields {who, stake, deposit}. The destructure
  * `[acc, bal] = entry` walked the struct's *field-name pairs* instead
  * of its values, so `acc.toString()` produced "who,6Va…fTVT" instead
  * of "6Va…fTVT" and every Council Members row rendered as a mangled
- * string. Caught on phone-test.
+ * string.
  *
  * Fix accepts both the modern SeatHolder struct and the legacy tuple
  * shape on the same code path. Tests pin down both shapes plus the
@@ -65,7 +65,7 @@ describe('parseStakedEntry — legacy tuple shape', () => {
 
 describe('parseStakedEntry — mangle guard', () => {
   it('returns null when the SeatHolder `who` field yields a non-SS58 string', () => {
-    // This is what the Slice 3 bug looked like — the destructure of a
+    // This is what the earlier bug looked like — the destructure of a
     // struct's field-name pair gave us toString() = "who,6Va…fTVT" instead
     // of the address. The guard catches it so a future regression renders
     // an empty row rather than garbage.

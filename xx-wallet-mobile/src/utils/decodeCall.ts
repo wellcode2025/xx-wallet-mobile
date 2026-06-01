@@ -9,18 +9,17 @@
  * itself. The depositor never gets to be a trusted narrator of "what
  * these bytes mean" — the bytes mean what they decode to, full stop.
  *
- * See  §7 (decoder scope and rules) and §2
- * (trust model). The single hard line: if `verifyCallHash` returns false,
+ * The single hard line: if `verifyCallHash` returns false,
  * the wallet must NOT render any description and must NOT enable the
  * approve button. There is no "approximately correct" rendering — either
  * the bytes hash to the on-chain hash, or they don't.
  *
- * Decoder coverage in slice 2 is narrow by design: balances.transferKeepAlive
+ * Decoder coverage is narrow by design: balances.transferKeepAlive
  * gets a friendly humanized description (covers 100% of foundation usage
- * observed in the spike); multisig and utility wrappers are decoded
+ * observed live on chain); multisig and utility wrappers are decoded
  * recursively; everything else falls back to the truthful literal
- * `section.method(arg=val,...)` form. Slice 7 broadens the friendly
- * coverage; the recursive structure is already complete.
+ * `section.method(arg=val,...)` form. The friendly coverage can be broadened
+ * later; the recursive structure is already complete.
  */
 
 import type { ApiPromise } from '@polkadot/api';
@@ -229,11 +228,11 @@ function recursivelyDecodeInner(call: Call, api: ApiPromise): DecodedCall[] {
 /**
  * Render a friendly one-line description for recognized call types.
  *
- * Slice 2 scope: balances.transferKeepAlive (and the defensive variants),
+ * Scope: balances.transferKeepAlive (and the defensive variants),
  * plus recursive descriptions for multisig and batch wrappers. Anything
  * else returns null so the caller falls back to `literal`.
  *
- * Slice 7 will broaden coverage. Until then the truthful-fallback rule
+ * Coverage can be broadened later. Until then the truthful-fallback rule
  * keeps unrecognized calls from being silently described as something
  * they aren't.
  */
@@ -332,8 +331,8 @@ function shortenForLiteral(s: string, max = 60): string {
  *
  * Substrate's MultiAddress can be `{Id: "6..."}`, a plain string, or
  * `{Index: N}` / `{Raw: "0x..."}` for less common variants. We handle
- * Id and plain string, returning a shortened SS58 — the address-book
- * nickname substitution is slice 7's job.
+ * Id and plain string, returning a shortened SS58 — address-book
+ * nickname substitution is handled by the rendering layer.
  */
 function formatDestAddress(dest: unknown): string {
   if (dest == null) return '?';
@@ -359,7 +358,7 @@ function formatDestAddress(dest: unknown): string {
   return '(unrecognized destination form)';
 }
 
-// ---------- Safe-decode wrapper (Phase 4: preimages) ----------
+// ---------- Safe-decode wrapper (preimages) ----------
 
 /**
  * The canonical failure copy. Used everywhere a decode is attempted on

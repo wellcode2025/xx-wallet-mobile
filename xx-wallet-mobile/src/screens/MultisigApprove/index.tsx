@@ -11,14 +11,15 @@
  *     their own risk — but with the trust-decision made visible (per
  *     §6.4 update agreed with Aaron).
  *   - Wires the Approve / Approve-and-execute / Cancel actions. Signing
- *     itself is wired via useTx in slice 2.5; this screen owns the UI
+ *     itself is wired via useTx; this screen owns the UI
  *     and the verification gates.
  *
  * The line that doesn't move: the wallet NEVER displays a depositor-
  * supplied description as if it came from our decoder. Either we render
  * what we decoded, or we render a warning that we have no decoded view.
  *
- * See  §6.4.
+ * The approval surface decodes from the call bytes and hash-gates against
+ * the chain — never trusting depositor-supplied text.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -73,14 +74,14 @@ import {
 
 /**
  * Generous static weight for the inner call. The foundation's actual
- * usage measured in the spike was {refTime: 146_841_000, proofSize: 3593}
+ * usage measured on the live chain was {refTime: 146_841_000, proofSize: 3593}
  * (transferKeepAlive). We pass ~3x that to absorb any future runtime
  * changes without tx failures; the chain charges only for actual usage,
  * so over-quoting wastes nothing beyond the deposit reserve calculation
  * which is negligible for the foundation.
  *
- * Slice 7 will compute this dynamically via paymentInfo on the inner call
- * (which requires reorganizing useTx to accept async builders).
+ * A future improvement could compute this dynamically via paymentInfo on
+ * the inner call (which requires reorganizing useTx to accept async builders).
  */
 const STATIC_INNER_CALL_WEIGHT = {
   refTime: 500_000_000,
@@ -387,7 +388,7 @@ function ApproveView({
   // Address-derivation safety gate. If for any reason the stored multisig
   // record's (threshold, signers) doesn't actually derive to the address
   // we're acting on, refuse rather than risk approving the wrong thing.
-  // Should be impossible given slice 1.5's import path validates this on
+  // Should be impossible given the import path validates this on
   // create, but defensive — this is the kind of check that's free to do
   // and catastrophic if missed.
   if (!addressVerified) {
@@ -990,9 +991,9 @@ function ApproveView({
 
           {/* Stale-proposal note for non-depositor cosigners. They can't
               cancel themselves (chain enforces depositor-only), but they
-              CAN nudge the depositor to clean it up. The notification
-              service (Phase 2a.5) will eventually offer a one-tap nudge;
-              for now this is informational. */}
+              CAN nudge the depositor to clean it up. A notification channel
+              could later offer a one-tap nudge; for now this is
+              informational. */}
           {(userRole === 'pending-approver' ||
             userRole === 'already-approved') &&
             staleness?.isStale &&

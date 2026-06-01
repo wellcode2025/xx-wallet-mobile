@@ -3,7 +3,7 @@
  * module-level cache so a pre-fetch from one component (typically the
  * StakingLayout on mount) warms the result for the bond flow.
  *
- * The Phase 3 spike measured ~6.2s wall time for the chain reads +
+ * Measured against the live chain at ~6.2s wall time for the chain reads +
  * Phragmén pass at era 1641. That's a real loading state — pre-fetching
  * lets the bond screen open warm in the common case. If the cache is
  * stale or for a different address, the hook re-fetches and shows

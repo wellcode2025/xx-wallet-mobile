@@ -24,7 +24,7 @@
  * The Vote struct is packed into a single u8: bit 0x80 = aye, low nibble
  * (0–6) = conviction id. Bits 0x70 must be zero.
  *
- * Slice 5's parseMyVoting decodes this byte; Slice 6 produces it. The
+ * parseMyVoting decodes this byte; this module produces it. The
  * encode → decode round-trip is exercised in tests below to make sure
  * the two helpers agree.
  */
@@ -67,7 +67,7 @@ export function encodeVoteByte(aye: boolean, conviction: ConvictionId): number {
 /**
  * Decode a packed u8 vote byte back into { aye, conviction }. Inverse
  * of `encodeVoteByte` for round-trip testing and for parsing
- * chain-returned AccountVotes (Slice 5's parseMyVoting uses the same
+ * chain-returned AccountVotes (parseMyVoting uses the same
  * unpacking inline).
  */
 export function decodeVoteByte(byte: number): {

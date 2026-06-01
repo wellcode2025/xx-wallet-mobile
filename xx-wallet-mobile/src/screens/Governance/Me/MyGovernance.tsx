@@ -16,22 +16,16 @@ import {
 } from '../Democracy';
 
 /**
- * Phase 4 Slice 5 — My Governance.
+ * My Governance.
  *
- * `/governance/me`. First screen in Phase 4 that pulls account-specific
- * state rather than chain-wide queries. Shows the active account's
- * commitments across democracy, council elections, and tip endorsements.
+ * `/governance/me`. Pulls account-specific state rather than chain-wide
+ * queries. Shows the active account's commitments across democracy,
+ * council elections, and tip endorsements.
  *
  * All sections are independent — a failure in one (per-branch flags
  * from useMyGovernance) renders an honest diagnostic on just that
- * card, not the whole screen. Pattern from Slice 4.3+ —
- * feedback_surface_error_message_on_screen.
- *
- * Out of scope (Phase 4b):
- *   - Voting on a referendum (democracy.vote)
- *   - Delegating / undelegating
- *   - Changing the council vote slate
- *   - Endorsing or reporting tips
+ * card, not the whole screen. Surface the underlying error message on
+ * the error UI (mobile has no easy console).
  */
 export function MyGovernance() {
   const activeAddress = useAccountsStore((s) => s.activeAddress);

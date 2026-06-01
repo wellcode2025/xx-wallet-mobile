@@ -5,14 +5,10 @@
  * cosigner list, and a timeline of multisig actions executed at this address
  * (from the indexer's pre-decoded `nested_calls`).
  *
- * Slice 1 surface — no actions yet:
- *   - Propose new call → slice 3
- *   - Approve / Cancel pending → slice 2 / slice 4
- *   - Edit local nickname → present here as a stub button (renames via the
- *     store but is intentionally minimal — full label/UX comes with slice 5)
- *   - Address-book nickname substitution in cosigners → slice 7
- *
- * Per design doc §6.3.
+ * Read-only surface. Related flows live elsewhere: propose new call,
+ * approve / cancel pending, edit local nickname (present here as a minimal
+ * stub button that renames via the store), and address-book nickname
+ * substitution in the cosigner list.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -621,8 +617,8 @@ type ActivityDescription =
 /**
  * Decode a multisig action from the indexer's nested_calls structure.
  *
- * Slice 7 broadens this: returns structured data so callers can apply
- * address-book name substitution to recipient addresses. The shape of
+ * Returns structured data so callers can apply address-book name
+ * substitution to recipient addresses. The shape of
  * nested_calls is loose (`unknown`) because the indexer's exact JSON
  * varies with runtime upgrades; we parse defensively here and elsewhere
  * it's consumed.

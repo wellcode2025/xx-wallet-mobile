@@ -2,19 +2,19 @@
  * MultisigPropose — first-signature submission of a new multisig action.
  *
  * The depositor's side of the multisig flow. They construct an inner call
- * (slice 3 supports balances.transferKeepAlive only — the foundation's
+ * (currently supports balances.transferKeepAlive only — the foundation's
  * actual usage), wrap it in `multisig.asMulti(..., maybeTimepoint=null,
  * ..., call, weight)`, sign and submit it themselves as the first
- * approval. Other cosigners then approve via the slice 2 flow.
+ * approval. Other cosigners then approve via the approval flow.
  *
  * After the on-chain submission finalizes, the wallet:
  *   1. Caches the call data locally in PendingProposalCache so the
  *      depositor can re-share it later if cosigners need it again.
- *   2. Navigates to the Share screen (slice 3.3) where the user picks
+ *   2. Navigates to the Share screen where the user picks
  *      how to deliver the call data to cosigners (file / QR / share sheet).
  *
- * Per design doc §6.5. Self-contained from Send (no shared form code) so
- * we don't risk regressing the working Send flow during slice 3.
+ * Self-contained from Send (no shared form code) so
+ * we don't risk regressing the working Send flow.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -59,7 +59,7 @@ const EXISTENTIAL_DEPOSIT = new BigNumber('1000000');
 
 /**
  * Same generous static weight bound as the approval flow uses (see
- * MultisigApprove notes for the rationale). Slice 7 will compute this
+ * MultisigApprove notes for the rationale). This could later be computed
  * dynamically from the inner call's paymentInfo.
  */
 const STATIC_INNER_CALL_WEIGHT = {
@@ -95,8 +95,8 @@ function ProposeView({ address }: { address: string }) {
 
   // Compute which of the user's wallet accounts are signers of this
   // multisig. ANY of these can be the on-chain signatory for a propose.
-  // Per the design principle (see memory: feedback_multisig_signer_picker)
-  // we must surface the choice — never use `activeAddress` implicitly.
+  // Show an explicit signer picker; never sign silently as the active
+  // account — surface the choice rather than use `activeAddress` implicitly.
   const eligibleSigners = useMemo(
     () =>
       accounts.filter((a) =>

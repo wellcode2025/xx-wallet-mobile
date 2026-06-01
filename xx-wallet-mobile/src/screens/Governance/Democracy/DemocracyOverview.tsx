@@ -9,7 +9,7 @@ import { OverviewTab } from './OverviewTab';
 import { PreimagesTab } from './PreimagesTab';
 
 /**
- * Phase 4 Slice 2 — Democracy + Preimages screen.
+ * Democracy + Preimages screen.
  *
  * `/governance/democracy`. Mirrors the official xx web wallet's
  * Democracy → Overview page: three live streams (referenda, public
@@ -19,13 +19,6 @@ import { PreimagesTab } from './PreimagesTab';
  * streams are zero. The bytes-package §6.4 invariant lives on the
  * Preimages tab; the orphaned 3,896-byte preimage at 0xa2652f… is the
  * production fixture for the "Unable to decode" UX.
- *
- * Two tabs not three because Slice 2 doesn't ship the referendum
- * detail screen (`/governance/democracy/:id`) — with 0 active
- * referenda there's nothing to drill into, and we'd rather defer that
- * surface until a live referendum appears (Slice 2b at most). The
- * Overview tab still surfaces what would tap through, so when a
- * referendum lands we can wire the link in a small follow-up.
  */
 
 type Tab = 'overview' | 'preimages';

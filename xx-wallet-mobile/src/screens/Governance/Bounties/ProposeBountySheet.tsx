@@ -8,7 +8,7 @@ import { formatBalance } from '@/utils';
 import { parseAmount } from '../Democracy/VoteSheet';
 
 /**
- * Phase 4b Slice 8 — Propose a bounty.
+ * Propose a bounty.
  *
  * Submits `bounties.proposeBounty(value, description)`. The deposit
  * is computed from the chain consts:

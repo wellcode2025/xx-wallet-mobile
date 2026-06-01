@@ -2,10 +2,10 @@
  * Tests for cycleProgress — the generalized period-progress helper.
  *
  * Generalised from the per-screen launchProgress that originally
- * shipped with Slice 2. Same math; the only addition is a noun param
- * that gets baked into the label ("X until next launch" / "election" /
- * "spend" / etc.). All the Slice 2 cases still hold; new cases here
- * cover the noun substitution and the council-term scenario for Slice 3.
+ * shipped with the Democracy screen. Same math; the only addition is a
+ * noun param that gets baked into the label ("X until next launch" /
+ * "election" / "spend" / etc.). All the original launch cases still hold;
+ * new cases here cover the noun substitution and the council-term scenario.
  */
 
 import { describe, expect, it } from 'vitest';

@@ -9,8 +9,8 @@
  *     straightforward.
  *   - Elections (Phragmen): members + backing stake, runners-up +
  *     stake, candidates + stake, term duration. xx registers this
- *     half under the bare name `elections` (the spike confirmed —
- *     `electionsPhragmen` etc. are absent). The same 13 SS58s appear
+ *     half under the bare name `elections` (confirmed against the live
+ *     chain — `electionsPhragmen` etc. are absent). The same 13 SS58s appear
  *     as `council.members` and `elections.members`; we use the
  *     elections version because it carries the per-member backing
  *     stake.
@@ -270,11 +270,11 @@ function optAddress(codec: any): string | null {
  *   - Vec<(AccountId, Balance)>                — legacy (and candidates,
  *                                                 still a tuple in modern)
  *
- * xx mainnet uses the SeatHolder struct for members + runnersUp. Slice 3
- * shipped assuming the tuple shape — the destructure `[acc, bal] = entry`
- * walked the struct's *field-name pairs* instead of its values, so
- * `acc.toString()` produced "who,6Va…fTVT" instead of "6Va…fTVT" and
- * every member rendered as a mangled string. Caught on phone-test.
+ * xx mainnet uses the SeatHolder struct for members + runnersUp. An
+ * earlier version assumed the tuple shape — the destructure
+ * `[acc, bal] = entry` walked the struct's *field-name pairs* instead of
+ * its values, so `acc.toString()` produced "who,6Va…fTVT" instead of
+ * "6Va…fTVT" and every member rendered as a mangled string.
  *
  * The fix: read SeatHolder by named field (`entry.who`, `entry.stake`)
  * with a tuple-destructure fallback for chains still on the legacy
@@ -310,7 +310,7 @@ export function parseStakedEntry(
       const address = entry.who.toString();
       // Defensive — only accept addresses that look like SS58 (start with 6).
       // A SeatHolder struct's `who` is an AccountId, so this is just a
-      // belt-and-braces check against the Slice-3 mangle bug.
+      // belt-and-braces check against the earlier mangle bug.
       if (!address.startsWith('6')) return null;
       const stake = entry.stake?.toBn?.() ?? null;
       return { address, stake };

@@ -18,8 +18,9 @@
  *     missing name, never a missing validator.
  *
  * Every chain read is a bulk .entries() / single call — never a
- * per-validator loop. The spike clocked per-validator queries at
- * ~800ms each (~2 minutes for the full set); bulk calls run ~1s.
+ * per-validator loop. Measured on the live chain: per-validator
+ * queries at ~800ms each (~2 minutes for the full set); bulk calls
+ * run ~1s.
  *
  * Fetch-once, like useStakingPosition — era-snapshot data that can't
  * change within an era.

@@ -47,14 +47,14 @@ const PAGE_SIZE = 20;
 
 // Confirmed query from explorer.xx.network payload inspection.
 //
-// NOTE (2026-05-04): roles_fragment is included in the query but the mapped
+// NOTE: roles_fragment is included in the query but the mapped
 // Transfer type does not yet expose the role fields (validator, nominator,
-// council, techcommit, special). This is intentional Phase 1 dead weight kept
-// as a seed for Phase 2b read-only staking views — the same way
-// fetchAccountRoles in src/api/identity.ts is kept. Revisit when staking
-// work starts: either drop the fragment from the query (lighter response) or
-// surface the role data on Transfer (small UI badges next to addresses). Do
-// not silently drop without checking the staking-views design first.
+// council, techcommit, special). This is intentional dead weight kept
+// as a seed for staking views — the same way fetchAccountRoles in
+// src/api/identity.ts is kept. Either drop the fragment from the query
+// (lighter response) or surface the role data on Transfer (small UI badges
+// next to addresses). Do not silently drop without checking the
+// staking-views design first.
 const LIST_TRANSFERS_QUERY = `
   fragment roles_fragment on account {
     techcommit

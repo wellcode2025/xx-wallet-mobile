@@ -11,7 +11,7 @@ import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Phase 3.5 polish — transfer cmixId to another account.
+ * Transfer cmixId to another account.
  *
  * `staking.transferCmixId(dest)`. Hands off the calling account's cMix
  * node id to the destination account. Used when a validator is

@@ -10,12 +10,12 @@ import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Phase 3 slice 2 — Stop nominating (chill).
+ * Stop nominating (chill).
  *
  * `staking.chill()` removes your nominations from on-chain election
  * but keeps your XX bonded. No unbonding kicks off; the user can
  * resume nominating anytime by submitting a fresh nominate(). To
- * actually withdraw bonded XX they need the unbond flow (slice 3).
+ * actually withdraw bonded XX they need the unbond flow.
  *
  * Lighter than bond — no params, no validator picking. Just confirm
  * and sign.

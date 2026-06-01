@@ -6,11 +6,11 @@ import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel, LoadingIndicator, SparkBarChart } from '@/components/ui';
 
 /**
- * Phase 2b slice 3 — Validator Detail.
+ * Validator Detail.
  *
- * Tap a row in the slice-2 ValidatorList → drill into a single
+ * Tap a row in the ValidatorList → drill into a single
  * validator. Live data from chain for anything that would drive a
- * future Phase-3 action (commission, stake, points, blocked, cmix_id,
+ * staking action (commission, stake, points, blocked, cmix_id,
  * current backers). Historical data from the indexer (location,
  * relative_performance, points-over-eras chart), clearly framed as
  * "as of <date>" because validator_stats is frozen at era 1384.

@@ -1,7 +1,7 @@
 /**
  * Tests for the treasury bond + bounty deposit math.
  *
- * Spike-observed constants from xx v206:
+ * Constants observed on xx v206:
  *   proposalBondPerMill = 50_000 (5%)
  *   proposalBondMinimum = 100 XX  (100_000_000_000 planck)
  *   proposalBondMaximum = 500 XX  (500_000_000_000 planck)

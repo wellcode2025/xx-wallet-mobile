@@ -14,9 +14,9 @@ type TreasuryResult = ReturnType<typeof useTreasury>;
  *   Approved — proposal IDs the council has approved, awaiting payout
  *              at the next spend tick. Read from treasury.approvals().
  *              We render the list of IDs (count + first 5 ids) — the
- *              per-id detail isn't fetched in Slice 4 since the queue
- *              is currently 0; when payouts become regular we can add
- *              the per-id detail lookup.
+ *              per-id detail isn't fetched since the queue is currently
+ *              0; when payouts become regular we can add the per-id
+ *              detail lookup.
  *
  * Both sections render empty-state copy when the chain has none, which
  * is the typical case on xx.

@@ -10,7 +10,7 @@ import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Phase 3.5 polish — change cmixId only.
+ * Change cmixId only.
  *
  * `staking.setCmixId(cmixId)`. Standalone variant of the cmixId change
  * inside ValidatorSetup — useful when a validator is just rotating

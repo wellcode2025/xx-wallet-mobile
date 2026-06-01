@@ -9,7 +9,7 @@ import { BountyRow } from './BountyRow';
 import { ProposeBountySheet } from './ProposeBountySheet';
 
 /**
- * Phase 4 Slice 1 — Bounties list screen.
+ * Bounties list screen.
  *
  * `/governance/bounties` lands here. Three tabs to match the official xx
  * web wallet:
@@ -24,9 +24,8 @@ import { ProposeBountySheet } from './ProposeBountySheet';
  *   Children — child bounties across all parents. Currently 0 on xx;
  *              empty-state-tolerant.
  *
- * Read-only — no actions on this screen. Slice 1 ships viewing only;
- * curator workflow extrinsics (Phase 4b at most) are out of scope per
- * the implementation plan.
+ * Read-only — no actions on this screen. Viewing only; curator
+ * workflow extrinsics are out of scope for this wallet.
  */
 
 type Tab = 'active' | 'past' | 'children';

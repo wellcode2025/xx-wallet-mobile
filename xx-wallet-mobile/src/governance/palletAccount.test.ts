@@ -30,8 +30,8 @@ describe('deriveModuleAccount — Polkadot treasury cross-chain fixture', () => 
 });
 
 describe('deriveModuleAccount — xx network treasury', () => {
-  it("produces a valid xx SS58 from the spike's observed palletId", () => {
-    // From the Phase 4 spike: api.consts.treasury.palletId = 0x78782f7472737279
+  it("produces a valid xx SS58 from the observed palletId", () => {
+    // Observed live on chain: api.consts.treasury.palletId = 0x78782f7472737279
     // which is the ASCII for "xx/trsry".
     const palletId = stringToU8a('xx/trsry');
     expect(palletId.length).toBe(8);

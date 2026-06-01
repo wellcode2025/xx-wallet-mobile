@@ -5,11 +5,11 @@ import type { CouncilMotion } from '@/hooks';
  * with an explanatory empty state when none are open (which is the
  * usual case on xx).
  *
- * Per the plan, Slice 3 doesn't fetch motion bodies (`council.voting`,
- * `council.proposalOf`) — at observation there are 0 live motions so
- * the detail wiring would be untestable. When motions become regular
- * the row taps would expand into a detail panel; for now we render
- * the hash list as a placeholder.
+ * Motion bodies (`council.voting`, `council.proposalOf`) aren't
+ * fetched — at observation there are 0 live motions so the detail
+ * wiring would be untestable. When motions become regular the row
+ * taps would expand into a detail panel; for now we render the hash
+ * list as a placeholder.
  */
 export function MotionsSection({
   title,

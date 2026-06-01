@@ -17,8 +17,9 @@
  * **The wallet must NEVER trust an externally-supplied multisig address
  * without re-deriving it from the (threshold, signers) tuple it claims.**
  *
- * See  §7.2 for the security rationale and
- * §9 for the JSON config interchange format.
+ * (Address derivation follows the Substrate multisig scheme; order-independent
+ * on the sorted signer set.) The JSON config interchange format carries
+ * {threshold, signers, optional name}.
  *
  * Crypto pre-init: `createKeyMulti` uses blake2 from @polkadot's WASM
  * crypto. Callers must ensure `cryptoWaitReady()` has resolved before
@@ -139,7 +140,7 @@ export function multisigAddressMatches(
  *     label the same multisig differently while their stored configHash
  *     fields agree.
  *
- * Used by `configHashOf` and (in slice 5) by the JSON config import path
+ * Used by `configHashOf` and by the JSON config import path
  * for change detection.
  */
 export function canonicalConfigJson(

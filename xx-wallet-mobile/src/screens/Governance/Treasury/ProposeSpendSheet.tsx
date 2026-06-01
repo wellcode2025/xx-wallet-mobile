@@ -8,7 +8,7 @@ import { isValidXxAddress } from '@/utils/address';
 import { parseAmount } from '../Democracy/VoteSheet';
 
 /**
- * Phase 4b Slice 8 — Propose a treasury spend.
+ * Propose a treasury spend.
  *
  * Submits `treasury.proposeSpend(value, beneficiary)`. The bond is
  * computed from the chain consts via the bondPreview helper:

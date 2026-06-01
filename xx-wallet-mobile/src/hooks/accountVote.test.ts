@@ -4,8 +4,8 @@
  *
  * Round-trip: encodeVoteByte → decodeVoteByte must return the original
  * (aye, conviction) pair for all 14 combinations (2 × 7). This is the
- * load-bearing test because Slice 5's parseMyVoting and Slice 6's
- * encode have to agree byte-for-byte.
+ * load-bearing test because parseMyVoting and the encoder have to agree
+ * byte-for-byte.
  */
 
 import { describe, expect, it } from 'vitest';

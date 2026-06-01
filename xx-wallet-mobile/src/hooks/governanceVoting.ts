@@ -18,10 +18,12 @@
  *       deposit: Balance,
  *   }
  *
- * Both are parsed via `toJSON()` keys per feedback_chain_enum_decoding.
- * Voter is also read via named field with the same defensive pattern as
- * council's SeatHolder (Slice 3.1). Mangle guards reject anything that
- * doesn't yield xx-SS58-prefixed addresses.
+ * Both are parsed via `toJSON()` keys: decode enums via .toJSON()/named
+ * fields with a mangle guard (addresses start with '6'), since
+ * auto-derived .isFoo/.asFoo accessors and tuple destructure are
+ * unreliable on the xx runtime. Voter is also read via named field with
+ * the same defensive pattern as council's SeatHolder. Mangle guards
+ * reject anything that doesn't yield xx-SS58-prefixed addresses.
  *
  * Exported for testing — useMyGovernance imports and applies these to
  * live chain data.
@@ -60,9 +62,9 @@ export type MyDemocracyVoting =
  * Parse a democracy Voting codec into our typed discriminant.
  *
  * Defensive across the two known representations of AccountVote inside
- * Direct.votes: Standard {vote, balance} and Split {aye, nay}. For
- * Slice 5 we surface only Standard with friendly aye/conviction; Split
- * collapses to `aye: null` so the row renders honestly.
+ * Direct.votes: Standard {vote, balance} and Split {aye, nay}. We
+ * surface only Standard with friendly aye/conviction; Split collapses to
+ * `aye: null` so the row renders honestly.
  */
 export function parseMyVoting(votingCodec: any): MyDemocracyVoting {
   let json: any;

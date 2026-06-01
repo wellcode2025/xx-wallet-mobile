@@ -8,19 +8,18 @@
  * These mirror the types defined in wallet.xx.network's
  * `packages/apps-config/src/api/typesBundle.ts`.
  *
- * For Phase 1 we register the minimum needed for balances and transfers.
- * Additional types for staking, governance, and custody will be added as we
- * build out each feature in later phases.
+ * We register the minimum needed for balances and transfers. Additional types
+ * for staking, governance, and custody will be added as each feature is built.
  */
 
 import type { OverrideBundleDefinition } from '@polkadot/types/types';
 
-// Minimal type bundle for Phase 1 — balances and transfers work without
-// custom types, but we register the chain identity so the API knows it's xx.
+// Minimal type bundle — balances and transfers work without custom types,
+// but we register the chain identity so the API knows it's xx.
 export const xxTypes: OverrideBundleDefinition = {
   types: [
     {
-      // All versions — Phase 1 doesn't need version-specific overrides.
+      // All versions — no version-specific overrides needed.
       minmax: [0, undefined],
       types: {
         // Placeholder — xx network currently uses standard Substrate types

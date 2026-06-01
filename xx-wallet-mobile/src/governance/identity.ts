@@ -27,9 +27,9 @@
  * miss is a fact about the chain, not a transient failure to be retried.
  *
  * Display-name helper: every governance screen needs the same "display
- * name OR shortened address" pattern (per  §7.3
- * — always pair the name with a truncated SS58 so a name swap cannot hide
- * what's being signed). `displayName(identity, address)` codifies it.
+ * name OR shortened address" pattern (a resolved name MUST always be shown
+ * paired with a truncated SS58 fragment, so a familiar label can't hide the
+ * real address). `displayName(identity, address)` codifies it.
  */
 
 import { useEffect, useState } from 'react';
@@ -175,9 +175,10 @@ export function useIdentity(
 
 /**
  * Always-paired display: identity display name (when set) + truncated
- * SS58. Per  §7.3, the name MUST be paired
- * with the truncated address so identity registration cannot be used to
- * hide what's being signed. Use this everywhere council members /
+ * SS58. A resolved name MUST always be shown paired with a truncated
+ * SS58 fragment, so a familiar label can't hide the real address —
+ * identity registration cannot be used to hide what's being signed.
+ * Use this everywhere council members /
  * curators / proposers are rendered.
  *
  * Returns the truncated address alone when no display name is set.

@@ -4,9 +4,9 @@
  *
  * One format, three transports, identical wallet-side semantics:
  *   1. File download → user shares via Signal / email / AirDrop / etc.
- *      (slice 3 — manual day-one UX)
- *   2. QR code → in-person handoff (slice 3)
- *   3. Notification service push → automated delivery (Phase 2a.5)
+ *      (manual UX)
+ *   2. QR code → in-person handoff
+ *   3. Notification service push → automated delivery
  *
  * Designing the format once and using it across all three paths means
  * the verification pipeline is the same regardless of how the bytes
@@ -18,8 +18,6 @@
  * receiver wallet can refuse to process payloads it doesn't understand
  * (rather than silently misinterpret them as something else).
  *
- * See  §8 (notification service interface)
- * for the canonical payload shape this conforms to.
  */
 
 import { isValidXxAddress } from './address';
@@ -38,8 +36,8 @@ export interface BytesPackage {
   /** On-chain call hash, 0x-prefixed 64 hex chars (lowercased). */
   callHash: string;
   /** The call data, 0x-prefixed lowercased hex. (Field name is `callData`
-   *  in the on-the-wire JSON to match Substrate-canonical terminology;
-   *  see feedback_substrate_terminology in memory.) */
+   *  in the on-the-wire JSON to use Substrate-canonical terminology — call
+   *  data, call hash, extrinsic, deposit — in user-facing strings.) */
   callData: string;
   /** The depositor's signer address (the signer who made the proposal). */
   proposedBy: string;

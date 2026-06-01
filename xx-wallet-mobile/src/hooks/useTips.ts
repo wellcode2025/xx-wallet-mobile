@@ -12,7 +12,10 @@
  * defensively for the day a tip lands.
  *
  * The OpenTip struct is read by named field (`tip.who`, `tip.finder`,
- * etc.) — never by array destructure, per feedback_chain_enum_decoding.
+ * etc.) — never by array destructure. Decode enums via .toJSON()/named
+ * fields with a mangle guard (addresses start with '6'); auto-derived
+ * .isFoo/.asFoo accessors and tuple destructure are unreliable on the
+ * xx runtime.
  */
 
 import { useEffect, useState } from 'react';
@@ -144,13 +147,16 @@ function numFromConst(c: any): number {
 }
 
 /**
- * Parse an OpenTip struct by named field — never array destructure
- * (per feedback_chain_enum_decoding). Returns null for unparseable
- * entries so the row is skipped rather than rendered with garbage.
+ * Parse an OpenTip struct by named field — never array destructure.
+ * Decode enums via .toJSON()/named fields with a mangle guard
+ * (addresses start with '6'); auto-derived .isFoo/.asFoo accessors and
+ * tuple destructure are unreliable on the xx runtime. Returns null for
+ * unparseable entries so the row is skipped rather than rendered with
+ * garbage.
  *
  * Endorsements live inside `tip.tips` as a Vec<(AccountId, Balance)>.
- * We sum the balances rather than render each individually — Slice 4
- * shows aggregate values; per-endorser detail can come later.
+ * We sum the balances rather than render each individually — we show
+ * aggregate values; per-endorser detail can come later.
  *
  * Exported for testing.
  */

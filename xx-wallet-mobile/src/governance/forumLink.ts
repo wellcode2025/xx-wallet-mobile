@@ -2,7 +2,7 @@
  * forumLinkExtractor — parse a governance description into its canonical
  * forum-link form, when present.
  *
- * **Why this exists.** The Phase 4 spike confirmed that bounty descriptions
+ * **Why this exists.** Confirmed against the live chain: bounty descriptions
  * on xx are stored as on-chain bytes that decode to HTML anchor tags
  * pointing to `forum.xx.network` threads:
  *
@@ -25,8 +25,8 @@
  *     title may not agree, and the user should see the host before tapping
  *     through. Renderers should require a tap-confirm for external links
  *     and always show the destination host alongside the title.
- * Per `feedback_visible_choice_over_gatekeeping`: we don't refuse external
- * links, but we make the trust decision visible.
+ * We prefer a warning + explicit acknowledgement over a hard block: we don't
+ * refuse external links, but we make the trust decision visible.
  *
  * **Parsing strategy.** A single regex matches the first `<a>` tag in the
  * input. Strict HTML parsing would be overkill — these strings are bounded

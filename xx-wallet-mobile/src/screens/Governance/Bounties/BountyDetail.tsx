@@ -17,7 +17,7 @@ import {
 import { BountyStatusBadge } from './BountyStatusBadge';
 
 /**
- * Phase 4 Slice 1 — Bounty detail screen.
+ * Bounty detail screen.
  *
  * `/governance/bounties/:id`. Shows everything a user can learn about a
  * bounty from chain state alone:
@@ -31,7 +31,7 @@ import { BountyStatusBadge } from './BountyStatusBadge';
  *   - Child bounties section (currently 0 on xx but future-proofed)
  *
  * Read-only. Curator workflow extrinsics (acceptCurator, awardBounty,
- * etc.) are foundation-only and aren't on the Phase 4 wallet roadmap.
+ * etc.) are foundation-only and out of scope for this wallet.
  */
 
 export function BountyDetail() {

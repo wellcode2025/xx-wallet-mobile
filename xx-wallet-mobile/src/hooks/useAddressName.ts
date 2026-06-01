@@ -61,8 +61,8 @@ export function useAddressName(
     }
 
     // Then address book — but only if the contact has a non-empty
-    // name. Address-book entries can exist with empty names (slice 5
-    // imports skip auto-add for unlabeled signers, but the user may
+    // name. Address-book entries can exist with empty names (imports
+    // skip auto-add for unlabeled signers, but the user may
     // have added an unnamed contact some other way).
     const contact = contacts.find((c) => c.address === address);
     if (contact && contact.name.trim().length > 0) {

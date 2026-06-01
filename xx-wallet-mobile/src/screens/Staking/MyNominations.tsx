@@ -17,12 +17,12 @@ import { ManageStakeSheet } from './ManageStakeSheet';
 import { RecentAlertsBanner } from './RecentAlertsBanner';
 
 /**
- * Staking section — My Nominations sub-view (slice 1).
+ * Staking section — My Nominations sub-view.
  *
  * For the active account, shows whether it's nominating and the honest
  * per-target status of each nomination (active / not-earning /
  * inactive), plus the bonded ledger. Read-only — bonding and
- * nominating are Phase 3.
+ * nominating are handled by the dedicated bond / nominate flows.
  *
  * Account-scoped to the active wallet account. useStakingPosition is
  * account-agnostic, so the multisig detail screen can reuse it later
@@ -372,7 +372,6 @@ function UnlockingSection({
 function EmptyState({ isBonded }: { isBonded: boolean }) {
   if (isBonded) {
     // Bonded but not nominating — chilled, freshly bonded, or validating-only.
-    // Phase 3 slice 2 will surface a "Resume nominating" action here.
     return (
       <div className="card flex flex-col items-center text-center gap-3 py-8">
         <div className="w-14 h-14 rounded-full bg-ink-800 border border-ink-700 flex items-center justify-center">
@@ -383,8 +382,8 @@ function EmptyState({ isBonded }: { isBonded: boolean }) {
             Bonded, not nominating
           </p>
           <p className="text-sm text-ink-400">
-            This account is bonded but isn't nominating any validators.
-            Nominate-from-bonded arrives later in Phase 3.
+            This account is bonded but isn't currently nominating any
+            validators.
           </p>
         </div>
       </div>

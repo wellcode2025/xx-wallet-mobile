@@ -5,7 +5,7 @@ import { useAccountsStore } from '@/store';
 import { formatBalance } from '@/utils';
 
 /**
- * Phase 4 Slice 9.1 — Release a matured conviction lock.
+ * Release a matured conviction lock.
  *
  * Submits `democracy.unlock(target: MultiAddress)`. Releases any
  * locks on the target account whose unlockAt block has passed; locks
@@ -17,7 +17,7 @@ import { formatBalance } from '@/utils';
  * TxFooter, and target = signer. If a future flow wants to release
  * locks for a different account (e.g. a custody pattern) the sheet
  * can grow a target picker, but for now the 1:1 signer=target case
- * covers everything Slice 9's notification surfaces.
+ * covers everything the lock-releasable notification surfaces.
  */
 
 interface UnlockSheetProps {

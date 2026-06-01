@@ -16,14 +16,14 @@ import { AddressLabel, LoadingIndicator } from '@/components/ui';
 import { ValidatorPickerSheet } from './ValidatorPickerSheet';
 
 /**
- * Phase 3 slice 2 — Change validators (re-nominate).
+ * Change validators (re-nominate).
  *
  * Submits `staking.nominate(newTargets)` against the account's
  * existing bond. No bondExtra, no chill — just replaces the nomination
  * set in one extrinsic. Cheap (~0.016 XX) and instant in effect from
  * the next era.
  *
- * Reuses slice 1's auto-nominate selection and ValidatorPickerSheet,
+ * Reuses StartStaking's auto-nominate selection and ValidatorPickerSheet,
  * with the hand-pick path pre-seeded with the user's current
  * nominations so they can tweak rather than restart.
  */

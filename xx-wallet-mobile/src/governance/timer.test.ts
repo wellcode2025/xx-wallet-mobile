@@ -12,7 +12,7 @@
  *   24 days   = 345,600 blocks   (the chain's spendPeriod)
  *   90 days   = 1,296,000 blocks (the chain's bountyUpdatePeriod)
  *
- * Live observation fixtures (from the Phase 4 spike at head #23,512,817):
+ * Live observation fixtures (observed live on chain at head #23,512,817):
  *   - Bounty #5 updateDue=20,912,532 → past, ~178 days overdue
  *   - Bounty #7 updateDue=23,932,462 → future, ~29 days 3 hrs
  */
@@ -20,7 +20,7 @@
 import { describe, expect, it } from 'vitest';
 import { blocksToHuman } from './timer';
 
-const HEAD = 23_512_817; // spike-observed head
+const HEAD = 23_512_817; // observed live on chain
 const BOUNTY_5_UPDATE_DUE = 20_912_532; // overdue
 const BOUNTY_7_UPDATE_DUE = 23_932_462; // ~29 days 3 hrs ahead
 

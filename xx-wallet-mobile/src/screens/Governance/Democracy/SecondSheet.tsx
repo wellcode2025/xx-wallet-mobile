@@ -3,7 +3,7 @@ import { Sheet, TxFooter } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 
 /**
- * Phase 4b Slice 7 — Second a public proposal.
+ * Second a public proposal.
  *
  * Substrate's older democracy pallet exposes `second(proposal: Compact<u32>)`
  * with no deposit on the seconder — backing a proposal is a free signal
@@ -11,9 +11,8 @@ import { useAccountsStore } from '@/store';
  *
  * Some chain versions take `second(proposal, secondsUpperBound)` for
  * the council-style weight accounting; xx v206's surface is the bare
- * one-argument form per the Slice 0 spike output. The builder below
- * will fall back to the bounded form if .second's metadata indicates
- * a second arg.
+ * one-argument form. The builder below will fall back to the bounded
+ * form if .second's metadata indicates a second arg.
  */
 
 interface SecondSheetProps {

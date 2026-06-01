@@ -8,14 +8,14 @@
  *   - Plain-text descriptions never get parsed as if they were links
  *   - Malformed HTML falls back to plain text
  *
- * The 5 active bounty descriptions observed in the Phase 4 spike are
- * used as fixtures so we know the parser handles real on-chain data.
+ * The 5 active bounty descriptions observed live on chain are used as
+ * fixtures so we know the parser handles real on-chain data.
  */
 
 import { describe, expect, it } from 'vitest';
 import { extractForumLink, CANONICAL_FORUM_PREFIX } from './forumLink';
 
-// All 5 live bounty descriptions from the Phase 4 spike (head #23,512,817).
+// All 5 live bounty descriptions observed live on chain (head #23,512,817).
 const LIVE_BOUNTY_DESCRIPTIONS = [
   {
     raw: '<a href="https://forum.xx.network/t/xxg-2025-01-moveforchange/7119">xxG-2025-01-MoveForChange</a>',

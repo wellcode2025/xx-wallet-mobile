@@ -98,7 +98,7 @@ interface UseValidatorDetailResult {
 
 /**
  * Foundation's cMix-id transform (staking.xx.network's custom derive):
- * 32-byte H256 + [2] byte, base64-encoded. Spike confirmed bit-identical
+ * 32-byte H256 + [2] byte, base64-encoded. Verified bit-identical
  * output to the indexer's recorded cmix_id.
  */
 function transformCmixId(h256: any): string | null {

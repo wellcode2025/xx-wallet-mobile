@@ -1,11 +1,13 @@
 /**
  * Tests for parseProposal — the treasury Proposal decoder.
  *
- * Per feedback_chain_enum_decoding, fields are read by name (not by
- * array destructure). The mangle guard rejects entries where the
- * proposer or beneficiary doesn't look like an xx SS58 address, so a
- * future regression of the Slice 3.1 class renders an empty row
- * rather than garbage.
+ * Fields are read by name (not by array destructure): decode enums via
+ * .toJSON()/named fields with a mangle guard (addresses start with '6'),
+ * since auto-derived .isFoo/.asFoo accessors and tuple destructure are
+ * unreliable on the xx runtime. The mangle guard rejects entries where
+ * the proposer or beneficiary doesn't look like an xx SS58 address, so a
+ * future regression of the same class renders an empty row rather than
+ * garbage.
  *
  * Tests stub the chain codec with plain JS objects whose .toString /
  * .toBn / .toNumber match what polkadot-codec returns for a real

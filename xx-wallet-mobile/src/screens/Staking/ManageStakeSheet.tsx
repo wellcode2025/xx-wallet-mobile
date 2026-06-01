@@ -10,7 +10,7 @@ import {
 import { Sheet } from '@/components/ui';
 
 /**
- * Phase 3 slices 2 + 3 — Manage stake.
+ * Manage stake.
  *
  * Triggered from MyNominations when the active account is bonded
  * and nominating. Four actions, each routing to its own screen:

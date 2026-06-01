@@ -4,7 +4,7 @@ import { useAccountsStore } from '@/store';
 import { displayName, useIdentity } from '@/governance';
 
 /**
- * Phase 4b Slice 7 — Stop delegating.
+ * Stop delegating.
  *
  * Submits `democracy.undelegate()`. No args; clears the delegating
  * voter state on chain for the signer's account. The conviction lock

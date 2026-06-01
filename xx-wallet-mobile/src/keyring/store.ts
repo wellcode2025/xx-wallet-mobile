@@ -5,11 +5,11 @@
  * Private keys are NEVER stored unencrypted — they are decrypted only when
  * needed to sign a transaction, and re-encrypted immediately after.
  *
- * This is a Phase 1 implementation using standard sr25519 accounts. Full
- * Sleeve (dual-phrase, quantum-secure) support will be added in a later phase.
+ * This implementation uses standard sr25519 accounts. Full Sleeve (dual-phrase,
+ * quantum-secure) support will be added later.
  *
  * IMPORTANT: The encryption here relies on the user's password + browser's
- * localStorage. This is acceptable for Phase 1 but on a real device we should
+ * localStorage. This is acceptable for now but on a real device we should
  * consider moving to the WebCrypto API with a proper key derivation function
  * and potentially the device's secure storage (e.g., via Credential Management
  * API where available).

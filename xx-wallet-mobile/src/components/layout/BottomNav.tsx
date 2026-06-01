@@ -9,7 +9,7 @@ import clsx from 'clsx';
  * Four top-level destinations: Wallet / Staking / Governance / Settings.
  * Send and Receive aren't tabs because they're per-action verbs reached
  * from the Dashboard's quick-action buttons; bottom-nav is reserved for
- * the top-level *categories*. Governance landed in Phase 4 (Slice 0).
+ * the top-level *categories*.
  *
  * The label `text-xs` is 12 px per the mobile text floor; on the smallest
  * iPhone SE size four 22-px Lucide icons + caps labels still fit with

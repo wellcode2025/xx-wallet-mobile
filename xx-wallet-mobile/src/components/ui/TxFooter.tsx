@@ -5,20 +5,19 @@ import { displayName, useIdentity } from '@/governance';
 import { useTx } from '@/hooks';
 
 /**
- * TxFooter — reusable footer for all democracy action sheets in
- * Slice 6+.
+ * TxFooter — reusable footer for governance action sheets.
  *
  * Renders:
  *   - Signed-by picker (defaults to active address, dropdown for others)
  *   - Password field with error-state feedback
  *   - Submit button with status copy ("Signing…" / "Broadcasting…" / …)
- *   - Per-state error UI showing error.message verbatim (per
- *     feedback_surface_error_message_on_screen)
+ *   - Per-state error UI showing error.message verbatim (surface the
+ *     underlying error message on the error UI; mobile browsers have no
+ *     easy console)
  *   - Success state with checkmark + Done button
  *
- * The signer-picker discipline (never silently use activeAddress)
- * comes from feedback_multisig_signer_picker — established in Phase
- * 2a multisig, mirrored in every Phase 4b participate sheet.
+ * The footer provides an explicit signer picker so the user chooses which
+ * key signs; it never signs silently as the active account.
  *
  * The footer renders inside an existing Sheet; the calling component
  * owns the Sheet wrapper and renders its own form fields above the

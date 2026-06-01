@@ -115,7 +115,7 @@ function clearCreateFlowState(): void {
  *   3. Reveal BOTH the quantum and standard recovery phrases for backup.
  *   4. Confirm a few random words from each phrase to prove backup.
  *
- * Per STRATEGY_UPDATE: Sleeve is the only flow (no plain-account opt-out),
+ * Sleeve is the only account-creation flow (no plain-account opt-out),
  * the quantum mnemonic is shown once and never stored, and the standard
  * mnemonic feeds the existing createFromMnemonic path so the resulting
  * xx network address is identical to what wallet.xx.network would produce

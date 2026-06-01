@@ -5,7 +5,7 @@ import { useAccountsStore } from '@/store';
 import { formatBalance } from '@/utils';
 
 /**
- * Phase 4b Slice 7 — Remove vote on an active referendum.
+ * Remove vote on an active referendum.
  *
  * Submits `democracy.removeVote(index: u32)`. Returns the locked
  * balance to the user's transferable balance (subject to any

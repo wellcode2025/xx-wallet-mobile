@@ -10,8 +10,8 @@
  * initial bundle small for users who only ever import existing accounts (they
  * never trigger this path).
  *
- * For the strategic context on why dual-mnemonic Sleeve and not the
- * experimental single-seed variant, see docs/.
+ * Dual-mnemonic Sleeve is used rather than the experimental single-seed
+ * variant.
  */
 
 import { SLEEVE_WASM_SHA256 } from './sleeveWasmHash';

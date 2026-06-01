@@ -36,7 +36,7 @@ export function Dashboard() {
   const { hideBalances, toggleHideBalances } = useSettingsStore();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   // Chooser sheet for "+ Add multisig" — Path A (manual) vs Path B
-  // (import from JSON). Path C (chain scan) joins this in slice 6.
+  // (import from JSON). Path C (chain scan) is added separately.
   const [addChooserOpen, setAddChooserOpen] = useState(false);
   // Chooser sheet for "+ Add account" — Create new (Sleeve) vs
   // Import existing (mnemonic or keystore). Mirrors the Add multisig
@@ -640,9 +640,9 @@ function BalanceRow({
 /**
  * Single row in the multisig list inside the account switcher. Pulled
  * out into its own component so each row can call useBalance for its
- * own address — the at-a-glance balance is one of Phase 2a's
- * acceptance criteria for the multisig list view (threshold + balance
- * + pending count, all visible without drilling in).
+ * own address — the at-a-glance balance is a requirement for the multisig
+ * list view (threshold + balance + pending count, all visible without
+ * drilling in).
  *
  * Per-row useBalance is acceptable here: foundation users typically
  * have a handful of multisigs (the treasury multisig + a couple of

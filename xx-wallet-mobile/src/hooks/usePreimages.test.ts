@@ -2,17 +2,16 @@
  * Tests for usePreimages.readStatus — the toJSON-based parser that
  * turns a RequestStatus codec into the typed shape the screen consumes.
  *
- * Background: Slice 2 shipped with a codec-accessor parser
+ * Background: an earlier version used a codec-accessor parser
  * (`.isUnrequested` / `.asUnrequested.foo`) that didn't match the xx
  * runtime — the screen rendered "No preimages on chain" despite 8 live
- * preimages on chain. Phone-test caught it. The fix switched to
- * parsing `statusCodec.toJSON()` directly, since the spike script
- * already proved the JSON shape works (and the JSON keys are stable
- * across polkadot-js versions in a way the auto-derived accessors
- * apparently aren't).
+ * preimages on chain. The fix switched to parsing
+ * `statusCodec.toJSON()` directly, since the JSON shape was already
+ * proven to work (and the JSON keys are stable across polkadot-js
+ * versions in a way the auto-derived accessors apparently aren't).
  *
- * Fixtures here use the exact JSON shape the Phase 4 spike observed
- * on xx mainnet at head #23,512,817.
+ * Fixtures here use the exact JSON shape observed live on xx mainnet
+ * at head #23,512,817.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -28,8 +27,8 @@ const DEPOSITOR_2 = '6WSH4iFzYY3ATabSuQwSaaacFLs9JVAhH7R3xAFf1UyWoEsH';
  */
 const codecOf = (json: unknown) => ({ toJSON: () => json });
 
-describe('readStatus — live spike fixtures', () => {
-  it('parses an Unrequested status (spike fixture: 199-byte preimage)', () => {
+describe('readStatus — live chain fixtures', () => {
+  it('parses an Unrequested status (chain fixture: 199-byte preimage)', () => {
     // Exact JSON shape observed at head #23,512,817 for hash
     // 0x01ccfcf7f6b3...
     const codec = codecOf({
@@ -47,7 +46,7 @@ describe('readStatus — live spike fixtures', () => {
     expect(result?.deposit?.toString()).toBe('40263000000');
   });
 
-  it('parses a Requested status (spike fixture: 3,896-byte preimage)', () => {
+  it('parses a Requested status (chain fixture: 3,896-byte preimage)', () => {
     // Exact JSON shape observed for hash 0xa2652f1879c182...
     const codec = codecOf({
       requested: {

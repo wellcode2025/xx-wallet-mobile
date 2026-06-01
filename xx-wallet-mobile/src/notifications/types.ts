@@ -9,7 +9,7 @@
  * same logical event twice — e.g. when usePendingMultisigs re-polls and
  * the same proposal is still pending — is a no-op the second time.
  *
- * Per strategy memory (strat_xx_wallet.md): pluggable notifications.
+ * Pluggable notifications:
  * The wallet emits events through this scaffold; concrete channels
  * (Telegram, browser push, OpenClaw, etc.) plug in as sinks.
  */

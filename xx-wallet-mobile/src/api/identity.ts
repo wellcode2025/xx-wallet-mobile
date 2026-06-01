@@ -18,13 +18,13 @@ const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
  * who has chilled returns `validator: false`.
  *
  * NOTE (2026-05-13): currently unused in production; kept as a seed for
- * Phase 2b (read-only staking views) and Phase 3 (active staking).
+ * read-only staking views and active staking.
  *
- * The Phase 2b feasibility spike (scripts/spikes/staking-spike.mjs) confirmed
+ * The staking feasibility spike (scripts/spikes/staking-spike.mjs) confirmed
  * these flags populate reliably for known role-holders. An earlier version
  * of this code queried `where: { id: ... }` and silently 500'd because the
- * indexer's primary key is `account_id`; the "data population isn't reliable"
- * note from the Phase 1 era was an artifact of that schema-key bug. The
+ * indexer's primary key is `account_id`; an earlier "data population isn't
+ * reliable" note was an artifact of that schema-key bug. The
  * aggregate-table fallback that masked it was also semantically wrong (it
  * counted ever-was-a-validator, not currently-is) and has been removed.
  */
@@ -76,9 +76,9 @@ const ACCOUNT_ROLES_QUERY = `
  * account table (e.g. a genesis-only address that's never transacted) or
  * if the query fails.
  *
- * Currently exported but unused in production; Phase 2b consumes this for
- * role badges. See AccountRoles for the currently-is vs has-ever-been
- * distinction and the spike-finding context.
+ * Currently exported but unused in production; read-only staking views
+ * consume this for role badges. See AccountRoles for the currently-is vs
+ * has-ever-been distinction and the rationale behind it.
  */
 export async function fetchAccountRoles(address: string): Promise<AccountRoles | null> {
   try {

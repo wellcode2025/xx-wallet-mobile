@@ -1,7 +1,7 @@
 /**
  * useBounties — list view of every active bounty on chain.
  *
- * Phase 4 Slice 1. Pulls `bounties.bounties.entries()` once on mount,
+ * Pulls `bounties.bounties.entries()` once on mount,
  * pairs each with its description from `bounties.bountyDescriptions`,
  * decodes the status enum into a typed discriminant, and prefetches
  * proposer + curator identities so display names are warm by the time

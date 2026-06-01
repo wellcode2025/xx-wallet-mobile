@@ -16,7 +16,7 @@ import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Phase 3.5 — Validator setup.
+ * Validator setup.
  *
  * Single screen that auto-detects three states and renders the right
  * form / submit shape:
@@ -42,7 +42,7 @@ import { AddressLabel, LoadingIndicator } from '@/components/ui';
  * wallet doesn't surface that distinction).
  */
 
-const MIN_FEE_BUFFER = new BN('100000000'); // 0.1 XX (same as slice 1)
+const MIN_FEE_BUFFER = new BN('100000000'); // 0.1 XX (same as StartStaking)
 const MIN_VALIDATOR_BOND_PLANCK = new BN('7500000000000'); // 7,500 XX
 const MIN_COMMISSION_PCT = 2;
 const MAX_COMMISSION_PCT = 100;

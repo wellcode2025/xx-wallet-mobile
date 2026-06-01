@@ -2,7 +2,7 @@
  * Tests for updateDueBadge — the threshold mapping from block-delta
  * to a colored chip kind.
  *
- * Thresholds (matching the Phase 4 plan, Slice 1 AC):
+ * Thresholds:
  *   red    — isOverdue (target ≤ current)
  *   amber  — 0 < remaining < 7 days
  *   green  — remaining ≥ 7 days

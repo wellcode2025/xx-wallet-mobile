@@ -15,7 +15,7 @@ import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Phase 3 slice 3 — Unbond.
+ * Unbond.
  *
  * `staking.unbond(amount)` — starts a 28-day unbonding clock for the
  * specified amount. The unbonded chunk shows up on MyNominations with
@@ -28,7 +28,7 @@ import { AddressLabel, LoadingIndicator } from '@/components/ui';
  * dangling nomination set.
  *
  * The 28-day-lock warning is front-loaded loudly. This is the most
- * commitment-heavy action in Phase 3.
+ * commitment-heavy action in the staking flow.
  */
 export function UnbondAmount() {
   const navigate = useNavigate();

@@ -12,7 +12,7 @@ import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
- * Phase 3 slice 3 — Withdraw unbonded.
+ * Withdraw unbonded.
  *
  * `staking.withdrawUnbonded(numSlashingSpans)` — moves all matured
  * unlocking chunks (era ≤ activeEra) from "unbonding" to fully

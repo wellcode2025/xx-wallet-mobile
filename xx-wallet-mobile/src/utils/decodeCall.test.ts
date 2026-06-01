@@ -9,7 +9,7 @@
  *
  * `decodeCall` itself needs a connected ApiPromise (it uses
  * api.registry.createType against the runtime metadata). That's an
- * integration concern — covered by end-to-end manual testing in slice 2's
+ * integration concern — covered by end-to-end manual testing in the
  * acceptance flow rather than here.
  */
 
@@ -127,7 +127,7 @@ describe('normalizeCallBytes', () => {
 });
 
 // ---------------------------------------------------------------------------
-// safeDecodeCall — the non-throwing wrapper used by Phase 4's preimage page.
+// safeDecodeCall — the non-throwing wrapper used by the preimage page.
 //
 // We can't drive the real registry path without a connected ApiPromise (the
 // throwing path is integration-tested manually, per the file-level note).
@@ -135,7 +135,7 @@ describe('normalizeCallBytes', () => {
 // throws, safeDecodeCall returns { ok: false } with the canonical rawHex,
 // surfacing the throw's message without swallowing it. We synthesize a
 // stub registry that always throws — exactly the failure mode the orphaned
-// 3,896-byte preimage at 0xa2652f1879c182… produced in the Phase 4 spike
+// 3,896-byte preimage at 0xa2652f1879c182… produced in the governance spike
 // ("Unable to find Call with index [35, 35]").
 // ---------------------------------------------------------------------------
 
@@ -158,7 +158,7 @@ describe('safeDecodeCall', () => {
     const api = apiThatThrows(
       'createType(Call):: findMetaCall: Unable to find Call with index [35, 35]/[35,35]'
     );
-    // Reproduces the orphaned-preimage failure from the Phase 4 spike at
+    // Reproduces the orphaned-preimage failure from the governance spike at
     // hash 0xa2652f1879c182… — call index bytes that don't map to any
     // registered call in xxnetwork v206 metadata.
     const result = safeDecodeCall('0x2323deadbeef', api);

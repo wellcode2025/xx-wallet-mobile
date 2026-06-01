@@ -5,7 +5,7 @@
  * nominating, and is each nomination actually earning?" is a
  * trust-critical question, so it gets the same decoded-from-source
  * discipline the multisig approval flow uses. The indexer is fine for
- * historical rewards (slice 4) but the live position is chain-only.
+ * historical rewards but the live position is chain-only.
  *
  * Fetch-once, not a subscription: the staking exposure
  * (erasStakersClipped) is a snapshot taken at era start and cannot
@@ -15,9 +15,9 @@
  * ever wanted.
  *
  * Account-agnostic: works for a plain stash or a multisig address
- * identically — a multisig is just an AccountId on chain. Slice 1
- * wires it for the active account; the multisig detail screen can
- * reuse it later by passing the multisig address.
+ * identically — a multisig is just an AccountId on chain. It's wired
+ * for the active account; the multisig detail screen can reuse it later
+ * by passing the multisig address.
  */
 
 import { useEffect, useState } from 'react';

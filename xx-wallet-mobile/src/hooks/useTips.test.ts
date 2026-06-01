@@ -1,9 +1,11 @@
 /**
  * Tests for parseOpenTip — the tips pallet OpenTip decoder.
  *
- * Per feedback_chain_enum_decoding, OpenTip's named fields are read
- * directly (`tip.who`, `tip.finder`, `tip.deposit`, `tip.closes`,
- * `tip.tips`). The endorser sum is computed by iterating
+ * OpenTip's named fields are read directly (`tip.who`, `tip.finder`,
+ * `tip.deposit`, `tip.closes`, `tip.tips`) — decode enums via
+ * .toJSON()/named fields with a mangle guard (addresses start with '6'),
+ * since auto-derived .isFoo/.asFoo accessors and tuple destructure are
+ * unreliable on the xx runtime. The endorser sum is computed by iterating
  * `tip.tips: Vec<(AccountId, Balance)>` — that part DOES use array
  * destructure because each entry is a real tuple, not a struct.
  *

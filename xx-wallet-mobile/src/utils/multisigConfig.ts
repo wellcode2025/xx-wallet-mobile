@@ -26,8 +26,9 @@
  *   - Anything that would let the sender impose semantics on the
  *     receiver's view of the multisig.
  *
- * See  §9 for the canonical schema and §6.6
- * Path B for the import flow.
+ * The config JSON carries a {threshold, signers, optional name} shape; on
+ * import the config is verified by re-deriving the address from its
+ * parameters (Path B import flow).
  */
 
 import { isValidXxAddress } from './address';

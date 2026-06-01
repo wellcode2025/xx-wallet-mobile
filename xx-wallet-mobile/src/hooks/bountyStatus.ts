@@ -10,7 +10,8 @@
  * The defensive `unknown` fallback exists to keep the screen rendering
  * if the runtime ever adds a sixth variant: we surface the raw JSON
  * for debug visibility, but the row + detail still draw their other
- * fields. See  "Slice 1 Risks".
+ * fields. This guards against a future runtime upgrade introducing an
+ * unrecognised bounty status.
  */
 
 export type BountyStatus =

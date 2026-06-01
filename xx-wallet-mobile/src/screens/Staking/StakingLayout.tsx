@@ -6,7 +6,7 @@ import { useAccountsStore } from '@/store';
 import { useAutoNominate } from '@/hooks';
 
 /**
- * Staking section layout — shared chrome for the Phase 2b staking
+ * Staking section layout — shared chrome for the staking
  * surfaces. TopBar plus a segmented control switching between the
  * section's peer views; the active view renders through the Outlet.
  *
@@ -17,7 +17,7 @@ import { useAutoNominate } from '@/hooks';
  *
  * Pre-fetch — when the user enters the Staking section, fire the
  * auto-nominate selection in the background so the bond flow opens
- * with a warm cache. Phase 3 spike clocked this at ~40s in-browser,
+ * with a warm cache. Measured at ~40s in-browser,
  * which is fine while the user is reading My Nominations / browsing
  * Validators but jarring as on-screen wait time. The hook is a no-op
  * if a fresh cache already exists for this address.

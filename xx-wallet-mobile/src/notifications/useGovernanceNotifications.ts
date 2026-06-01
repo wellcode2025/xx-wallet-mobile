@@ -1,10 +1,10 @@
 /**
- * useGovernanceNotifications — bridges Phase 4 chain state into the
+ * useGovernanceNotifications — bridges governance chain state into the
  * notification scaffold.
  *
  * Mount once at the App root alongside useMultisigNotifications +
  * useSlashNotifications. Three categories, all derived from the
- * Phase 4 read hooks (no extra chain queries):
+ * governance read hooks (no extra chain queries):
  *
  *   - referendum.ending — an ongoing referendum is within the
  *     configured threshold of its end block (default 24h on xx).

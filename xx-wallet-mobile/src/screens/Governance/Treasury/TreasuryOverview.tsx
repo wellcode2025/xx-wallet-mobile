@@ -13,7 +13,7 @@ import { TipsTab } from './TipsTab';
 import { ProposeSpendSheet } from './ProposeSpendSheet';
 
 /**
- * Phase 4 Slice 4 — Treasury + Tips screen.
+ * Treasury + Tips screen.
  *
  * `/governance/treasury`. Mirrors the official xx web wallet's
  * Treasury page with the Tips sub-tab consolidated alongside (the web

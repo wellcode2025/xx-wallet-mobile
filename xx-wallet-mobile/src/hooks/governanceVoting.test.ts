@@ -2,11 +2,12 @@
  * Tests for parseMyVoting (democracy Voting enum) and parseCouncilVote
  * (elections Voter struct).
  *
- * Both use the named-field / toJSON discipline established by
- * feedback_chain_enum_decoding (Slice 2.1 + 3.1 + 4.4). Mangle guards
- * reject anything that doesn't yield xx-SS58 addresses, so a future
- * polkadot-codec shape change renders an empty section rather than
- * garbage.
+ * Both use the named-field / toJSON discipline: decode enums via
+ * .toJSON()/named fields with a mangle guard (addresses start with '6'),
+ * since auto-derived .isFoo/.asFoo accessors and tuple destructure are
+ * unreliable on the xx runtime. Mangle guards reject anything that
+ * doesn't yield xx-SS58 addresses, so a future polkadot-codec shape
+ * change renders an empty section rather than garbage.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -89,7 +90,7 @@ describe('parseMyVoting — Direct variant', () => {
     expect(r.votes[0].conviction).toBe('Locked 4× (4 days)');
   });
 
-  it('decodes a Split vote as aye:null (Slice 5 surfaces only Standard)', () => {
+  it('decodes a Split vote as aye:null (we surface only Standard)', () => {
     const r = parseMyVoting(
       codecOf({
         direct: {

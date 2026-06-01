@@ -16,8 +16,7 @@ import {
 import { formatBalance } from '@/utils';
 
 /**
- * Phase 4b Slice 6 — Vote action sheet, refactored in Slice 7 to use
- * the shared TxFooter.
+ * Vote action sheet. Uses the shared TxFooter.
  *
  * Submits `democracy.vote(refIndex, AccountVote::Standard{vote, balance})`
  * where vote is the packed u8 from encodeVoteByte. The form chrome

@@ -8,9 +8,9 @@
  * container via preserveAspectRatio="none"; vertical scaling is
  * normalized to the max value in the dataset.
  *
- * Single-purpose for slice 3: validator points-per-era over the
- * historical window. If a more general chart is wanted later, this
- * can grow — but slice 3 doesn't need axes, tooltips, or interaction.
+ * Single-purpose: validator points-per-era over the historical
+ * window. If a more general chart is wanted later, this can grow —
+ * but this use doesn't need axes, tooltips, or interaction.
  */
 
 import clsx from 'clsx';

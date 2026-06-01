@@ -1,7 +1,7 @@
 /**
  * governanceTimer — convert block deltas into human-readable durations.
  *
- * Used by every Phase 4 surface that has a deadline encoded as a target
+ * Used by every governance surface that has a deadline encoded as a target
  * block number:
  *   - Bounty `updateDue` ("29 days 3 hrs" or "Update overdue")
  *   - Democracy launch / voting / enactment / cooloff periods

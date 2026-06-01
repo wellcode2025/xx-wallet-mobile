@@ -2,7 +2,7 @@
  * updateDueBadge — pure mapping from a block-delta to a badge style.
  *
  * Bounty rows show an "update due" indicator next to the value. The
- * color thresholds (per the Phase 4 plan, Slice 1 acceptance criteria):
+ * color thresholds:
  *
  *   - red  "Update overdue"  when isOverdue (target block ≤ current)
  *   - amber                  when 0 < remaining < 7 days

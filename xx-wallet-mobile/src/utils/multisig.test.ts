@@ -10,8 +10,8 @@
  *   different from what they thought they were approving at.
  * - The fixture below pins the derivation against the live foundation
  *   operations multisig (`6Zihn…HnU8M`, 2-of-4 over the four known signer
- *   accounts) observed in the Phase 2a spike. If this test fails, either
- *   the wallet's derivation is wrong, the spike data was misinterpreted,
+ *   accounts) observed in the multisig spike. If this test fails, either
+ *   the wallet's derivation is wrong, the live chain data was misinterpreted,
  *   or @polkadot/util-crypto's createKeyMulti behavior changed.
  */
 
@@ -28,7 +28,7 @@ import {
   multisigAddressMatches,
 } from './multisig';
 
-// The foundation operations multisig, observed live during the Phase 2a
+// The foundation operations multisig, observed live during the multisig
 // spike (see scripts/spikes/multisig-spike-address.mjs). Address, threshold,
 // and signer set were extracted from real `multisig.asMulti` extrinsics on
 // `wss://rpc.xx.network`.
@@ -43,7 +43,7 @@ const FOUNDATION_OPS = {
   ],
 };
 
-// Another known-real xx address from the spike's decoded transfer history
+// Another known-real xx address from decoded live transfer history
 // (recurring recipient of foundation outflows; full form appears in the
 // nested_calls JSON returned by the indexer). Used as a synthetic 5th
 // signer to exercise the 3-of-5 derivation case with an address we know

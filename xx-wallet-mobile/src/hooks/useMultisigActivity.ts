@@ -11,13 +11,13 @@
  * (which doesn't capture the multisig context — a transfer signed via
  * as_multi looks identical to a regular transfer in the `transfer` table).
  *
- * For slice 1 (read-only view), we only surface MultisigExecuted events —
+ * For the read-only view, we only surface MultisigExecuted events —
  * the things the multisig has actually done. NewMultisig/MultisigApproval
  * events (proposals created or partially approved) are part of the
- * lifecycle but are slice 2 territory (Pending actions list).
+ * lifecycle but belong to the pending-actions list, handled separately.
  *
  * Indexer schema and query patterns confirmed against `indexer.xx.network`
- * by the Phase 2a spike (`scripts/spikes/multisig-spike-address.mjs`).
+ * (`scripts/spikes/multisig-spike-address.mjs`).
  *
  * Degradation: if the indexer is unreachable, returns an error and an empty
  * list. The wallet itself remains operable (signing path doesn't depend on
@@ -161,7 +161,7 @@ function extrinsicIndexFromPhase(phase: unknown): number | null {
  * substrate event signature is roughly
  *   MultisigExecuted(approving, timepoint, multisig, call_hash, result)
  * with the call_hash at index 3 in the JSON-stringified data array we
- * observed in the spike. We parse defensively because event-data shape
+ * observed live on chain. We parse defensively because event-data shape
  * has changed across runtime versions historically.
  */
 function callHashFromEventData(data: unknown): string {

@@ -19,8 +19,11 @@
  *     proposalBondMinimum, proposalBondMaximum.
  *
  * Pending proposals are read by named field (proposer, value,
- * beneficiary, bond) — never by array-destructure, per
- * feedback_chain_enum_decoding. The Slice 3.1 SeatHolder bug is the
+ * beneficiary, bond) — never by array-destructure. Decode enums via
+ * .toJSON()/named fields with a mangle guard (addresses start with
+ * '6'); auto-derived .isFoo/.asFoo accessors and tuple destructure are
+ * unreliable on the xx runtime, and an earlier council SeatHolder bug
+ * (a tuple destructure walking a struct's field-name pairs) is the
  * reference for why.
  *
  * Identity prefetch for all visible proposers + beneficiaries fires
@@ -100,9 +103,9 @@ export function useTreasury(): UseTreasuryResult {
         // proposalBondMinimum is Get<BalanceOf<T>> on most substrate
         // versions, while proposalBondMaximum is Get<Option<BalanceOf<T>>>.
         // bnFromConst handles both shapes plus a string-fallback for
-        // codecs that don't expose .toBn (the actual Slice 4 bug —
-        // proposalBondMaximum on xx is an Option<Balance>, and calling
-        // .toBn() on the Option wrapper threw "is not a function").
+        // codecs that don't expose .toBn (an earlier bug: proposalBondMaximum
+        // on xx is an Option<Balance>, and calling .toBn() on the Option
+        // wrapper threw "is not a function").
         const proposalBondMinimum = bnFromConst(consts.proposalBondMinimum);
         const proposalBondMaximum = bnFromConst(consts.proposalBondMaximum);
 
@@ -123,7 +126,7 @@ export function useTreasury(): UseTreasuryResult {
         // Independent fetches via Promise.allSettled — a failure in any
         // one branch leaves the others available. Without this, an
         // exception decoding the proposals storage shape (the
-        // feedback_chain_enum_decoding class of bug) would blank the
+        // enum-decoding class of bug) would blank the
         // entire screen, including the pot balance which lives on a
         // completely different code path.
         //
@@ -131,10 +134,9 @@ export function useTreasury(): UseTreasuryResult {
         // throws inside the query (e.g. calling `.entries()` on a
         // storage type that doesn't expose it) become rejected
         // promises instead of escaping past Promise.allSettled into
-        // the outer catch. Without this, Slice 4.1's allSettled did
-        // nothing — the sync throw escaped before allSettled was even
-        // invoked, and the whole hook still error-stated. Slice 4.2
-        // fix.
+        // the outer catch. Without this wrapping, an earlier bug let the
+        // sync throw escape before allSettled was even invoked, and the
+        // whole hook still error-stated.
         //
         // Each branch logs its own error so phone-test inspection of
         // the deployed build narrows down which call actually failed.
@@ -232,7 +234,7 @@ function numFromConst(c: any): number {
  *   1. Plain Balance codec — has `.toBn()`. Most chains, most consts.
  *   2. Option<Balance> codec — has `.isSome` / `.unwrap()`, no `.toBn()`.
  *      proposalBondMaximum on xx v206 is this shape; calling `.toBn()`
- *      directly is the bug Slice 4.4 fixes.
+ *      directly on the Option wrapper throws, which an earlier bug hit.
  *   3. Some other Codec whose `.toString()` yields a decimal or hex
  *      number string — fallback path so a future shape change doesn't
  *      crash us again.
@@ -355,9 +357,11 @@ function readPendingProposals(
 
 /**
  * Parse a treasury Proposal struct by named field — never array
- * destructure (per feedback_chain_enum_decoding). Returns null for
- * unparseable entries so the row is skipped rather than rendered
- * with garbage.
+ * destructure. Decode enums via .toJSON()/named fields with a mangle
+ * guard (addresses start with '6'); auto-derived .isFoo/.asFoo
+ * accessors and tuple destructure are unreliable on the xx runtime.
+ * Returns null for unparseable entries so the row is skipped rather
+ * than rendered with garbage.
  *
  * Exported for testing.
  */

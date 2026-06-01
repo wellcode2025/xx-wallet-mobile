@@ -11,11 +11,11 @@ import { formatBalance, shortenAddress } from '@/utils';
 import { VoteSheet } from './VoteSheet';
 
 /**
- * Phase 4b Slice 6 — Referendum detail screen.
+ * Referendum detail screen.
  *
- * `/governance/democracy/:id`. Deferred from Slice 2 because the chain
- * had 0 active referenda then (still does as of this slice, but the
- * Vote button needs somewhere to live so the screen ships now).
+ * `/governance/democracy/:id`. The chain currently has 0 active
+ * referenda, but the Vote button needs somewhere to live, so the
+ * screen ships regardless.
  *
  * Anchor for the Vote button. Below the per-referendum data: tally,
  * threshold, end-block countdown, proposal hash. Above the Vote button:

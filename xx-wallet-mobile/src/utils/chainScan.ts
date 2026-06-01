@@ -14,7 +14,8 @@
  * Algorithm:
  *   1. For each of the user's wallet accounts, query the indexer's
  *      event table for multisig events whose data blob mentions that
- *      account. Same ILIKE pattern the spike used; catches both
+ *      account. Same ILIKE pattern used by the indexer feasibility
+ *      check; catches both
  *      "user was the approver" and "user appears in other_signatories".
  *   2. Collect unique (block_number, extrinsic_index) pairs.
  *   3. Batch-fetch those extrinsics so we get their args + signer.
@@ -100,7 +101,7 @@ export async function scanForUserMultisigs(
   const validAddrs = userAddresses.filter(isValidXxAddress);
   if (validAddrs.length === 0) return [];
 
-  // Phase 1: collect candidate (block, extrinsic_index) tuples from
+  // Step 1: collect candidate (block, extrinsic_index) tuples from
   // multisig events mentioning any of the user's addresses. Doing one
   // query per address is simpler than building an _or of N ILIKE
   // clauses; the indexer handles it fine for a typical 1-5 account user.
@@ -137,7 +138,7 @@ export async function scanForUserMultisigs(
 
   if (candidateTuples.size === 0) return [];
 
-  // Phase 2: batch-fetch the extrinsic rows for those tuples. We chunk
+  // Step 2: batch-fetch the extrinsic rows for those tuples. We chunk
   // to keep individual GraphQL requests under a sensible size (the
   // indexer may have request-size limits; 50 per request is well within
   // anything reasonable).
@@ -188,7 +189,7 @@ export async function scanForUserMultisigs(
     allExtrinsics.push(...extrinsic);
   }
 
-  // Phase 3: parse each extrinsic and aggregate by derived multisig
+  // Step 3: parse each extrinsic and aggregate by derived multisig
   // address. Walk all of them; dedupe via the Map.
   const byAddress = new Map<string, DiscoveredMultisig>();
 

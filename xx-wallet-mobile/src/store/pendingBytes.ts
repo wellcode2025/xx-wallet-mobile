@@ -8,12 +8,12 @@
  * To render a description of "what does this proposal do?" the wallet
  * needs the full bytes, which arrive out-of-band from one of two sources:
  *
- *   1. The user themselves proposed it (slice 3), in which case the
+ *   1. The user themselves proposed it, in which case the
  *      wallet held the bytes locally during construction. Cached so the
  *      user can re-share with cosigners later.
  *
  *   2. A cosigner shared bytes with the user via paste / file / QR /
- *      eventually the notification service (slice 2 + 2a.5). Cached so
+ *      eventually the notification service. Cached so
  *      the user can navigate away and come back without losing them.
  *
  * Both paths persist into this store keyed by (multisigAddress, callHash).
@@ -28,8 +28,10 @@
  * cap. We don't bound this store's size for now; if it ever balloons,
  * we'll add eviction in a polish pass.
  *
- * See  §5 (data model) and §6.4 (approval
- * flow's use of cached bytes).
+ * This is the call-bytes cache half of the multisig data model (the other
+ * half being the known-multisigs store). The approval flow decodes from
+ * these cached bytes and hash-gates against the chain — never trusting
+ * depositor-supplied text.
  */
 
 import { create } from 'zustand';

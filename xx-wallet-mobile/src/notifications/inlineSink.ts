@@ -2,10 +2,10 @@
  * Wallet-inline sink — surfaces actionable events directly in the
  * wallet UI without requiring the user to plug in an external channel.
  *
- * For Phase 3.5 v1 this only handles slash-flavored events; multisig
+ * Currently this only handles slash-flavored events; multisig
  * and transfer events still pass through the noop default (and any
  * plugin sink the user registers). Future scope could broaden the
- * inline surface — see strategy memory on pluggable notifications.
+ * inline surface via the pluggable notification design.
  *
  * Writes to `useAlertsStore` which a banner on MyNominations renders.
  * The store is persisted, so a slash alert observed mid-session

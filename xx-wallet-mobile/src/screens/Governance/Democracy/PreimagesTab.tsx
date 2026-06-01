@@ -8,7 +8,7 @@ import { displayName, useIdentity } from '@/governance';
 import type { PreimageEntry } from '@/hooks';
 
 /**
- * Phase 4 Slice 2 — Preimages tab inside /governance/democracy.
+ * Preimages tab inside /governance/democracy.
  *
  * One row per on-chain preimage. Each row shows:
  *   - Truncated hash (with a copy button — preimage hashes are how
