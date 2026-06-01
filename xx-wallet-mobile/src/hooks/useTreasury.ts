@@ -28,7 +28,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { BN } from '@polkadot/util';
+import { BN } from '@polkadot/util';
 import { xxApi } from '@/api';
 import { deriveModuleAccount, resolveIdentitiesBatch } from '@/governance';
 
@@ -97,12 +97,14 @@ export function useTreasury(): UseTreasuryResult {
         const spendPeriod = numFromConst(consts.spendPeriod);
         const burnPerMill = numFromConst(consts.burn);
         const proposalBondPerMill = numFromConst(consts.proposalBond);
-        const proposalBondMinimum = consts.proposalBondMinimum
-          ? consts.proposalBondMinimum.toBn()
-          : null;
-        const proposalBondMaximum = consts.proposalBondMaximum
-          ? consts.proposalBondMaximum.toBn()
-          : null;
+        // proposalBondMinimum is Get<BalanceOf<T>> on most substrate
+        // versions, while proposalBondMaximum is Get<Option<BalanceOf<T>>>.
+        // bnFromConst handles both shapes plus a string-fallback for
+        // codecs that don't expose .toBn (the actual Slice 4 bug —
+        // proposalBondMaximum on xx is an Option<Balance>, and calling
+        // .toBn() on the Option wrapper threw "is not a function").
+        const proposalBondMinimum = bnFromConst(consts.proposalBondMinimum);
+        const proposalBondMaximum = bnFromConst(consts.proposalBondMaximum);
 
         // Derive treasury account from palletId (8 bytes — toU8a yields exactly that).
         let treasuryAddress: string | null = null;
@@ -221,6 +223,52 @@ function numFromConst(c: any): number {
   if (c == null) return 0;
   if (typeof c.toNumber === 'function') return c.toNumber();
   return Number(c.toString());
+}
+
+/**
+ * Read a chain constant that's supposed to be a balance, defensively
+ * across the three shapes it can take on different substrate versions:
+ *
+ *   1. Plain Balance codec — has `.toBn()`. Most chains, most consts.
+ *   2. Option<Balance> codec — has `.isSome` / `.unwrap()`, no `.toBn()`.
+ *      proposalBondMaximum on xx v206 is this shape; calling `.toBn()`
+ *      directly is the bug Slice 4.4 fixes.
+ *   3. Some other Codec whose `.toString()` yields a decimal or hex
+ *      number string — fallback path so a future shape change doesn't
+ *      crash us again.
+ *
+ * Returns null when the const is absent or unparseable. The hook then
+ * renders an empty "—" / no-render state for that field, which is the
+ * right behavior since these are read-only display constants.
+ */
+function bnFromConst(c: any): BN | null {
+  if (c == null) return null;
+  try {
+    // Option<Balance> — unwrap if isSome.
+    if (typeof c.isSome === 'boolean') {
+      if (!c.isSome) return null;
+      const inner = c.unwrap();
+      if (typeof inner?.toBn === 'function') return inner.toBn();
+      return parseBnString(inner?.toString?.());
+    }
+    // Plain Balance — direct `.toBn()`.
+    if (typeof c.toBn === 'function') return c.toBn();
+    // Anything else with a toString — try to parse as decimal or hex.
+    return parseBnString(c.toString?.());
+  } catch {
+    return null;
+  }
+}
+
+function parseBnString(s: string | undefined): BN | null {
+  if (!s) return null;
+  try {
+    if (/^\d+$/.test(s)) return new BN(s);
+    if (s.startsWith('0x')) return new BN(s.slice(2), 16);
+  } catch {
+    /* fall through */
+  }
+  return null;
 }
 
 // ---- Per-branch readers for the Promise.allSettled fan-out ----
