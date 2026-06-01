@@ -1,4 +1,5 @@
-import { ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import { formatBalance } from '@/utils';
 import { displayName, useIdentity, blocksToHuman } from '@/governance';
 import { useConnectionStore } from '@/store';
@@ -107,25 +108,37 @@ function ReferendumRow({ ref_ }: { ref_: OngoingReferendum }) {
   const blockNumber = useConnectionStore((s) => s.blockNumber);
   const end = blocksToHuman(blockNumber, ref_.end);
   return (
-    <li className="border-b border-ink-800/60 last:border-0 pb-3 last:pb-0">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-sm text-ink-100 font-medium">#{ref_.id}</p>
-        <p className="text-xs text-ink-400">{ref_.threshold}</p>
-      </div>
-      {ref_.proposalHash && (
-        <p className="mt-1 font-mono text-xs text-ink-400 truncate">
-          {shortenHex(ref_.proposalHash)}
+    <li className="border-b border-ink-800/60 last:border-0">
+      <Link
+        to={`/governance/democracy/${ref_.id}`}
+        className="block py-3 -mx-3 px-3 rounded-xl active:bg-ink-800/40 transition-colors"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <p className="text-sm text-ink-100 font-medium">#{ref_.id}</p>
+            <ChevronRight
+              size={14}
+              strokeWidth={1.75}
+              className="text-ink-400"
+            />
+          </div>
+          <p className="text-xs text-ink-400">{ref_.threshold}</p>
+        </div>
+        {ref_.proposalHash && (
+          <p className="mt-1 font-mono text-xs text-ink-400 truncate">
+            {shortenHex(ref_.proposalHash)}
+          </p>
+        )}
+        <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+          <TallyCell label="Ayes" amount={ref_.tally.ayes} />
+          <TallyCell label="Nays" amount={ref_.tally.nays} />
+          <TallyCell label="Turnout" amount={ref_.tally.turnout} />
+        </div>
+        <p className="mt-2 text-xs text-ink-400">
+          Ends in <span className="text-ink-200">{end.label}</span>
+          <span className="text-ink-500"> (block #{ref_.end.toLocaleString()})</span>
         </p>
-      )}
-      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-        <TallyCell label="Ayes" amount={ref_.tally.ayes} />
-        <TallyCell label="Nays" amount={ref_.tally.nays} />
-        <TallyCell label="Turnout" amount={ref_.tally.turnout} />
-      </div>
-      <p className="mt-2 text-xs text-ink-400">
-        Ends in <span className="text-ink-200">{end.label}</span>
-        <span className="text-ink-500"> (block #{ref_.end.toLocaleString()})</span>
-      </p>
+      </Link>
     </li>
   );
 }

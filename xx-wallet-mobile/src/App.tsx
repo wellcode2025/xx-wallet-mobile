@@ -46,6 +46,7 @@ import {
   BountiesList,
   BountyDetail,
   DemocracyOverview,
+  ReferendumDetail,
   CouncilOverview,
   TreasuryOverview,
   MyGovernance,
@@ -266,6 +267,10 @@ export function App() {
             <Route
               path="/governance/democracy"
               element={<DemocracyOverview />}
+            />
+            <Route
+              path="/governance/democracy/:id"
+              element={<ReferendumDetail />}
             />
             <Route
               path="/governance/council"
