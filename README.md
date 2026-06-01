@@ -28,7 +28,7 @@ and native multisig — with quantum-resistant key generation on by default.
 
 > [!IMPORTANT]
 > **Unofficial project.** This is an independent, community-built wallet. It is **not** an
-> official xx network or xx Foundation product and is not endorsed by them. It interacts with
+> official xx network or xx Foundation product and is not **currently** endorsed by them. It interacts with
 > the public xx network chain the same way any wallet does.
 >
 > **Self-custody, your responsibility.** The wallet is non-custodial — you alone hold your keys
