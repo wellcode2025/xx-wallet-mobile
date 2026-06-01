@@ -1,0 +1,1 @@
+export { MyGovernance } from './MyGovernance';

@@ -48,6 +48,7 @@ import {
   DemocracyOverview,
   CouncilOverview,
   TreasuryOverview,
+  MyGovernance,
 } from '@/screens/Governance';
 import { MultisigCreate } from '@/screens/MultisigCreate';
 import { MultisigDetail } from '@/screens/MultisigDetail';
@@ -274,6 +275,7 @@ export function App() {
               path="/governance/treasury"
               element={<TreasuryOverview />}
             />
+            <Route path="/governance/me" element={<MyGovernance />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
             <Route path="/multisig/import" element={<MultisigImport />} />

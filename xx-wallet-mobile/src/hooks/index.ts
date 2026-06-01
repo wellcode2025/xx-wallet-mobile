@@ -20,3 +20,5 @@ export * from './usePreimages';
 export * from './useCouncil';
 export * from './useTreasury';
 export * from './useTips';
+export * from './governanceVoting';
+export * from './useMyGovernance';

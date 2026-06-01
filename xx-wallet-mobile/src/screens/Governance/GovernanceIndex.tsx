@@ -76,8 +76,7 @@ const ROWS: Row[] = [
     title: 'My governance',
     subtitle: 'Your votes, delegations, and bonds',
     icon: UserCog,
-    to: null,
-    comingIn: 'Slice 5',
+    to: '/governance/me',
     forumPath: '',
   },
 ];
