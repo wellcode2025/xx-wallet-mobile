@@ -8,7 +8,7 @@ node_modules/
 dist/
 dist-ssr/
 
-# Environment files (we don't currently use any but defensive)
+# Environment files
 .env
 .env.local
 .env.*.local
@@ -21,9 +21,6 @@ yarn-debug.log*
 # OS / IDE noise
 .DS_Store
 Thumbs.db
-# Catches both the dot-separator and colon-separator forms of the Windows
-# "downloaded from internet" alternate-data-stream metadata files that
-# leak through rsync from NTFS (/mnt/c) to ext4 (~).
 *Zone.Identifier
 *:Zone.Identifier
 .vscode/*
@@ -32,58 +29,11 @@ Thumbs.db
 *.swp
 *.swo
 
-# Go build artifacts inside sleeve-wasm/. Note that the *output* artifacts
-# (public/sleeve/main.wasm + wasm_exec.js) ARE intentionally committed so
-# day-to-day npm builds don't depend on Go being installed.
+# Go build artifacts inside sleeve-wasm/. The output artifacts under
+# public/sleeve/ (main.wasm + wasm_exec.js) ARE committed so day-to-day
+# npm builds don't depend on Go being installed.
 xx-wallet-mobile/sleeve-wasm/*.test
 xx-wallet-mobile/sleeve-wasm/coverage.out
 
-# Throwaway / scratch — kept locally, not for the repo
+# Throwaway / scratch
 scratch/
-
-# Reference material in docs/ that came from external upstream repos.
-# These were cloned for reading + analysis (xxfoundation patterns, the
-# audited Sleeve reference, the experimental single-seed bounty fork).
-# Each has its own upstream and license; not part of this project's source.
-docs/sleeve-main/
-docs/sleeve-modification-single-seed-main*/
-docs/scripts-main/
-docs/xxfoundation-scripts/
-docs/xxnetwork-js-main/
-
-# xx network media kit — large binary archive + extracted folder.
-# We've already extracted just the icon SVGs we ship into public/brand/.
-# The full kit doesn't need to live in version control (and the .ai files
-# in particular are sizeable Illustrator binaries).
-docs/xx network_media kit/
-docs/xx network_media kit.zip
-
-# Misc one-off cleanup leftovers
-docs/test-write.txt
-docs/_to-delete-*
-
-# After the May 2026 cleanup pass we moved all vendor reference clones
-# (sleeve, scripts, xxnetwork-js, etc.) under a single
-# docs/_external-reference/ folder. Same intent as the per-folder
-# patterns above — these are upstream reference repos we keep locally
-# for reading, NOT part of this project's source tree.
-docs/_external-reference/
-
-# --- Internal / non-public docs (kept locally, never published) ---
-/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/
-/docs/WSL_MIGRATION.md
-/docs/xx network_media kit/
-/docs/_external-reference/
-/xx-wallet-mobile/docs/PHASE_4_GOVERNANCE_
