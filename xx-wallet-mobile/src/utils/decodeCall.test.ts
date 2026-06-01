@@ -188,7 +188,7 @@ describe('safeDecodeCall', () => {
     const api: AnyApi = {
       registry: {
         createType: () => {
-          // eslint-disable-next-line no-throw-literal
+           
           throw 'string-not-Error';
         },
       },

@@ -70,7 +70,10 @@ export function VoteSheet({
   }, [open, initialAye]);
 
   const { balance } = useBalance(signerAddress || null);
-  const available = balance?.transferable ?? new BN(0);
+  const available = useMemo(
+    () => balance?.transferable ?? new BN(0),
+    [balance]
+  );
 
   const amountBn = useMemo(() => parseAmount(amountStr), [amountStr]);
 

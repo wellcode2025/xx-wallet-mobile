@@ -83,7 +83,7 @@ export function WhatsNewSheet() {
     if (open && RELEASE_NOTES.length === 0) {
       close();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [open]);
 
   return (

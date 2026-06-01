@@ -178,9 +178,10 @@ function ProposeView({ address }: { address: string }) {
 
   const parsedAmount = useMemo(() => parseAmount(amount), [amount]);
 
-  const transferable = balance
-    ? new BigNumber(balance.transferable.toString())
-    : null;
+  const transferable = useMemo(
+    () => (balance ? new BigNumber(balance.transferable.toString()) : null),
+    [balance]
+  );
 
   // Existential deposit warnings — same logic as Send. The multisig is
   // the sender here; if the proposed amount would reap it, the chain

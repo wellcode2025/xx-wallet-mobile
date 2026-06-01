@@ -108,9 +108,10 @@ export function Send() {
     recipient.trim() === active.address;
   const parsedAmount = useMemo(() => parseAmount(amount), [amount]);
 
-  const transferable = balance
-    ? new BigNumber(balance.transferable.toString())
-    : null;
+  const transferable = useMemo(
+    () => (balance ? new BigNumber(balance.transferable.toString()) : null),
+    [balance]
+  );
 
   // Would sender drop below existential deposit after this send? Catches
   // both "leaves a tiny non-zero remainder" (was the only case before) AND
