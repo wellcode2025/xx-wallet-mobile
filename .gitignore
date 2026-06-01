@@ -68,3 +68,22 @@ docs/_to-delete-*
 # patterns above — these are upstream reference repos we keep locally
 # for reading, NOT part of this project's source tree.
 docs/_external-reference/
+
+# --- Internal / non-public docs (kept locally, never published) ---
+/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/
+/docs/WSL_MIGRATION.md
+/docs/xx network_media kit/
+/docs/_external-reference/
+/xx-wallet-mobile/docs/PHASE_4_GOVERNANCE_
