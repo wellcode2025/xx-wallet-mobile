@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronRight, ExternalLink, ThumbsUp } from 'lucide-react';
 import { formatBalance } from '@/utils';
 import { displayName, useIdentity, blocksToHuman } from '@/governance';
 import { useConnectionStore } from '@/store';
+import { SecondSheet } from './SecondSheet';
 import type {
   ExternalProposal,
   OngoingReferendum,
@@ -204,19 +206,33 @@ function ProposalsSection({
 function ProposalRow({ proposal }: { proposal: PublicProposal }) {
   const { identity } = useIdentity(proposal.depositor);
   const name = displayName(identity, proposal.depositor);
+  const [secondOpen, setSecondOpen] = useState(false);
   return (
     <li className="border-b border-ink-800/60 last:border-0 pb-2 last:pb-0">
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-sm text-ink-100">#{proposal.id}</p>
-        <p className="text-xs text-ink-400 truncate">
-          Depositor: <span className="text-ink-300">{name.primary}</span>
-        </p>
+        <button
+          type="button"
+          onClick={() => setSecondOpen(true)}
+          className="inline-flex items-center gap-1 text-xs text-xx-500 active:text-xx-400 font-medium"
+        >
+          <ThumbsUp size={11} strokeWidth={2} />
+          Second
+        </button>
       </div>
+      <p className="text-xs text-ink-400 truncate mt-0.5">
+        Depositor: <span className="text-ink-300">{name.primary}</span>
+      </p>
       {proposal.proposalHash && (
         <p className="mt-1 font-mono text-xs text-ink-400 truncate">
           {shortenHex(proposal.proposalHash)}
         </p>
       )}
+      <SecondSheet
+        open={secondOpen}
+        onClose={() => setSecondOpen(false)}
+        proposalIndex={proposal.id}
+      />
     </li>
   );
 }

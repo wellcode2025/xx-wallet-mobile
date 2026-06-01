@@ -9,5 +9,6 @@ export * from './Sheet';
 export * from './SparkBarChart';
 export * from './StakingStatusBadge';
 export * from './TransactionItem';
+export * from './TxFooter';
 export * from './UpdateBanner';
 export * from './WhatsNewSheet';

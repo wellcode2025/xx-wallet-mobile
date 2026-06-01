@@ -1,12 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, X as XIcon } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, LoadingIndicator } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 import { useMyGovernance, type MyDemocracyVoting } from '@/hooks';
 import { displayName, useIdentity } from '@/governance';
 import { formatBalance } from '@/utils';
+import {
+  DelegateSheet,
+  RemoveVoteSheet,
+  UndelegateSheet,
+} from '../Democracy';
 
 /**
  * Phase 4 Slice 5 — My Governance.
@@ -117,6 +122,13 @@ function DemocracySection({
   failed: boolean;
   diagnostic: string | null;
 }) {
+  const [delegateOpen, setDelegateOpen] = useState(false);
+  const [undelegateOpen, setUndelegateOpen] = useState(false);
+  const [removeVoteFor, setRemoveVoteFor] = useState<{
+    refIndex: number;
+    balance: import('@polkadot/util').BN | null;
+  } | null>(null);
+
   return (
     <section className="card space-y-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -138,11 +150,19 @@ function DemocracySection({
       )}
 
       {!failed && voting.kind === 'none' && (
-        <p className="text-sm text-ink-400">
-          You haven't voted on any active referenda, and you're not
-          delegating. When you vote on a referendum the entry shows
-          here with its conviction and lock end.
-        </p>
+        <>
+          <p className="text-sm text-ink-400">
+            You haven't voted on any active referenda, and you're not
+            delegating. When you vote on a referendum the entry shows
+            here with its conviction and lock end.
+          </p>
+          <button
+            onClick={() => setDelegateOpen(true)}
+            className="text-xs text-xx-500 active:text-xx-400 font-medium"
+          >
+            Delegate vote power
+          </button>
+        </>
       )}
 
       {!failed && voting.kind === 'direct' && (
@@ -159,9 +179,12 @@ function DemocracySection({
                   className="border-b border-ink-800/60 last:border-0 pb-2 last:pb-0"
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-sm text-ink-100">
+                    <Link
+                      to={`/governance/democracy/${v.refIndex}`}
+                      className="text-sm text-ink-100 active:text-xx-500"
+                    >
                       Referendum #{v.refIndex}
-                    </p>
+                    </Link>
                     {v.aye != null && (
                       <span
                         className={
@@ -187,6 +210,18 @@ function DemocracySection({
                       · {v.conviction}
                     </p>
                   )}
+                  <button
+                    onClick={() =>
+                      setRemoveVoteFor({
+                        refIndex: v.refIndex,
+                        balance: v.balance,
+                      })
+                    }
+                    className="mt-1 inline-flex items-center gap-1 text-xs text-ink-400 active:text-danger font-medium"
+                  >
+                    <XIcon size={10} strokeWidth={2.5} />
+                    Remove vote
+                  </button>
                 </li>
               ))}
             </ul>
@@ -225,7 +260,33 @@ function DemocracySection({
               amount={voting.priorLock.amount}
             />
           )}
+          <button
+            onClick={() => setUndelegateOpen(true)}
+            className="text-xs text-ink-400 active:text-danger font-medium"
+          >
+            Stop delegating
+          </button>
         </>
+      )}
+
+      <DelegateSheet
+        open={delegateOpen}
+        onClose={() => setDelegateOpen(false)}
+      />
+      {voting.kind === 'delegating' && (
+        <UndelegateSheet
+          open={undelegateOpen}
+          onClose={() => setUndelegateOpen(false)}
+          currentTarget={voting.target}
+        />
+      )}
+      {removeVoteFor && (
+        <RemoveVoteSheet
+          open={!!removeVoteFor}
+          onClose={() => setRemoveVoteFor(null)}
+          refIndex={removeVoteFor.refIndex}
+          lockedAmount={removeVoteFor.balance}
+        />
       )}
     </section>
   );
