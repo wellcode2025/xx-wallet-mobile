@@ -373,7 +373,7 @@ function EmptyState({ isBonded }: { isBonded: boolean }) {
   if (isBonded) {
     // Bonded but not nominating — chilled, freshly bonded, or validating-only.
     return (
-      <div className="card flex flex-col items-center text-center gap-3 py-8">
+      <div className="card flex flex-col items-center text-center gap-4 py-8">
         <div className="w-14 h-14 rounded-full bg-ink-800 border border-ink-700 flex items-center justify-center">
           <Coins size={24} strokeWidth={1.5} className="text-ink-400" />
         </div>
@@ -383,9 +383,16 @@ function EmptyState({ isBonded }: { isBonded: boolean }) {
           </p>
           <p className="text-sm text-ink-400">
             This account is bonded but isn't currently nominating any
-            validators.
+            validators. Nominate to start earning rewards — your existing
+            bond is used, so there's nothing more to lock.
           </p>
         </div>
+        <Link
+          to="/staking/change"
+          className="px-5 py-2.5 rounded-full bg-xx-500 text-ink-950 text-sm font-medium active:opacity-80 transition-opacity"
+        >
+          Nominate validators
+        </Link>
       </div>
     );
   }

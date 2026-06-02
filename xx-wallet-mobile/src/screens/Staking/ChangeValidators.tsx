@@ -44,6 +44,13 @@ export function ChangeValidators() {
   } = useAutoNominate(activeAccount?.address ?? null);
   const { submit, status, error: txError } = useTx();
 
+  // This screen serves two states: re-nominating an account that already
+  // nominates, and the first nomination for an account that is bonded but
+  // not nominating (e.g. after a chill). Both submit staking.nominate();
+  // the only difference is wording.
+  const nominating = !!position?.isNominating;
+  const isBonded = !!position?.ledger;
+
   // Form state — initial hand-pick selection is the user's current nominations
   const [mode, setMode] = useState<'auto' | 'pick'>('auto');
   const [handPicked, setHandPicked] = useState<string[]>([]);
@@ -121,15 +128,15 @@ export function ChangeValidators() {
 
   return (
     <>
-      <TopBar title="Change validators" showBack />
+      <TopBar title={nominating ? 'Change validators' : 'Nominate validators'} showBack />
       <div className="px-5 py-4 space-y-4">
         {/* Account context */}
         <div className="card space-y-2">
           <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
-            Re-nominating from
+            {nominating ? 'Re-nominating from' : 'Nominating from'}
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
-          {position?.targets && (
+          {nominating && position?.targets && (
             <p className="text-xs text-ink-400">
               Currently nominating{' '}
               <span className="text-ink-200">
@@ -144,16 +151,16 @@ export function ChangeValidators() {
           <LoadingIndicator message="Loading your position..." />
         )}
 
-        {position && !position.isNominating && (
+        {position && !isBonded && (
           <div className="card">
             <p className="text-sm text-ink-200">
-              This account isn't currently nominating. Start by bonding +
-              nominating in Start staking — change validators afterwards.
+              This account isn't bonded yet. Bond and nominate together in
+              Start staking first.
             </p>
           </div>
         )}
 
-        {position && position.isNominating && !isDone && (
+        {position && isBonded && !isDone && (
           <>
             {/* Selection */}
             <div className="card space-y-3">
