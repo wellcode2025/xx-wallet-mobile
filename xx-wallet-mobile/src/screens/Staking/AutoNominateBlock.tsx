@@ -1,23 +1,32 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { ChevronDown, ChevronRight, RefreshCcw } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  RefreshCcw,
+  SlidersHorizontal,
+} from 'lucide-react';
 import type { AutoNominateValidator, AutoNominateTimings } from '@/staking';
+import { useAutoSelection } from '@/hooks';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 import { ValidatorStatsSheet } from './ValidatorStatsSheet';
+import { AdvancedSelectionSheet } from './AdvancedSelectionSheet';
 
 /**
  * Auto-recommend block — shared by Start staking and Change validators.
  *
  * Renders the auto-nominate result with enough context that the picks
  * aren't opaque: a plain-language "how these were chosen" explainer, each
- * validator's commission and rank inline, and tap-to-inspect on any row
- * (opens a flow-safe stats sheet rather than navigating away).
+ * validator's commission and rank inline, tap-to-inspect on any row, and
+ * a single quiet "Advanced" entry point to the optional quality levers
+ * (kept off the main flow so the default stays uncluttered).
  */
 interface AutoNominateBlockProps {
   autoComputing: boolean;
   autoError: Error | null;
   autoResult: {
     selected: AutoNominateValidator[];
+    allElected: AutoNominateValidator[];
     timings: AutoNominateTimings;
   } | null;
   onRefresh: () => void;
@@ -32,6 +41,10 @@ export function AutoNominateBlock({
   const [showValidators, setShowValidators] = useState(true);
   const [showHow, setShowHow] = useState(false);
   const [statsAddress, setStatsAddress] = useState<string | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Levered selection (no-op when no levers are active).
+  const selection = useAutoSelection(autoResult);
 
   if (autoComputing && !autoResult) {
     return (
@@ -65,11 +78,13 @@ export function AutoNominateBlock({
 
   if (!autoResult) return null;
 
+  const picks = selection.selected;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-ink-100">
-          {autoResult.selected.length} validators chosen for you
+          {picks.length} validator{picks.length === 1 ? '' : 's'} chosen for you
         </p>
         <button
           onClick={onRefresh}
@@ -83,6 +98,26 @@ export function AutoNominateBlock({
       <p className="text-xs text-ink-400">
         Selected in {(autoResult.timings.totalMs / 1000).toFixed(1)}s.
       </p>
+
+      {/* Advanced entry point + live effect — single quiet line */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => setAdvancedOpen(true)}
+          className="flex items-center gap-1.5 text-xs text-ink-400 active:text-ink-200"
+        >
+          <SlidersHorizontal size={12} strokeWidth={1.75} />
+          Advanced
+          {selection.leverCount > 0 && (
+            <span className="w-1.5 h-1.5 rounded-full bg-xx-500" />
+          )}
+        </button>
+        {selection.leverCount > 0 && selection.changedCount > 0 && (
+          <span className="text-xs text-ink-400">
+            {selection.changedCount} pick
+            {selection.changedCount === 1 ? '' : 's'} changed
+          </span>
+        )}
+      </div>
 
       {/* How these were chosen — plain-language explainer */}
       <div>
@@ -104,7 +139,7 @@ export function AutoNominateBlock({
             its stake already is. This favours strong, lower-commission
             validators that aren't oversubscribed. Validators that block
             nominations or are already full are skipped. Tap any validator below
-            to see its full stats, or switch to Hand-pick to choose your own.
+            to see its full stats, or use Advanced to bias the picks.
           </p>
         )}
       </div>
@@ -122,7 +157,7 @@ export function AutoNominateBlock({
 
       {showValidators && (
         <ul className="rounded-2xl bg-ink-950 border border-ink-800 divide-y divide-ink-800/60">
-          {autoResult.selected.map((v, idx) => (
+          {picks.map((v, idx) => (
             <li key={v.validatorId}>
               <button
                 onClick={() => setStatsAddress(v.validatorId)}
@@ -133,15 +168,13 @@ export function AutoNominateBlock({
                 </span>
                 <AddressLabel
                   address={v.validatorId}
+                  nameOverride={v.displayName ?? undefined}
                   className="text-xs min-w-0 flex-1"
                 />
                 <span className="font-mono text-xs text-ink-400 numeric flex-shrink-0">
                   {v.commission.toFixed(0)}%
                 </span>
-                <ChevronRight
-                  size={14}
-                  className="text-ink-500 flex-shrink-0"
-                />
+                <ChevronRight size={14} className="text-ink-500 flex-shrink-0" />
               </button>
             </li>
           ))}
@@ -152,6 +185,11 @@ export function AutoNominateBlock({
         address={statsAddress}
         open={statsAddress !== null}
         onClose={() => setStatsAddress(null)}
+      />
+
+      <AdvancedSelectionSheet
+        open={advancedOpen}
+        onClose={() => setAdvancedOpen(false)}
       />
     </div>
   );

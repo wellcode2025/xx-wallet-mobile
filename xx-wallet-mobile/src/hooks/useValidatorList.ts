@@ -33,7 +33,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { BN } from '@polkadot/util';
+import { hexToString, type BN } from '@polkadot/util';
 import { xxApi } from '@/api';
 
 const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
@@ -94,6 +94,42 @@ async function fetchValidatorDisplayNames(): Promise<Map<string, string>> {
   return names;
 }
 
+/**
+ * Chain identity display names for the given validator addresses, via a
+ * single batched identityOf.multi call (not a per-validator loop). The
+ * chain is authoritative for identity; the indexer's account.identity is
+ * often sparse, so names are read here the same way the detail screen
+ * resolves them. Best-effort: any parse failure just yields no name for
+ * that validator.
+ */
+async function fetchChainDisplayNames(
+  api: any,
+  addresses: string[]
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  try {
+    if (!api.query.identity?.identityOf || addresses.length === 0) return names;
+    const results: any[] = await api.query.identity.identityOf.multi(addresses);
+    results.forEach((res, i) => {
+      try {
+        if (!res || res.isNone) return;
+        const raw = res.toJSON ? res.toJSON() : null;
+        const reg = Array.isArray(raw) ? raw[0] : raw;
+        const displayRaw = reg?.info?.display?.raw;
+        if (typeof displayRaw === 'string') {
+          const name = hexToString(displayRaw).trim();
+          if (name) names.set(addresses[i], name);
+        }
+      } catch {
+        /* skip this validator's name */
+      }
+    });
+  } catch {
+    /* identity unavailable — names are enrichment, never fatal */
+  }
+  return names;
+}
+
 export function useValidatorList(): UseValidatorListResult {
   const [validators, setValidators] = useState<ValidatorListEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -148,8 +184,16 @@ export function useValidatorList(): UseValidatorListResult {
           );
         }
 
-        // Identity display names (indexer enrichment).
-        const displayNames = await fetchValidatorDisplayNames();
+        // Identity display names — chain-first (authoritative, the same
+        // source the detail screen uses), with the indexer as a fallback
+        // for any the chain doesn't resolve.
+        const addresses = (prefsEntries as any[]).map(([key]) =>
+          key.args[0].toString()
+        );
+        const [chainNames, indexerNames] = await Promise.all([
+          fetchChainDisplayNames(api, addresses),
+          fetchValidatorDisplayNames(),
+        ]);
         if (cancelled) return;
 
         // staking.validators.entries() is the spine — the authoritative
@@ -160,7 +204,8 @@ export function useValidatorList(): UseValidatorListResult {
             const stake = stakeByAddr.get(address) ?? null;
             return {
               address,
-              displayName: displayNames.get(address) ?? null,
+              displayName:
+                chainNames.get(address) ?? indexerNames.get(address) ?? null,
               commission: Number(prefs.commission.toString()) / 1e7,
               blocked: prefs.blocked?.isTrue === true,
               isActive: stake !== null,

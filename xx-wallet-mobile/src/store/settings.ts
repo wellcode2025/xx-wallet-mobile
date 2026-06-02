@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { DEFAULT_ENDPOINT } from '../api';
+import { DEFAULT_LEVERS, type QualityLevers } from '../staking';
 
 /**
  * Bounds for the multisig stale-proposal threshold. 7 days minimum so
@@ -36,11 +37,21 @@ interface SettingsState {
    * stale-detection logic in usePendingMultisigs / approval surfaces.
    */
   staleThresholdDays: number;
+  /**
+   * Optional, opt-in "advanced" levers that re-rank the auto-nominate
+   * picks (prefer on-chain identity, prefer less-saturated validators,
+   * cap commission). All off by default = the base ranking. Applied
+   * client-side to the already-computed candidate set; see
+   * docs/validator-selection.md.
+   */
+  autoNominateLevers: QualityLevers;
 
   setEndpoint(endpoint: string): void;
   setCustomEndpoint(endpoint: string): void;
   toggleHideBalances(): void;
   setStaleThresholdDays(days: number): void;
+  setAutoNominateLevers(partial: Partial<QualityLevers>): void;
+  resetAutoNominateLevers(): void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -50,6 +61,7 @@ export const useSettingsStore = create<SettingsState>()(
       customEndpoint: '',
       hideBalances: false,
       staleThresholdDays: STALE_THRESHOLD_DAYS_DEFAULT,
+      autoNominateLevers: { ...DEFAULT_LEVERS },
 
       setEndpoint(endpoint: string) {
         set({ endpoint });
@@ -72,6 +84,16 @@ export const useSettingsStore = create<SettingsState>()(
           Math.min(STALE_THRESHOLD_DAYS_MAX, Math.round(days))
         );
         set({ staleThresholdDays: clamped });
+      },
+
+      setAutoNominateLevers(partial: Partial<QualityLevers>) {
+        set((s) => ({
+          autoNominateLevers: { ...s.autoNominateLevers, ...partial },
+        }));
+      },
+
+      resetAutoNominateLevers() {
+        set({ autoNominateLevers: { ...DEFAULT_LEVERS } });
       },
     }),
     { name: 'xx-wallet:settings' }

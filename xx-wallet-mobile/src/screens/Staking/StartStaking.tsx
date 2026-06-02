@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useAccountsStore } from '@/store';
 import {
   useAutoNominate,
+  useAutoSelection,
   useBalance,
   useTx,
   invalidateAutoNominateCache,
@@ -53,6 +54,8 @@ export function StartStaking() {
     refresh,
   } = useAutoNominate(activeAccount?.address ?? null);
   const { submit, status, error: txError } = useTx();
+  // Auto-pick after the user's optional quality levers (no-op by default).
+  const autoSelection = useAutoSelection(autoResult);
 
   // Form state
   const [amount, setAmount] = useState('');
@@ -68,9 +71,9 @@ export function StartStaking() {
   const targets = useMemo(
     () =>
       mode === 'auto'
-        ? autoResult?.selected.map((v) => v.validatorId) ?? []
+        ? autoSelection.selected.map((v) => v.validatorId)
         : handPicked,
-    [mode, autoResult, handPicked]
+    [mode, autoSelection.selected, handPicked]
   );
 
   // Validation

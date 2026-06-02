@@ -45,6 +45,7 @@
  */
 
 import type { ApiPromise } from '@polkadot/api';
+import { hexToString } from '@polkadot/util';
 import BigNumber from 'bignumber.js';
 
 import { seqPhragmen, type ElectedValidator, type Voter } from './phragmen';
@@ -73,6 +74,10 @@ export interface AutoNominateValidator {
   return: number;
   /** Commission as a percent, 0..100. */
   commission: number;
+  /** True if the validator has registered an on-chain identity. */
+  hasIdentity: boolean;
+  /** On-chain identity display name, or null. */
+  displayName: string | null;
   blocked: boolean;
 }
 
@@ -255,7 +260,9 @@ function buildVotersList(chainData: ChainData, exclude: string): Voter[] {
 function computeReturn(
   chainData: ChainData,
   elected: ElectedValidator,
-  avgStake: BigNumber
+  avgStake: BigNumber,
+  identitySet: Set<string>,
+  identityNames: Map<string, string>
 ): AutoNominateValidator {
   const performance = chainData.performance[elected.validatorId];
   const avgPerformance =
@@ -276,6 +283,8 @@ function computeReturn(
     backers: elected.backers,
     return: avgPerformance * stakingReturn,
     commission: commission * 100,
+    hasIdentity: identitySet.has(elected.validatorId),
+    displayName: identityNames.get(elected.validatorId) ?? null,
     blocked,
   };
 }
@@ -284,7 +293,9 @@ function orderValidatorsByReturn(
   chainData: ChainData,
   validators: ElectedValidator[],
   customFilters: ValidatorFilter[],
-  targetCount: number
+  targetCount: number,
+  identitySet: Set<string>,
+  identityNames: Map<string, string>
 ): { all: AutoNominateValidator[]; top: AutoNominateValidator[] } {
   if (validators.length === 0) return { all: [], top: [] };
   // Compute average stake across the elected set
@@ -293,7 +304,7 @@ function orderValidatorsByReturn(
     .dividedBy(validators.length);
   // Score each, filter, sort
   const all: AutoNominateValidator[] = validators.map((v) =>
-    computeReturn(chainData, v, avgStake)
+    computeReturn(chainData, v, avgStake, identitySet, identityNames)
   );
   const top = all
     .filter(({ backers, blocked }) => !blocked && backers < MAX_NOMINATIONS_PER_VALIDATOR)
@@ -335,11 +346,45 @@ export async function selectValidators(
 
   const voters = buildVotersList(chainData, nominator);
   const [, elected] = seqPhragmen(voters, chainData.count);
+
+  // Which elected validators have a registered on-chain identity? Used by
+  // the optional "prefer identified validators" quality lever. Best-effort:
+  // if the identity pallet/query is unavailable, fall back to an empty set
+  // (the lever then simply has no effect rather than breaking selection).
+  const identitySet = new Set<string>();
+  const identityNames = new Map<string, string>();
+  try {
+    const electedIds = elected.map((e) => e.validatorId);
+    const idents = (await api.query.identity.identityOf.multi(
+      electedIds
+    )) as unknown as Array<{ isNone?: boolean; toJSON?: () => unknown }>;
+    electedIds.forEach((id, i) => {
+      const res = idents[i];
+      if (!res || res.isNone) return;
+      identitySet.add(id);
+      try {
+        const raw = res.toJSON ? (res.toJSON() as any) : null;
+        const reg = Array.isArray(raw) ? raw[0] : raw;
+        const displayRaw = reg?.info?.display?.raw;
+        if (typeof displayRaw === 'string') {
+          const name = hexToString(displayRaw).trim();
+          if (name) identityNames.set(id, name);
+        }
+      } catch {
+        /* registered but no parseable display name */
+      }
+    });
+  } catch {
+    /* identity unavailable — lever degrades to no-op, names stay null */
+  }
+
   const { all, top } = orderValidatorsByReturn(
     chainData,
     elected,
     customFilters,
-    targetCount
+    targetCount,
+    identitySet,
+    identityNames
   );
   const tEnd = Date.now();
 

@@ -96,6 +96,10 @@ and native multisig — with quantum-resistant key generation on by default.
   nominating account to a validating one.
 - **Stay informed**: a network-wide validator list, per-validator detail with on-chain identity and
   history, a personal rewards history, and slash alerts that give you time to react.
+- **Transparent, tunable picks**: every recommended validator is tappable for full stats, and an
+  optional Advanced panel lets you bias selection — prefer validators with an on-chain identity or
+  less-concentrated stake, or cap commission. See [docs/validator-selection.md](docs/validator-selection.md)
+  for how the recommender and levers work.
 
 ### Governance
 xx network runs Substrate's first-generation governance (Gov1). The wallet mirrors the official web

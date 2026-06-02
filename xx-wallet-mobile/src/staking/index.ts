@@ -15,3 +15,11 @@ export {
   type ValidatorFilter,
   type SelectValidatorsOptions,
 } from './selectValidators';
+
+export {
+  applyQualityLevers,
+  leversActiveCount,
+  countSelectionChanges,
+  DEFAULT_LEVERS,
+  type QualityLevers,
+} from './qualityLevers';
