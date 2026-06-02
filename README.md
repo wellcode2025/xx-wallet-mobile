@@ -41,14 +41,28 @@ and native multisig — with quantum-resistant key generation on by default.
 
 ## Screenshots
 
-> _Screens: Dashboard · Send · Staking · Governance. (Add exported device screenshots to
-> `docs/screenshots/` and link them here — a short demo GIF works well too.)_
-
-<!--
-| Dashboard | Staking | Governance |
-| --- | --- | --- |
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Staking](docs/screenshots/staking.png) | ![Governance](docs/screenshots/governance.png) |
--->
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/01-dashboard.jpeg" width="220" alt="Dashboard" /><br/><sub><b>Dashboard</b></sub></td>
+    <td align="center"><img src="docs/screenshots/02-send.jpeg" width="220" alt="Send" /><br/><sub><b>Send</b></sub></td>
+    <td align="center"><img src="docs/screenshots/04-receive.jpeg" width="220" alt="Receive" /><br/><sub><b>Receive</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/03-transaction-details.jpeg" width="220" alt="Transaction details" /><br/><sub><b>Transaction details</b></sub></td>
+    <td align="center"><img src="docs/screenshots/05-share-contact.jpeg" width="220" alt="Share contact" /><br/><sub><b>Share contact</b></sub></td>
+    <td align="center"><img src="docs/screenshots/06-staking-nominations.jpeg" width="220" alt="My Nominations" /><br/><sub><b>Staking · My Nominations</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/07-staking-validators.jpeg" width="220" alt="Validators" /><br/><sub><b>Staking · Validators</b></sub></td>
+    <td align="center"><img src="docs/screenshots/09-validator-details.jpeg" width="220" alt="Validator details" /><br/><sub><b>Validator details</b></sub></td>
+    <td align="center"><img src="docs/screenshots/08-staking-rewards.jpeg" width="220" alt="Rewards" /><br/><sub><b>Staking · Rewards</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/10-governance.jpeg" width="220" alt="Governance" /><br/><sub><b>Governance</b></sub></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
 
 ---
 
