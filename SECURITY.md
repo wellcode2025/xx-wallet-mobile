@@ -78,7 +78,7 @@ Please include:
 
 You can expect:
 
-- An acknowledgement within 72 hours.
+- An acknowledgement within 7 days.
 - A best-effort estimate of remediation timeline within 7 days of acknowledgement.
 - Public disclosure once a fix has been deployed, with credit to the reporter unless you request anonymity.
 
