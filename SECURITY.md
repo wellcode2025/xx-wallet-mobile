@@ -4,7 +4,7 @@
 
 xx Wallet Mobile is feature-complete across its planned surfaces and verified end-to-end against live xx network: core wallet (accounts, send/receive, transaction history), multisig (proposal / approval / cancellation / cross-wallet bytes-package handoff / chain scan for discoverable multisigs), the full staking lifecycle for both nominators and validators (nominate, manage, unbond/withdraw, validator setup, cMix node-identity maintenance, slash alerts), and the full Gov1 governance surface (read and participate across democracy, council, treasury, bounties, and tips). The codebase has **not** yet been independently audited by a third-party security firm; treat it as experimental software and use it at your own risk. This document is intended for security researchers, integrators, and users who want to understand exactly what threats the wallet does and does not protect against.
 
-If you find a vulnerability, please follow the responsible-disclosure process at the bottom of this document rather than opening a public issue.
+**If you find a vulnerability, please follow the responsible-disclosure process at the bottom of this document rather than opening a public issue.**
 
 ---
 
