@@ -71,6 +71,8 @@ export interface AutoNominateValidator {
   backers: number;
   /** Projected return contribution: avgPerformance × (avgStake / backedStake) × (1 − commission). */
   return: number;
+  /** Commission as a percent, 0..100. */
+  commission: number;
   blocked: boolean;
 }
 
@@ -273,6 +275,7 @@ function computeReturn(
     score: elected.score,
     backers: elected.backers,
     return: avgPerformance * stakingReturn,
+    commission: commission * 100,
     blocked,
   };
 }

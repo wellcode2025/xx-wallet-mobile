@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { ArrowDown, ArrowUp, Check, Search } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, Info, Search } from 'lucide-react';
 import { useValidatorList, type ValidatorListEntry } from '@/hooks';
 import { formatBalance } from '@/utils';
 import {
@@ -9,14 +9,16 @@ import {
   LoadingIndicator,
   Sheet,
 } from '@/components/ui';
+import { ValidatorStatsSheet } from './ValidatorStatsSheet';
 
 /**
  * Validator picker — hand-pick path for the bond flow.
  *
  * Wraps the live validator list (chain-first via useValidatorList) with
  * a multi-select interaction capped at the chain's maxNominations (16).
- * Tapping a row toggles selection; the row's tap target is the whole
- * card, not a link, so no detail-screen navigation from inside the sheet.
+ * Tapping the main row area toggles selection; a separate info button
+ * opens a flow-safe ValidatorStatsSheet on top so users can inspect a
+ * validator without losing their selection.
  *
  * Sort and search mirror the standalone ValidatorList screen so users
  * who already know that surface find this one familiar.
@@ -51,6 +53,9 @@ export function ValidatorPickerSheet({
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('stake');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  // Validator whose stats sheet is open (null = closed). Inspecting a
+  // validator must not disturb the in-progress multi-select.
+  const [statsAddress, setStatsAddress] = useState<string | null>(null);
 
   // Reset selection state to match `initial` whenever the sheet opens.
   // Otherwise reopening after a previous interaction would carry stale
@@ -114,6 +119,7 @@ export function ValidatorPickerSheet({
   };
 
   return (
+    <>
     <Sheet open={open} onClose={onClose} title="Choose validators">
       <div className="px-5 pb-5 space-y-3">
         {/* Selection bar */}
@@ -209,6 +215,7 @@ export function ValidatorPickerSheet({
                       !selected.has(v.address) && selected.size >= MAX_SELECTABLE
                     }
                     onToggle={() => toggleValidator(v.address)}
+                    onInfo={() => setStatsAddress(v.address)}
                   />
                 ))}
               </ul>
@@ -217,6 +224,14 @@ export function ValidatorPickerSheet({
         )}
       </div>
     </Sheet>
+
+      <ValidatorStatsSheet
+        elevated
+        address={statsAddress}
+        open={statsAddress !== null}
+        onClose={() => setStatsAddress(null)}
+      />
+    </>
   );
 }
 
@@ -225,21 +240,29 @@ function PickerRow({
   selected,
   disabled,
   onToggle,
+  onInfo,
 }: {
   validator: ValidatorListEntry;
   selected: boolean;
   disabled: boolean;
   onToggle: () => void;
+  onInfo: () => void;
 }) {
   return (
-    <li className="border-b border-ink-800/60 last:border-0">
+    <li
+      className={clsx(
+        'flex items-stretch border-b border-ink-800/60 last:border-0',
+        selected && 'bg-xx-500/10'
+      )}
+    >
+      {/* Select toggle — the main row area */}
       <button
         onClick={onToggle}
         disabled={disabled}
         className={clsx(
-          'w-full flex items-center gap-3 py-3 px-3 rounded-xl transition-colors text-left',
+          'flex-1 min-w-0 flex items-center gap-3 py-3 pl-3 pr-2 rounded-l-xl transition-colors text-left',
           selected
-            ? 'bg-xx-500/10 active:bg-xx-500/15'
+            ? 'active:bg-xx-500/15'
             : disabled
               ? 'opacity-40 cursor-not-allowed'
               : 'active:bg-ink-800/40'
@@ -293,6 +316,16 @@ function PickerRow({
             {validator.commission.toFixed(0)}%
           </p>
         </div>
+      </button>
+
+      {/* Info — opens stats without toggling selection. Always enabled,
+          even when the row can't be selected (16-cap reached). */}
+      <button
+        onClick={onInfo}
+        aria-label="View validator stats"
+        className="flex items-center px-3 text-ink-400 active:text-ink-100 active:bg-ink-800/40 transition-colors"
+      >
+        <Info size={16} strokeWidth={1.75} />
       </button>
     </li>
   );

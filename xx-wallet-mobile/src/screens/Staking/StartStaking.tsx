@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BN } from '@polkadot/util';
 import clsx from 'clsx';
-import { AlertTriangle, CheckCircle2, ChevronDown, RefreshCcw } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 import { useAccountsStore } from '@/store';
 import {
@@ -11,11 +11,11 @@ import {
   useTx,
   invalidateAutoNominateCache,
 } from '@/hooks';
-import type { AutoNominateValidator, AutoNominateTimings } from '@/staking';
 import { formatBalance, parseAmount } from '@/utils';
 import { TopBar } from '@/components/layout';
-import { AddressLabel, LoadingIndicator } from '@/components/ui';
+import { AddressLabel } from '@/components/ui';
 import { ValidatorPickerSheet } from './ValidatorPickerSheet';
+import { AutoNominateBlock } from './AutoNominateBlock';
 
 /**
  * Start staking (bond + nominate, one signature).
@@ -59,7 +59,6 @@ export function StartStaking() {
   const [mode, setMode] = useState<'auto' | 'pick'>('auto');
   const [handPicked, setHandPicked] = useState<string[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [showValidators, setShowValidators] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
@@ -235,13 +234,11 @@ export function StartStaking() {
           </div>
 
           {mode === 'auto' ? (
-            <AutoBlock
+            <AutoNominateBlock
               autoComputing={autoComputing}
               autoError={autoError}
               autoResult={autoResult}
               onRefresh={refresh}
-              showValidators={showValidators}
-              setShowValidators={setShowValidators}
             />
           ) : (
             <PickBlock
@@ -376,98 +373,6 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
     <div className="flex items-baseline justify-between gap-3">
       <span className="text-xs text-ink-400">{label}</span>
       <span className="font-mono text-sm text-ink-100 numeric">{value}</span>
-    </div>
-  );
-}
-
-function AutoBlock({
-  autoComputing,
-  autoError,
-  autoResult,
-  onRefresh,
-  showValidators,
-  setShowValidators,
-}: {
-  autoComputing: boolean;
-  autoError: Error | null;
-  autoResult: { selected: AutoNominateValidator[]; timings: AutoNominateTimings } | null;
-  onRefresh: () => void;
-  showValidators: boolean;
-  setShowValidators: (v: boolean) => void;
-}) {
-  if (autoComputing && !autoResult) {
-    return (
-      <div className="space-y-2">
-        <LoadingIndicator message="Selecting validators for you..." />
-        <p className="text-xs text-ink-400">
-          This usually takes 30–60 seconds in the browser. The wallet pulls
-          every bonded account, ledger, validator, and nominator from chain,
-          runs the election locally, then scores each elected validator by
-          recent performance, stake dilution, and commission.
-        </p>
-      </div>
-    );
-  }
-  if (autoError) {
-    return (
-      <div>
-        <p className="text-sm text-danger">
-          Couldn't select validators — {autoError.message}.
-        </p>
-        <button
-          onClick={onRefresh}
-          className="mt-2 text-sm text-xx-500 active:opacity-70"
-        >
-          Try again →
-        </button>
-      </div>
-    );
-  }
-  if (!autoResult) return null;
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-ink-100">
-          {autoResult.selected.length} validators chosen for you
-        </p>
-        <button
-          onClick={onRefresh}
-          className="flex items-center gap-1 text-xs text-xx-500 active:opacity-70"
-        >
-          <RefreshCcw size={11} />
-          Refresh
-        </button>
-      </div>
-      <p className="text-xs text-ink-400">
-        Top-ranked by projected return (performance × stake dilution ×
-        commission). Selected in {(autoResult.timings.totalMs / 1000).toFixed(1)}s.
-      </p>
-      <button
-        onClick={() => setShowValidators(!showValidators)}
-        className="flex items-center gap-1 text-xs text-xx-500 active:opacity-70"
-      >
-        <ChevronDown
-          size={12}
-          className={clsx(
-            'transition-transform',
-            showValidators && 'rotate-180'
-          )}
-        />
-        {showValidators ? 'Hide' : 'Show'} validators
-      </button>
-      {showValidators && (
-        <ul className="space-y-1">
-          {autoResult.selected.map((v, idx) => (
-            <li
-              key={v.validatorId}
-              className="flex items-center gap-2 py-1 text-xs"
-            >
-              <span className="text-ink-500 w-5 flex-shrink-0">{idx + 1}</span>
-              <AddressLabel address={v.validatorId} className="text-xs min-w-0" />
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

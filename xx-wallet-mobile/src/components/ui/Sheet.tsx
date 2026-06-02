@@ -6,13 +6,16 @@ interface SheetProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  /** Render above another open sheet (higher z-index). Used when a sheet
+   *  opens on top of another, e.g. validator stats over the picker. */
+  elevated?: boolean;
 }
 
 /**
  * Bottom-anchored modal sheet — the native mobile pattern for secondary flows.
  * Slides up from below, dismissed by tap on backdrop or the X button.
  */
-export function Sheet({ open, onClose, title, children }: SheetProps) {
+export function Sheet({ open, onClose, title, children, elevated }: SheetProps) {
   useEffect(() => {
     if (!open) return;
     const handleEsc = (e: KeyboardEvent) => {
@@ -29,7 +32,11 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div
+      className={`fixed inset-0 flex flex-col justify-end ${
+        elevated ? 'z-[60]' : 'z-50'
+      }`}
+    >
       {/* Backdrop */}
       <button
         onClick={onClose}
