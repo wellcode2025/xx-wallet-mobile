@@ -146,6 +146,7 @@ function Populated({
           <SparkBarChart
             data={chartData}
             height={64}
+            formatValue={(v) => `${v.toLocaleString()} XX`}
             ariaLabel={`Rewards-per-era bar chart, ${chartData.length} eras`}
           />
         </div>
