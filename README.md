@@ -27,15 +27,41 @@ the complete staking lifecycle (nominator **and** validator), the full Gov1 gove
 and native multisig — with quantum-resistant key generation on by default.
 
 > [!IMPORTANT]
-> **Unofficial project.** This is an independent, community-built wallet. It is **not** an
-> official xx network or xx Foundation product and is not **currently** endorsed by them. It interacts with
-> the public xx network chain the same way any wallet does.
+> **Not yet official.** This is an independent, community-built wallet — not yet a formally endorsed
+> or official xx network / xx Foundation product. It interacts with the public xx network chain the
+> same way any wallet does.
 >
 > **Self-custody, your responsibility.** The wallet is non-custodial — you alone hold your keys
 > and recovery phrases. There is no password reset and no way to recover lost phrases.
 >
 > **Not independently audited.** The code has not yet had a third-party security audit. Treat it
 > as experimental and use it at your own risk. See [Security](#security) and [`SECURITY.md`](SECURITY.md).
+
+---
+
+## Why xx Wallet Mobile
+
+A few things set it apart — and they're deliberately built to add as little *new* trust as possible
+on top of what xx network already provides:
+
+- **Mobile-first, not a desktop port.** An installable PWA designed for the phone: touch-native
+  flows, and it works offline once installed — new-account generation included.
+- **Same chain, same foundation tools.** The wallet has no backend of its own. Keys are generated
+  with the audited [xxfoundation/sleeve](https://github.com/xxfoundation/sleeve) reference; chain
+  state and history come straight from the xx network RPC and the xx Foundation indexer (the same
+  sources `explorer.xx.network` uses); and the auto-nominate logic is ported from the foundation's
+  own [staking.xx.network](https://github.com/xxnetwork/staking.xx.network) Simple Staker. You rely
+  on the same primitives the official wallet does — not a new server or homegrown cryptography. Even
+  the production deployment runs on xx Foundation infrastructure (the Foundation's Cloudflare account
+  and the `xx.network` domain), not a personal server.
+- **You can see what you sign.** Multisig calls, governance preimages, and proposals are decoded
+  locally from the on-chain bytes — never from a description someone supplied — and validators are
+  inspectable before you stake.
+- **Quantum-resistant by default**, non-custodial, and free of telemetry, analytics, and ads — your
+  keys never leave the device.
+
+It's an independent project, not an official one (see the note above). The goal is a better phone
+experience without asking you to trust anything new.
 
 ---
 
@@ -94,12 +120,13 @@ and native multisig — with quantum-resistant key generation on by default.
 - **Unbond and withdraw** with the 28-day lock surfaced up front and per-chunk countdowns.
 - **Run a validator** end to end: set commission, manage your cMix node identity, and convert a
   nominating account to a validating one.
-- **Stay informed**: a network-wide validator list, per-validator detail with on-chain identity and
-  history, a personal rewards history, and slash alerts that give you time to react.
-- **Transparent, tunable picks**: every recommended validator is tappable for full stats, and an
-  optional Advanced panel lets you bias selection — prefer validators with an on-chain identity or
-  less-concentrated stake, or cap commission. See [docs/validator-selection.md](docs/validator-selection.md)
-  for how the recommender and levers work.
+- **Stay informed**: a network-wide validator list showing identity names at a glance, per-validator
+  detail with full on-chain identity and a tap-to-read points-per-era history, a personal rewards
+  history, and slash alerts that give you time to react.
+- **Transparent, tunable picks**: every recommended validator shows its name and commission and is
+  tappable for full stats, and an optional Advanced panel lets you bias the recommendation — prefer
+  validators with an on-chain identity or less-concentrated stake, or cap commission. See
+  [docs/validator-selection.md](docs/validator-selection.md) for how the recommender and levers work.
 
 ### Governance
 xx network runs Substrate's first-generation governance (Gov1). The wallet mirrors the official web

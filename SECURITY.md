@@ -53,11 +53,11 @@ These are explicitly out of scope. Users should understand them before storing s
 The wallet is a static SPA hosted on Cloudflare Workers Static Assets, with auto-deploy from this GitHub repository. The chain of trust is:
 
 1. The GitHub repository — anyone with `push` access to `main` can introduce new code that will deploy automatically.
-2. The Cloudflare account hosting the Worker — anyone with deploy access can replace the live wallet.
-3. The DNS provider — anyone who can change the domain's CNAME record can redirect users to a different origin.
+2. The Cloudflare account hosting the Worker — controlled by the **xx Foundation** (the same infrastructure that serves other xx network properties), not by an individual contributor. Anyone with deploy access to it can replace the live wallet.
+3. The DNS — `mobile.xx.network` is a subdomain of the Foundation-controlled `xx.network` zone; anyone who can change its records can redirect users to a different origin.
 4. The user's installed Progressive Web App — once installed, the service worker silently fetches and applies new versions on every navigation. There is no version pin, no signature check, no prompt.
 
-This is the same trust model used by every browser-served wallet (`wallet.xx.network` included). Users who require stronger guarantees should use a hardware wallet for material balances and treat any browser-served wallet — including this one — as a hot wallet for active operating funds only.
+In other words, the hosting and DNS trust surface is the xx Foundation's own infrastructure — the same place the official `wallet.xx.network` is served from — rather than a third-party or personal server. This is the same trust model used by every browser-served wallet (`wallet.xx.network` included). Users who require stronger guarantees should use a hardware wallet for material balances and treat any browser-served wallet — including this one — as a hot wallet for active operating funds only.
 
 ## Reporting a vulnerability
 
