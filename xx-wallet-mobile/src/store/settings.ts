@@ -18,6 +18,39 @@ export const STALE_THRESHOLD_DAYS_DEFAULT = 30;
 export const STALE_THRESHOLD_DAYS_MIN = 7;
 export const STALE_THRESHOLD_DAYS_MAX = 365;
 
+/** Auto-lock options (ms of background/idle before the app re-locks). */
+export const AUTO_LOCK_OPTIONS: { label: string; ms: number }[] = [
+  { label: 'Immediately', ms: 0 },
+  { label: '30 seconds', ms: 30_000 },
+  { label: '1 minute', ms: 60_000 },
+  { label: '5 minutes', ms: 300_000 },
+];
+export const AUTO_LOCK_DEFAULT_MS = 60_000;
+
+/**
+ * App-lock config. The lock is an opt-in *access gate* (privacy / speed
+ * bump) — it does not protect the keys, which stay encrypted with the
+ * signing password. Persisted; the live locked/unlocked state is separate
+ * and in-memory (see store/lock.ts).
+ */
+export interface AppLockConfig {
+  /** 'off' = no lock; 'pin' = PIN gate; 'biometric' = biometric + PIN backup. */
+  mode: 'off' | 'pin' | 'biometric';
+  /** scrypt salt for the PIN hash, hex; null when no PIN set. */
+  pinSalt: string | null;
+  /** scrypt hash of the PIN, hex; null when no PIN set. */
+  pinHash: string | null;
+  /** Background/idle time before re-locking, in ms. */
+  autoLockMs: number;
+}
+
+const DEFAULT_APP_LOCK: AppLockConfig = {
+  mode: 'off',
+  pinSalt: null,
+  pinHash: null,
+  autoLockMs: AUTO_LOCK_DEFAULT_MS,
+};
+
 interface SettingsState {
   /** The currently active RPC endpoint (preset or custom URL). */
   endpoint: string;
@@ -45,6 +78,8 @@ interface SettingsState {
    * docs/validator-selection.md.
    */
   autoNominateLevers: QualityLevers;
+  /** Opt-in app-lock (access gate). See AppLockConfig. */
+  appLock: AppLockConfig;
 
   setEndpoint(endpoint: string): void;
   setCustomEndpoint(endpoint: string): void;
@@ -52,6 +87,12 @@ interface SettingsState {
   setStaleThresholdDays(days: number): void;
   setAutoNominateLevers(partial: Partial<QualityLevers>): void;
   resetAutoNominateLevers(): void;
+  /** Enable the PIN gate with an already-derived salt + hash. */
+  setAppPin(pinSalt: string, pinHash: string): void;
+  /** Turn the app lock off and forget the PIN. */
+  disableAppLock(): void;
+  /** Update the auto-lock delay (ms). */
+  setAutoLockMs(ms: number): void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -62,6 +103,7 @@ export const useSettingsStore = create<SettingsState>()(
       hideBalances: false,
       staleThresholdDays: STALE_THRESHOLD_DAYS_DEFAULT,
       autoNominateLevers: { ...DEFAULT_LEVERS },
+      appLock: { ...DEFAULT_APP_LOCK },
 
       setEndpoint(endpoint: string) {
         set({ endpoint });
@@ -94,6 +136,32 @@ export const useSettingsStore = create<SettingsState>()(
 
       resetAutoNominateLevers() {
         set({ autoNominateLevers: { ...DEFAULT_LEVERS } });
+      },
+
+      setAppPin(pinSalt: string, pinHash: string) {
+        set((s) => ({
+          appLock: {
+            ...s.appLock,
+            mode: s.appLock.mode === 'biometric' ? 'biometric' : 'pin',
+            pinSalt,
+            pinHash,
+          },
+        }));
+      },
+
+      disableAppLock() {
+        set((s) => ({
+          appLock: {
+            ...s.appLock,
+            mode: 'off',
+            pinSalt: null,
+            pinHash: null,
+          },
+        }));
+      },
+
+      setAutoLockMs(ms: number) {
+        set((s) => ({ appLock: { ...s.appLock, autoLockMs: ms } }));
       },
     }),
     { name: 'xx-wallet:settings' }

@@ -14,11 +14,13 @@ import {
   useConnectionStore,
   useInstallStore,
   useSettingsStore,
+  useLockStore,
   type BeforeInstallPromptEvent,
 } from '@/store';
 import { xxApi } from '@/api';
 import { AppLayout, OnboardingLayout } from '@/components/layout';
 import { IOSInstallBanner, UpdateBanner, WhatsNewSheet } from '@/components/ui';
+import { LockScreen, LockController } from '@/components/lock';
 import { Welcome, CreateWallet, ImportWallet } from '@/screens/Onboarding';
 import { Dashboard } from '@/screens/Dashboard';
 import { Send } from '@/screens/Send';
@@ -100,6 +102,8 @@ function ScrollToTop() {
  */
 function RequireAccount() {
   const accounts = useAccountsStore((s) => s.accounts);
+  const lockMode = useSettingsStore((s) => s.appLock.mode);
+  const isUnlocked = useLockStore((s) => s.isUnlocked);
   const location = useLocation();
   // Hook order: call before the conditional return so React's hook
   // rules don't trip when the user is in the onboarding redirect path.
@@ -108,6 +112,10 @@ function RequireAccount() {
   useGovernanceNotifications();
   if (accounts.length === 0) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
+  }
+  // Opt-in app lock — gate the whole authenticated app behind unlock.
+  if (lockMode !== 'off' && !isUnlocked) {
+    return <LockScreen />;
   }
   return <Outlet />;
 }
@@ -223,6 +231,7 @@ export function App() {
       <UpdateBanner />
       <WhatsNewSheet />
       <IOSInstallBanner />
+      <LockController />
       <Routes>
         {/* Onboarding flow */}
         <Route element={<OnboardingLayout />}>

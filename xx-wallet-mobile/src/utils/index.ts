@@ -7,3 +7,4 @@ export * from './decodeCall';
 export * from './bytesPackage';
 export * from './multisigConfig';
 export * from './chainScan';
+export * from './pin';

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AppLockSettings } from './AppLockSettings';
 import {
   ChevronRight,
   Check,
@@ -201,6 +202,8 @@ export function Settings() {
             readonly
           />
         </Section>
+
+        <AppLockSettings />
 
         {/* Accounts section */}
         <Section
