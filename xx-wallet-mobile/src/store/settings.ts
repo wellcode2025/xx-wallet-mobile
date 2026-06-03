@@ -40,6 +40,8 @@ export interface AppLockConfig {
   pinSalt: string | null;
   /** scrypt hash of the PIN, hex; null when no PIN set. */
   pinHash: string | null;
+  /** WebAuthn credential id (base64) for biometric unlock; null when off. */
+  biometricCredentialId: string | null;
   /** Background/idle time before re-locking, in ms. */
   autoLockMs: number;
 }
@@ -48,6 +50,7 @@ const DEFAULT_APP_LOCK: AppLockConfig = {
   mode: 'off',
   pinSalt: null,
   pinHash: null,
+  biometricCredentialId: null,
   autoLockMs: AUTO_LOCK_DEFAULT_MS,
 };
 
@@ -89,7 +92,11 @@ interface SettingsState {
   resetAutoNominateLevers(): void;
   /** Enable the PIN gate with an already-derived salt + hash. */
   setAppPin(pinSalt: string, pinHash: string): void;
-  /** Turn the app lock off and forget the PIN. */
+  /** Enable biometric unlock (PIN must already be set, stays as backup). */
+  setBiometric(credentialId: string): void;
+  /** Turn biometric off, keeping the PIN gate. */
+  disableBiometric(): void;
+  /** Turn the app lock off and forget the PIN + biometric. */
   disableAppLock(): void;
   /** Update the auto-lock delay (ms). */
   setAutoLockMs(ms: number): void;
@@ -149,6 +156,32 @@ export const useSettingsStore = create<SettingsState>()(
         }));
       },
 
+      setBiometric(credentialId: string) {
+        // Biometric is additive on top of the PIN; only flip the mode when
+        // a PIN already exists (the required backup). Otherwise no-op.
+        set((s) =>
+          s.appLock.pinHash
+            ? {
+                appLock: {
+                  ...s.appLock,
+                  mode: 'biometric',
+                  biometricCredentialId: credentialId,
+                },
+              }
+            : s
+        );
+      },
+
+      disableBiometric() {
+        set((s) => ({
+          appLock: {
+            ...s.appLock,
+            mode: s.appLock.pinHash ? 'pin' : 'off',
+            biometricCredentialId: null,
+          },
+        }));
+      },
+
       disableAppLock() {
         set((s) => ({
           appLock: {
@@ -156,6 +189,7 @@ export const useSettingsStore = create<SettingsState>()(
             mode: 'off',
             pinSalt: null,
             pinHash: null,
+            biometricCredentialId: null,
           },
         }));
       },

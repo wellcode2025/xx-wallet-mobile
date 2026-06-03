@@ -1,32 +1,43 @@
 import { useEffect, useState } from 'react';
-import { Lock } from 'lucide-react';
+import { Fingerprint, Lock } from 'lucide-react';
 import { useSettingsStore, useLockStore, useAccountsStore } from '@/store';
-import { verifyPin } from '@/utils';
+import { verifyPin, verifyBiometric } from '@/utils';
 import { xxKeyring } from '@/keyring';
 
 /**
  * Full-screen unlock gate, shown by RequireAccount when an app-lock is
- * enabled and the session is locked. PIN entry with attempt rate limiting,
- * plus a "Forgot PIN?" recovery that verifies the wallet signing password
- * (which the user must know to use the wallet anyway) and turns the lock
- * off so they can set a new PIN in Settings.
+ * enabled and the session is locked.
+ *
+ * Three views:
+ *  - biometric: tap to prompt the platform authenticator (fingerprint/face);
+ *    shown first when biometric mode is on. "Use PIN instead" falls back.
+ *  - pin: PIN entry with attempt rate limiting; "Forgot PIN?" → recovery.
+ *  - recovery: verify any wallet's signing password (which the user must know
+ *    to use the wallet anyway) and turn the lock off so they can set a new PIN.
  *
  * The lock is an access gate only — it never touches the keys, which stay
  * encrypted with the signing password regardless.
  */
 export function LockScreen() {
-  const { pinSalt, pinHash } = useSettingsStore((s) => s.appLock);
+  const { mode, pinSalt, pinHash, biometricCredentialId } = useSettingsStore(
+    (s) => s.appLock
+  );
   const disableAppLock = useSettingsStore((s) => s.disableAppLock);
   const { accounts, activeAddress } = useAccountsStore();
   const unlock = useLockStore((s) => s.unlock);
   const recordFailure = useLockStore((s) => s.recordFailure);
   const cooldownUntil = useLockStore((s) => s.cooldownUntil);
 
+  const [view, setView] = useState<'biometric' | 'pin' | 'recovery'>(
+    mode === 'biometric' ? 'biometric' : 'pin'
+  );
+
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [recovering, setRecovering] = useState(false);
+  const [bioError, setBioError] = useState<string | null>(null);
+
   const [password, setPassword] = useState('');
   const [recoverError, setRecoverError] = useState<string | null>(null);
 
@@ -40,6 +51,19 @@ export function LockScreen() {
 
   const cooldownLeft = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
   const inCooldown = cooldownLeft > 0;
+
+  const submitBiometric = async () => {
+    if (busy || !biometricCredentialId) return;
+    setBusy(true);
+    setBioError(null);
+    const ok = await verifyBiometric(biometricCredentialId);
+    setBusy(false);
+    if (ok) {
+      unlock();
+    } else {
+      setBioError("Couldn't verify. Try again, or use your PIN.");
+    }
+  };
 
   const submitPin = async () => {
     if (busy || inCooldown || pin.length === 0 || !pinSalt || !pinHash) return;
@@ -97,10 +121,51 @@ export function LockScreen() {
     <div className="min-h-screen bg-ink-950 flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-xs flex flex-col items-center gap-6">
         <div className="w-16 h-16 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center">
-          <Lock size={26} strokeWidth={1.75} className="text-xx-500" />
+          {view === 'biometric' ? (
+            <Fingerprint size={26} strokeWidth={1.75} className="text-xx-500" />
+          ) : (
+            <Lock size={26} strokeWidth={1.75} className="text-xx-500" />
+          )}
         </div>
 
-        {!recovering ? (
+        {view === 'biometric' && (
+          <>
+            <div className="text-center space-y-1">
+              <p className="font-display font-medium text-lg text-ink-100">
+                Wallet locked
+              </p>
+              <p className="text-sm text-ink-400">
+                Unlock with your fingerprint or face.
+              </p>
+            </div>
+
+            <div className="w-full space-y-2">
+              {bioError && (
+                <p className="text-xs text-danger text-center">{bioError}</p>
+              )}
+              <button
+                onClick={submitBiometric}
+                disabled={busy}
+                className="w-full py-3 rounded-2xl bg-xx-500 text-ink-950 text-sm font-medium active:opacity-80 disabled:bg-ink-800 disabled:text-ink-500 flex items-center justify-center gap-2"
+              >
+                <Fingerprint size={18} strokeWidth={2} />
+                {busy ? 'Verifying…' : 'Unlock with biometrics'}
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setView('pin');
+                setBioError(null);
+              }}
+              className="text-xs text-ink-400 active:text-ink-200"
+            >
+              Use PIN instead
+            </button>
+          </>
+        )}
+
+        {view === 'pin' && (
           <>
             <div className="text-center space-y-1">
               <p className="font-display font-medium text-lg text-ink-100">
@@ -140,17 +205,32 @@ export function LockScreen() {
               </button>
             </div>
 
-            <button
-              onClick={() => {
-                setRecovering(true);
-                setError(null);
-              }}
-              className="text-xs text-ink-400 active:text-ink-200"
-            >
-              Forgot PIN?
-            </button>
+            <div className="flex flex-col items-center gap-2">
+              {mode === 'biometric' && biometricCredentialId && (
+                <button
+                  onClick={() => {
+                    setView('biometric');
+                    setError(null);
+                  }}
+                  className="text-xs text-ink-400 active:text-ink-200"
+                >
+                  Use biometrics instead
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setView('recovery');
+                  setError(null);
+                }}
+                className="text-xs text-ink-400 active:text-ink-200"
+              >
+                Forgot PIN?
+              </button>
+            </div>
           </>
-        ) : (
+        )}
+
+        {view === 'recovery' && (
           <>
             <div className="text-center space-y-1">
               <p className="font-display font-medium text-lg text-ink-100">
@@ -196,13 +276,13 @@ export function LockScreen() {
 
             <button
               onClick={() => {
-                setRecovering(false);
+                setView(mode === 'biometric' ? 'biometric' : 'pin');
                 setPassword('');
                 setRecoverError(null);
               }}
               className="text-xs text-ink-400 active:text-ink-200"
             >
-              ← Back to PIN
+              ← Back
             </button>
           </>
         )}

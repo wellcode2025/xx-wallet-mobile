@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
-import { Check, Clock, KeyRound, Lock } from 'lucide-react';
+import { Check, Clock, Fingerprint, KeyRound, Lock } from 'lucide-react';
 import { Sheet } from '@/components/ui';
 import {
   useSettingsStore,
   useLockStore,
   AUTO_LOCK_OPTIONS,
 } from '@/store';
-import { PIN_MIN_LENGTH, hashPin, randomSaltHex, verifyPin } from '@/utils';
+import {
+  PIN_MIN_LENGTH,
+  hashPin,
+  randomSaltHex,
+  verifyPin,
+  isBiometricAvailable,
+  enrollBiometric,
+} from '@/utils';
 
 /**
  * App-lock settings — enable / change / disable the opt-in PIN access gate
@@ -21,7 +28,20 @@ export function AppLockSettings() {
   );
   const [autoLockSheet, setAutoLockSheet] = useState(false);
 
+  // Whether this device can do biometrics here (secure context + platform
+  // authenticator). False on the HTTP dev URL and on biometric-less desktops,
+  // so the option only appears where it actually works.
+  const [bioAvailable, setBioAvailable] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    isBiometricAvailable().then((ok) => alive && setBioAvailable(ok));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const isOn = appLock.mode !== 'off';
+  const isBiometric = appLock.mode === 'biometric';
   const autoLockLabel =
     AUTO_LOCK_OPTIONS.find((o) => o.ms === appLock.autoLockMs)?.label ?? 'Custom';
 
@@ -37,12 +57,13 @@ export function AppLockSettings() {
         <LockRow
           icon={<Lock size={18} className="text-ink-400" />}
           label="App lock"
-          value={isOn ? 'On · PIN' : 'Off'}
+          value={isOn ? (isBiometric ? 'On · Biometric' : 'On · PIN') : 'Off'}
           onClick={() => setPinSheet(isOn ? 'disable' : 'set')}
         />
 
         {isOn && (
           <>
+            {bioAvailable && <BiometricToggleRow />}
             <LockRow
               icon={<Clock size={18} className="text-ink-400" />}
               label="Auto-lock"
@@ -59,9 +80,9 @@ export function AppLockSettings() {
         )}
 
         <p className="px-1 text-xs text-ink-400 leading-relaxed">
-          Requires a PIN to open the wallet. This protects your privacy on a
-          shared or lost phone — it doesn't replace your wallet password, which
-          is still needed to send.
+          Requires a PIN to open the wallet{bioAvailable ? ', or your fingerprint / face' : ''}.
+          This protects your privacy on a shared or lost phone — it doesn't
+          replace your wallet password, which is still needed to send.
         </p>
       </div>
 
@@ -99,6 +120,71 @@ function LockRow({
       </span>
       <span className="text-sm text-ink-400 flex-shrink-0">{value}</span>
     </button>
+  );
+}
+
+/**
+ * Toggle row for biometric unlock. Only rendered when the PIN gate is on and
+ * the device supports a platform authenticator. Enabling enrolls a WebAuthn
+ * credential; the PIN stays as the required backup. Disabling drops the
+ * credential and falls back to the PIN.
+ */
+function BiometricToggleRow() {
+  const isBiometric = useSettingsStore((s) => s.appLock.mode === 'biometric');
+  const setBiometric = useSettingsStore((s) => s.setBiometric);
+  const disableBiometric = useSettingsStore((s) => s.disableBiometric);
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = async () => {
+    if (busy) return;
+    setError(null);
+    if (isBiometric) {
+      disableBiometric();
+      return;
+    }
+    setBusy(true);
+    try {
+      const credentialId = await enrollBiometric();
+      setBiometric(credentialId);
+    } catch {
+      // User cancelled the prompt or the platform refused — stay on PIN.
+      setError("Couldn't set up biometrics. Your PIN still works.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={toggle}
+        disabled={busy}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 transition-colors text-left disabled:opacity-60"
+      >
+        <span className="flex items-center gap-3 min-w-0">
+          <Fingerprint size={18} className="text-ink-400" />
+          <span className="text-sm text-ink-100">
+            {busy ? 'Setting up…' : 'Unlock with biometrics'}
+          </span>
+        </span>
+        <span
+          className={clsx(
+            'flex-shrink-0 w-9 h-5 rounded-full transition-colors relative',
+            isBiometric ? 'bg-xx-500' : 'bg-ink-700'
+          )}
+        >
+          <span
+            className={clsx(
+              'absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all',
+              isBiometric ? 'left-[18px]' : 'left-0.5'
+            )}
+          />
+        </span>
+      </button>
+      {error && <p className="px-1 text-xs text-danger">{error}</p>}
+    </div>
   );
 }
 
