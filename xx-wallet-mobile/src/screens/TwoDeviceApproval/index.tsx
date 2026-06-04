@@ -180,6 +180,7 @@ export function TwoDeviceApproval() {
           { address: backup.address, label: 'Offline backup' },
         ],
         localName: name.trim() || 'Protected account',
+        preset: 'two-device',
       });
       setCreatedAddress(m.address);
       setStep('done');

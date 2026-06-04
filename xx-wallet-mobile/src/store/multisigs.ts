@@ -61,6 +61,12 @@ export interface Multisig {
   /** sha256 of canonical {threshold, sortedSigners} JSON. Used to detect
    *  duplicate imports of the same configuration regardless of source. */
   configHash: string;
+  /** Local UI hint marking how this multisig was set up. 'two-device' means
+   *  it was created via the guided two-device-approval wizard (a 2-of-3
+   *  framed as device + device + offline backup); the spend flow reframes
+   *  its copy accordingly. Purely cosmetic — not part of configHash, and
+   *  absent for manually-added multisigs. */
+  preset?: 'two-device';
   importedAt: number;
   /** Updated by store consumers (e.g., the multisig detail screen) when
    *  they fetch fresh on-chain state for this multisig. Used to surface
@@ -74,6 +80,8 @@ export interface AddMultisigInput {
    *  internally before storage. */
   signers: Array<string | MultisigSigner>;
   localName: string;
+  /** Optional setup-origin hint; see Multisig.preset. */
+  preset?: 'two-device';
 }
 
 interface MultisigsState {
@@ -106,7 +114,7 @@ export const useMultisigsStore = create<MultisigsState>()(
     (set, get) => ({
       multisigs: [],
 
-      async addMultisig({ threshold, signers, localName }) {
+      async addMultisig({ threshold, signers, localName, preset }) {
         // Normalize signers to {address, label?} shape for storage.
         const normalizedSigners: MultisigSigner[] = signers.map((s) =>
           typeof s === 'string' ? { address: s } : { ...s }
@@ -141,6 +149,7 @@ export const useMultisigsStore = create<MultisigsState>()(
           signers: normalizedSigners,
           localName: localName.trim() || 'Untitled multisig',
           configHash,
+          ...(preset ? { preset } : {}),
           importedAt: now,
           lastSeenAt: now,
         };

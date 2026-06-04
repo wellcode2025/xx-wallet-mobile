@@ -124,6 +124,11 @@ function ApproveView({
 }) {
   const navigate = useNavigate();
   const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
+  // Multisigs created by the guided two-device-approval wizard reframe the
+  // spend flow as a 2-factor approval ("approve on your second device").
+  // Cosmetic only — every verification gate and the signing path below are
+  // identical regardless.
+  const isTwoDevice = multisig.preset === 'two-device';
   const { accounts, activeAddress } = useAccountsStore();
   const { pending, isLoading: pendingLoading } = usePendingMultisigs(address);
   const stalenessOf = useStaleness();
@@ -688,7 +693,10 @@ function ApproveView({
 
   return (
     <>
-      <TopBar title="Approve proposal" showBack />
+      <TopBar
+        title={isTwoDevice ? 'Approve spend' : 'Approve proposal'}
+        showBack
+      />
       <div className="px-5 py-6 max-w-md mx-auto space-y-4 pb-24">
         {/* Header: which multisig + role context */}
         <div className="space-y-1.5">
@@ -698,10 +706,24 @@ function ApproveView({
               {multisig.localName}
             </p>
             <span className="text-xs text-ink-400">
-              · {multisig.threshold}-of-{multisig.signers.length}
+              {isTwoDevice
+                ? '· two-device approval'
+                : `· ${multisig.threshold}-of-${multisig.signers.length}`}
             </span>
           </div>
-          <RoleBanner role={userRole} />
+          <RoleBanner
+            role={userRole}
+            isTwoDevice={isTwoDevice}
+            nextApprovalExecutes={nextApprovalExecutes}
+          />
+          {isTwoDevice &&
+            (userRole === 'pending-approver' || userRole === 'depositor') && (
+              <p className="text-xs text-ink-400 leading-relaxed">
+                This is the second factor protecting these funds — the spend was
+                started on one device and needs a second device to approve
+                before it can go through.
+              </p>
+            )}
         </div>
 
         {/* Signer picker — which of YOUR accounts is acting on this
@@ -1074,7 +1096,13 @@ function ApproveView({
       <Sheet
         open={confirmOpen && !isDone}
         onClose={closeConfirm}
-        title={nextApprovalExecutes ? 'Confirm and execute' : 'Confirm approval'}
+        title={
+          nextApprovalExecutes
+            ? isTwoDevice
+              ? 'Confirm & release funds'
+              : 'Confirm and execute'
+            : 'Confirm approval'
+        }
       >
         <div className="space-y-4">
           <div className="space-y-3 p-4 rounded-2xl bg-ink-800 border border-ink-700/50">
@@ -1118,7 +1146,9 @@ function ApproveView({
             <Row label="Effect">
               <span className="text-xs text-ink-300 leading-snug">
                 {nextApprovalExecutes
-                  ? 'Your approval will be the threshold-meeting signature; the inner action will execute on chain immediately.'
+                  ? isTwoDevice
+                    ? 'This is your second-device approval — it releases the funds from your protected account immediately.'
+                    : 'Your approval will be the threshold-meeting signature; the inner action will execute on chain immediately.'
                   : `Your approval will be recorded. ${
                       multisig.threshold -
                       (proposal?.approvals.length ?? 0) -
@@ -1192,11 +1222,17 @@ function ApproveView({
 
           <div>
             <h2 className="font-display font-semibold text-xl">
-              {nextApprovalExecutes ? 'Transfer executed' : 'Approval recorded'}
+              {nextApprovalExecutes
+                ? isTwoDevice
+                  ? 'Funds released'
+                  : 'Transfer executed'
+                : 'Approval recorded'}
             </h2>
             <p className="text-sm text-ink-400 mt-1 leading-relaxed">
               {nextApprovalExecutes
-                ? 'Threshold met. The transfer has executed on chain — funds have moved out of the multisig.'
+                ? isTwoDevice
+                  ? 'Both devices approved. The transfer has executed on chain — funds have moved out of your protected account.'
+                  : 'Threshold met. The transfer has executed on chain — funds have moved out of the multisig.'
                 : `Your signature is on chain. ${
                     multisig.threshold - ((proposal?.approvals.length ?? 0) + 1)
                   } more signature(s) needed before the transfer executes.`}
@@ -1439,8 +1475,30 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 // ---------- Sub-components ----------
 
-function RoleBanner({ role }: { role: UserRole }) {
+function RoleBanner({
+  role,
+  isTwoDevice,
+  nextApprovalExecutes,
+}: {
+  role: UserRole;
+  isTwoDevice: boolean;
+  nextApprovalExecutes: boolean;
+}) {
   const text = (() => {
+    if (isTwoDevice) {
+      switch (role) {
+        case 'pending-approver':
+          return nextApprovalExecutes
+            ? 'Approve from your second device to release these funds.'
+            : 'Approve this spend from your second device.';
+        case 'depositor':
+          return 'You started this spend. Approve it from your second device to release the funds.';
+        case 'already-approved':
+          return "You've approved from this device. Waiting on your other device.";
+        case 'not-a-signer':
+          return "You're not a signer on this protected account.";
+      }
+    }
     switch (role) {
       case 'pending-approver':
         return 'You are being asked to approve this proposal.';
