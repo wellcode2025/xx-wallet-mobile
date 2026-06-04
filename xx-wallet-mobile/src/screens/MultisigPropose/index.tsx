@@ -81,6 +81,10 @@ export function MultisigPropose() {
 function ProposeView({ address }: { address: string }) {
   const navigate = useNavigate();
   const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
+  // Accounts from the guided two-device-approval wizard reframe the spend
+  // flow as 2-factor ("start a spend → approve on your second device").
+  // Cosmetic only; the signing path below is identical.
+  const isTwoDevice = multisig.preset === 'two-device';
   const { accounts, activeAddress } = useAccountsStore();
   const { balance } = useBalance(address);
   const putBytes = usePendingBytesStore((s) => s.putBytes);
@@ -246,7 +250,11 @@ function ProposeView({ address }: { address: string }) {
       case 'finalized':
         return 'Done';
       default:
-        return isImmediate ? 'Confirm and execute' : 'Propose to cosigners';
+        return isImmediate
+          ? 'Confirm and execute'
+          : isTwoDevice
+            ? 'Propose spend'
+            : 'Propose to cosigners';
     }
   })();
 
@@ -424,14 +432,14 @@ function ProposeView({ address }: { address: string }) {
 
   return (
     <>
-      <TopBar title="Propose" showBack />
+      <TopBar title={isTwoDevice ? 'Start a spend' : 'Propose'} showBack />
       <div className="px-5 py-4 space-y-5 max-w-md mx-auto pb-24">
         {/* Multisig context header — funds origin */}
         <div className="card space-y-1">
           <div className="flex items-center gap-2">
             <Users size={14} className="text-xx-500" strokeWidth={2.25} />
             <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
-              Funds from multisig
+              {isTwoDevice ? 'Funds from protected account' : 'Funds from multisig'}
             </p>
           </div>
           <p className="text-sm font-medium text-ink-100">
@@ -688,6 +696,21 @@ function ProposeView({ address }: { address: string }) {
                 </li>
               </ul>
             </>
+          ) : isTwoDevice ? (
+            <>
+              <p className="text-ink-300">When you tap Propose:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>Your first approval is submitted on chain.</li>
+                <li>
+                  You'll get a QR code (or file) to open on your second
+                  device.
+                </li>
+                <li>
+                  Approving there releases the funds; until then they stay
+                  in your protected account.
+                </li>
+              </ul>
+            </>
           ) : (
             <>
               <p className="text-ink-300">When you tap Propose:</p>
@@ -719,7 +742,7 @@ function ProposeView({ address }: { address: string }) {
           className="btn-primary w-full"
         >
           <ArrowUpRight size={18} />
-          {isImmediate ? 'Execute' : 'Propose'}
+          {isImmediate ? 'Execute' : isTwoDevice ? 'Start spend' : 'Propose'}
         </button>
       </div>
 
@@ -808,7 +831,13 @@ function ProposeView({ address }: { address: string }) {
       <Sheet
         open={confirmOpen && !isDone}
         onClose={closeConfirm}
-        title={isImmediate ? 'Confirm and execute' : 'Confirm proposal'}
+        title={
+          isImmediate
+            ? 'Confirm and execute'
+            : isTwoDevice
+              ? 'Confirm spend'
+              : 'Confirm proposal'
+        }
       >
         <div className="space-y-4">
           <div className="space-y-3 p-4 rounded-2xl bg-ink-800 border border-ink-700/50">
@@ -836,7 +865,9 @@ function ProposeView({ address }: { address: string }) {
               <span className="text-xs text-ink-300 leading-snug">
                 {isImmediate
                   ? 'Threshold 1 — your single signature executes the transfer immediately on chain.'
-                  : 'Records your signature as the proposer. Other signers must approve before the transfer executes.'}
+                  : isTwoDevice
+                    ? 'Records your first approval. Your second device must approve before the funds move.'
+                    : 'Records your signature as the proposer. Other signers must approve before the transfer executes.'}
               </span>
             </Row>
           </div>
@@ -901,12 +932,18 @@ function ProposeView({ address }: { address: string }) {
           </div>
           <div>
             <h2 className="font-display font-semibold text-xl">
-              {isImmediate ? 'Transfer executed' : 'Proposal submitted'}
+              {isImmediate
+                ? 'Transfer executed'
+                : isTwoDevice
+                  ? 'Spend started'
+                  : 'Proposal submitted'}
             </h2>
             <p className="text-sm text-ink-400 mt-1 leading-relaxed">
               {isImmediate
                 ? 'The transfer has executed on chain. The funds have moved out of the multisig.'
-                : 'Your signature is on chain. Next: share the call data with your cosigners so they can approve.'}
+                : isTwoDevice
+                  ? 'Your first approval is on chain. Next: open this on your second device to approve and release the funds.'
+                  : 'Your signature is on chain. Next: share the call data with your cosigners so they can approve.'}
             </p>
           </div>
           {txHash && (
@@ -918,7 +955,11 @@ function ProposeView({ address }: { address: string }) {
             </div>
           )}
           <button onClick={closeSuccess} className="btn-primary w-full mt-2">
-            {isImmediate ? 'Done' : 'Share with cosigners'}
+            {isImmediate
+              ? 'Done'
+              : isTwoDevice
+                ? 'Send to second device'
+                : 'Share with cosigners'}
           </button>
         </div>
       </Sheet>

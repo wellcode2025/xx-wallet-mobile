@@ -71,6 +71,9 @@ function ShareView({
 }) {
   const navigate = useNavigate();
   const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
+  // Accounts created by the two-device-approval wizard reframe this hand-off
+  // as "send to your second device" rather than "share with cosigners".
+  const isTwoDevice = multisig.preset === 'two-device';
   const cachedEntry = usePendingBytesStore((s) =>
     s.getBytes(address, callHash)
   );
@@ -263,7 +266,10 @@ function ShareView({
 
   return (
     <>
-      <TopBar title="Share with cosigners" showBack />
+      <TopBar
+        title={isTwoDevice ? 'Send to your second device' : 'Share with cosigners'}
+        showBack
+      />
       <div className="px-5 py-6 max-w-md mx-auto space-y-4 pb-24">
         {/* Context */}
         <div className="space-y-1">
@@ -274,17 +280,20 @@ function ShareView({
             </p>
           </div>
           <h1 className="text-lg font-display font-medium text-ink-100 leading-snug">
-            Send this to your cosigners
+            {isTwoDevice
+              ? 'Open this on your second device'
+              : 'Send this to your cosigners'}
           </h1>
           <p className="text-xs text-ink-400 leading-relaxed">
-            They'll import it into their wallet, see the same decoded
-            action you see below, and can approve once
-            {multisig.threshold > 1
-              ? ` (you need ${multisig.threshold - 1} more signature${
-                  multisig.threshold - 1 !== 1 ? 's' : ''
-                })`
-              : ''}
-            .
+            {isTwoDevice
+              ? 'Your second device will show the same decoded action below, where one approval releases the funds. The quickest way is to scan the QR code with it.'
+              : "They'll import it into their wallet, see the same decoded action you see below, and can approve once" +
+                (multisig.threshold > 1
+                  ? ` (you need ${multisig.threshold - 1} more signature${
+                      multisig.threshold - 1 !== 1 ? 's' : ''
+                    })`
+                  : '') +
+                '.'}
           </p>
         </div>
 
@@ -299,7 +308,9 @@ function ShareView({
               strokeWidth={2.25}
             />
             <p className="text-xs uppercase tracking-wider text-xx-500 font-medium">
-              Action your cosigners will see
+              {isTwoDevice
+                ? 'Action your second device will see'
+                : 'Action your cosigners will see'}
             </p>
           </div>
           {decoded ? (
@@ -369,8 +380,18 @@ function ShareView({
               Download as file
             </button>
             <p className="text-xs text-ink-400 leading-relaxed -mt-1 px-1">
-              Recommended. Saves a <code>{fileName}</code> file you can
-              share via Signal, email, AirDrop, or any channel you trust.
+              {isTwoDevice ? (
+                <>
+                  Saves a <code>{fileName}</code> file you can get to your
+                  second device (AirDrop, email to yourself, or any channel
+                  you trust).
+                </>
+              ) : (
+                <>
+                  Recommended. Saves a <code>{fileName}</code> file you can
+                  share via Signal, email, AirDrop, or any channel you trust.
+                </>
+              )}
             </p>
 
             {/* QR code (collapsible — saves vertical space when not in use) */}
@@ -395,8 +416,9 @@ function ShareView({
                   </div>
                 )}
                 <p className="text-xs text-ink-700 text-center leading-relaxed px-2 pb-1">
-                  Have your cosigner scan this with their wallet. Best
-                  for in-person handoffs.
+                  {isTwoDevice
+                    ? 'Scan this with your second device to load the spend, then approve there.'
+                    : 'Have your cosigner scan this with their wallet. Best for in-person handoffs.'}
                 </p>
               </div>
             )}
