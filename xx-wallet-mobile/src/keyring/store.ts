@@ -322,6 +322,29 @@ class XxKeyring {
   }
 
   /**
+   * Derive the xx address for a mnemonic WITHOUT persisting an account or
+   * touching localStorage. Uses the identical derivation as
+   * createFromMnemonic (addFromUri on the ss58-55 keyring), so a phrase
+   * backed up here reproduces this exact address when later imported. The
+   * in-memory pair is removed immediately.
+   *
+   * Used for the offline backup signer in two-device-approval setup, whose
+   * private key must never live on this device — we only keep its address.
+   * Does not go through the manualScryptDecrypt / unlock() path.
+   */
+  addressFromMnemonic(mnemonic: string): string {
+    const keyring = this.ensureReady();
+    const trimmed = mnemonic.trim();
+    if (!mnemonicValidate(trimmed)) {
+      throw new Error('Invalid mnemonic phrase.');
+    }
+    const pair = keyring.addFromUri(trimmed);
+    const { address } = pair;
+    keyring.removePair(address);
+    return address;
+  }
+
+  /**
    * Create a new account from a mnemonic and persist it.
    * The mnemonic should already be validated/confirmed by the user.
    *

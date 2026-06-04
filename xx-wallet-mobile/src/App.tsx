@@ -60,6 +60,7 @@ import { MultisigPropose } from '@/screens/MultisigPropose';
 import { MultisigShare } from '@/screens/MultisigShare';
 import { MultisigImport } from '@/screens/MultisigImport';
 import { MultisigScan } from '@/screens/MultisigScan';
+import { TwoDeviceApproval } from '@/screens/TwoDeviceApproval';
 import {
   inlineSink,
   registerSink,
@@ -293,6 +294,7 @@ export function App() {
             />
             <Route path="/governance/me" element={<MyGovernance />} />
             <Route path="/tx/:id" element={<TransactionDetail />} />
+            <Route path="/multisig/two-device" element={<TwoDeviceApproval />} />
             <Route path="/multisig/create" element={<MultisigCreate />} />
             <Route path="/multisig/import" element={<MultisigImport />} />
             <Route path="/multisig/scan" element={<MultisigScan />} />

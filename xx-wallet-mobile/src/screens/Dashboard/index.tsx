@@ -12,6 +12,7 @@ import {
   Loader2,
   Plus,
   Search,
+  ShieldCheck,
   UserPlus,
   Users,
 } from 'lucide-react';
@@ -485,6 +486,40 @@ export function Dashboard() {
         title="Add multisig"
       >
         <div className="space-y-3">
+          {/* Guided "two-device approval" — the recommended, hand-held
+              path that builds an opinionated 2-of-3. The manual create /
+              import / scan paths sit below for power users. */}
+          <button
+            onClick={() => {
+              setAddChooserOpen(false);
+              navigate('/multisig/two-device');
+            }}
+            className="w-full flex items-start gap-3 p-3 rounded-2xl bg-xx-500/10 border border-xx-500/30 active:bg-xx-500/20 text-left"
+          >
+            <div className="w-9 h-9 rounded-full bg-ink-900 border border-xx-500/40 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck size={16} strokeWidth={2} className="text-xx-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-ink-100">
+                  Protect with a second device
+                </p>
+                <span className="text-[10px] uppercase tracking-wider text-xx-500 font-semibold">
+                  2FA
+                </span>
+              </div>
+              <p className="text-sm text-ink-300 leading-snug mt-0.5">
+                Guided setup that requires approval from two of your devices
+                before funds can move. Recommended if you want a second factor
+                on your savings.
+              </p>
+            </div>
+          </button>
+
+          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium pt-1 px-1">
+            Or set up manually
+          </p>
+
           <button
             onClick={() => {
               setAddChooserOpen(false);
