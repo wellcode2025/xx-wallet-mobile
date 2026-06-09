@@ -31,7 +31,7 @@ import {
 } from '@/store';
 import { XX_ENDPOINTS } from '@/api';
 import { TopBar } from '@/components/layout';
-import { AddressIcon, RevealableAddress, Sheet } from '@/components/ui';
+import { AddressIcon, Sheet } from '@/components/ui';
 import { xxKeyring } from '@/keyring';
 import { Users } from 'lucide-react';
 import clsx from 'clsx';
@@ -198,12 +198,9 @@ export function Settings() {
                     </span>
                   )}
                 </div>
-                <RevealableAddress
-                  address={acct.address}
-                  start={14}
-                  end={6}
-                  className="mt-0.5"
-                />
+                <p className="font-mono text-xs text-ink-400 truncate mt-0.5">
+                  {acct.address.slice(0, 14)}…
+                </p>
               </div>
               <ChevronRight size={18} className="text-ink-400 flex-shrink-0" />
             </button>
