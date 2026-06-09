@@ -27,6 +27,7 @@ import {
   Pencil,
   X,
   AlertTriangle,
+  MoreVertical,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import clsx from 'clsx';
@@ -79,6 +80,7 @@ function MultisigView({ address }: { address: string }) {
   const renameMultisig = useMultisigsStore((s) => s.renameMultisig);
   const removeMultisig = useMultisigsStore((s) => s.removeMultisig);
   const [exportOpen, setExportOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(multisig.localName);
   const [forgetOpen, setForgetOpen] = useState(false);
@@ -108,7 +110,19 @@ function MultisigView({ address }: { address: string }) {
 
   return (
     <>
-      <TopBar title={multisig.localName} showBack />
+      <TopBar
+        title={multisig.localName}
+        showBack
+        right={
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="-mr-1 p-2 rounded-full active:bg-ink-800"
+            aria-label="More options"
+          >
+            <MoreVertical size={20} strokeWidth={2} />
+          </button>
+        }
+      />
       <div className="px-5 py-6 max-w-md mx-auto space-y-5">
         {/* Hero: identicon, address, threshold, balance */}
         <div className="flex flex-col items-center text-center space-y-3 pt-2">
@@ -276,42 +290,6 @@ function MultisigView({ address }: { address: string }) {
           )}
         </div>
 
-        {/* Action row: Export config. The Propose entry now lives as a
-            quick-action right under the balance hero; keeping it here
-            too would just be a duplicate entry point. Export remains
-            available to all viewers — even watch-only — so they can
-            re-share the config to bring others onto the same multisig. */}
-        <button
-          onClick={() => setExportOpen(true)}
-          className="btn-secondary w-full"
-        >
-          <Share2 size={16} strokeWidth={2} />
-          Export config to share with cosigners
-        </button>
-
-        {/* Manage — rename or forget. A multisig has no key of its own, so
-            "forget" only removes the local record; it's reversible (re-import
-            or re-derive from the same signers + threshold). Framed gently so
-            nobody mistakes it for destroying an on-chain account. */}
-        <div className="space-y-2 pt-1">
-          <button
-            onClick={() => {
-              setRenameDraft(multisig.localName);
-              setRenameOpen(true);
-            }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
-          >
-            <Pencil size={18} className="text-ink-400" />
-            <span className="text-sm text-ink-100">Rename</span>
-          </button>
-          <button
-            onClick={() => setForgetOpen(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
-          >
-            <X size={18} className="text-ink-400" />
-            <span className="text-sm text-ink-200">Forget multisig</span>
-          </button>
-        </div>
       </div>
 
       {/* Export sheet — produces a config JSON that other signers can
@@ -321,6 +299,61 @@ function MultisigView({ address }: { address: string }) {
           JSON's parameters and refuses if it doesn't match what the
           JSON claims, so this can be sent over untrusted channels
           (Slack, email, etc.) safely. */}
+      {/* Overflow menu — management actions kept off the (potentially long)
+          activity scroll, reached from the ⋮ in the top bar. */}
+      <Sheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        title={multisig.localName}
+      >
+        <div className="space-y-2">
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              setExportOpen(true);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <Share2 size={18} className="text-ink-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-ink-100">Export config</p>
+              <p className="text-xs text-ink-400">
+                Share this multisig with cosigners
+              </p>
+            </div>
+          </button>
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              setRenameDraft(multisig.localName);
+              setRenameOpen(true);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <Pencil size={18} className="text-ink-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-ink-100">Rename</p>
+              <p className="text-xs text-ink-400">Change the local nickname</p>
+            </div>
+          </button>
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              setForgetOpen(true);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+          >
+            <X size={18} className="text-ink-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-ink-200">Forget multisig</p>
+              <p className="text-xs text-ink-400">
+                Remove from this wallet · reversible
+              </p>
+            </div>
+          </button>
+        </div>
+      </Sheet>
+
       <ExportConfigSheet
         open={exportOpen}
         onClose={() => setExportOpen(false)}
