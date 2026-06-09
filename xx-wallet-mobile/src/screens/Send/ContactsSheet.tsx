@@ -24,7 +24,7 @@ import {
   Download as DownloadIcon,
   BadgeCheck,
 } from 'lucide-react';
-import { useAddressBook } from '@/store';
+import { useAddressBook, useAccountsStore } from '@/store';
 import { shortenAddress } from '@/utils';
 import { copyToClipboard } from '@/utils/clipboard';
 import { fetchIdentitiesBatch } from '@/api';
@@ -62,6 +62,7 @@ export function ContactsSheet({
   onRequestDelete,
 }: ContactsSheetProps) {
   const { contacts, setIdentity, importContacts, exportContacts } = useAddressBook();
+  const { accounts, activeAddress } = useAccountsStore();
 
   const [contactSearch, setContactSearch] = useState('');
   const [syncProgress, setSyncProgress] = useState<{ done: number; total: number } | null>(null);
@@ -75,6 +76,19 @@ export function ContactsSheet({
       (c) => c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q)
     );
   }, [contacts, contactSearch]);
+
+  // The user's own accounts, surfaced as recipients (you can send between your
+  // own accounts) — auto-derived, separate from contacts, never editable here.
+  // Exclude the active account since you can't send to yourself.
+  const filteredMyAccounts = useMemo(() => {
+    const mine = accounts.filter((a) => a.address !== activeAddress);
+    if (!contactSearch.trim()) return mine;
+    const q = contactSearch.toLowerCase();
+    return mine.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) || a.address.toLowerCase().includes(q)
+    );
+  }, [accounts, activeAddress, contactSearch]);
 
   // "Sync identities" — explicit user action only, never on background timers.
   // Reason: battery + data cost on mobile.
@@ -220,6 +234,47 @@ export function ContactsSheet({
                 <p className="text-ink-400">No valid contacts found in the file.</p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* My accounts — your own wallet addresses, selectable as recipients.
+            Auto-derived from the accounts store; not editable here. */}
+        {filteredMyAccounts.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1">
+              My accounts
+            </p>
+            <ul className="space-y-2">
+              {filteredMyAccounts.map((a) => (
+                <li key={a.address}>
+                  <button
+                    onClick={() => handleSelect(a.address)}
+                    className={clsx(
+                      'w-full flex items-center gap-3 p-3 rounded-2xl bg-ink-800 border text-left active:opacity-80',
+                      a.address === currentRecipient.trim()
+                        ? 'border-xx-500/40'
+                        : 'border-ink-700/50'
+                    )}
+                  >
+                    <AddressIcon address={a.address} size={36} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{a.name}</p>
+                      <p className="font-mono text-xs text-ink-400 truncate">
+                        {shortenAddress(a.address, { start: 8, end: 6 })}
+                      </p>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider text-ink-400 font-medium flex-shrink-0">
+                      yours
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {contacts.length > 0 && (
+              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1 pt-2">
+                Contacts
+              </p>
+            )}
           </div>
         )}
 

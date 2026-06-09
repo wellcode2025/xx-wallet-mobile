@@ -24,13 +24,14 @@ import {
   Loader2,
   Edit2,
   ArrowUpRight,
+  ScanLine,
 } from 'lucide-react';
 import { useAddressBook } from '@/store';
 import type { Contact, OnChainIdentity } from '@/store';
 import { useBalance } from '@/hooks';
 import { isValidXxAddress, formatBalance, shortenAddress } from '@/utils';
 import { fetchIdentity } from '@/api';
-import { Sheet } from '@/components/ui';
+import { Sheet, QrScanner } from '@/components/ui';
 import clsx from 'clsx';
 
 export type ContactFormMode = 'add' | 'edit' | 'details' | null;
@@ -70,6 +71,7 @@ export function ContactForm({
   const [formAddress, setFormAddress] = useState('');
   const [formNote, setFormNote] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Debounced on-chain identity preview (add mode mostly)
   const [previewIdentity, setPreviewIdentity] = useState<OnChainIdentity | null>(null);
@@ -198,6 +200,7 @@ export function ContactForm({
   };
 
   return (
+    <>
     <Sheet
       open={mode !== null}
       onClose={onClose}
@@ -346,9 +349,20 @@ export function ContactForm({
           <>
             {/* Address first — it's the only required field */}
             <div>
-              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Address <span className="text-danger normal-case font-normal">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-ink-300 uppercase tracking-wide">
+                  Address <span className="text-danger normal-case font-normal">*</span>
+                </label>
+                {mode === 'add' && (
+                  <button
+                    onClick={() => setScannerOpen(true)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-xx-500 active:text-xx-600"
+                  >
+                    <ScanLine size={14} />
+                    Scan QR
+                  </button>
+                )}
+              </div>
               <textarea
                 value={formAddress}
                 onChange={(e) => { setFormAddress(e.target.value); setFormError(null); }}
@@ -451,6 +465,17 @@ export function ContactForm({
 
       </div>
     </Sheet>
+    {scannerOpen && (
+      <QrScanner
+        onScan={(result) => {
+          setFormAddress(result.trim());
+          setFormError(null);
+          setScannerOpen(false);
+        }}
+        onClose={() => setScannerOpen(false)}
+      />
+    )}
+    </>
   );
 }
 
