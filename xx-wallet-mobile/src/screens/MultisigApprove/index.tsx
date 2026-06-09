@@ -40,6 +40,7 @@ import {
   Send,
 } from 'lucide-react';
 import { hexToU8a } from '@polkadot/util';
+import type { BN } from '@polkadot/util';
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
 import {
@@ -52,6 +53,7 @@ import {
 import {
   formatAge,
   useApi,
+  useBalance,
   usePendingMultisigs,
   useStaleness,
   useTx,
@@ -331,6 +333,55 @@ function ApproveView({
   }, [eligibleKey, proposal?.callHash]);
 
   const signerAccount = accounts.find((a) => a.address === signerAddress);
+
+  // Pre-flight fee check. The signer pays the extrinsic fee from its OWN
+  // account (separate from the multisig's balance), so a freshly-created
+  // signer with no XX can't approve. Estimate the fee and warn before the
+  // user signs, instead of letting the signature fail mid-broadcast.
+  const { balance: signerBalance } = useBalance(signerAddress);
+  const [estFee, setEstFee] = useState<BN | null>(null);
+  useEffect(() => {
+    if (!api || !callBytes || !proposal || !signerAddress) {
+      setEstFee(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const innerCall = api.registry.createType('Call', hexToU8a(callBytes));
+        const otherSignatories = multisig.signers
+          .map((s) => s.address)
+          .filter((a) => a !== signerAddress)
+          .sort();
+        const timepoint = {
+          height: proposal.whenBlock,
+          index: proposal.whenIndex,
+        };
+        const tx = api.tx.multisig.asMulti(
+          multisig.threshold,
+          otherSignatories,
+          timepoint,
+          innerCall,
+          STATIC_INNER_CALL_WEIGHT
+        );
+        const info = await tx.paymentInfo(signerAddress);
+        if (!cancelled) setEstFee(info.partialFee.toBn());
+      } catch {
+        if (!cancelled) setEstFee(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, callBytes, proposal?.callHash, signerAddress, multisig.threshold]);
+
+  // Only a hard shortfall blocks — estFee null (still estimating) never blocks.
+  const feeShortfall = !!(
+    signerBalance &&
+    estFee &&
+    signerBalance.transferable.lt(estFee)
+  );
 
   // The role of the SELECTED signer on this proposal. Different from the
   // pre-picker version (which used the active account); the picker may
@@ -777,10 +828,39 @@ function ApproveView({
                 })}
               </select>
             )}
-            <p className="text-xs text-ink-400 leading-relaxed">
-              The chosen account signs the approval and pays the
-              extrinsic fee.
-            </p>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="text-xs text-ink-400 leading-relaxed">
+                Signs the approval and pays the network fee from its own
+                balance.
+              </p>
+              {signerBalance && (
+                <p
+                  className={clsx(
+                    'text-xs font-mono numeric flex-shrink-0',
+                    feeShortfall ? 'text-danger' : 'text-ink-300'
+                  )}
+                >
+                  {formatBalance(signerBalance.transferable, { decimals: 4 })} XX
+                </p>
+              )}
+            </div>
+            {feeShortfall && (
+              <div className="flex items-start gap-2 p-2.5 rounded-xl bg-danger/10 border border-danger/30">
+                <AlertTriangle
+                  size={14}
+                  className="text-danger flex-shrink-0 mt-0.5"
+                />
+                <p className="text-xs text-ink-200 leading-snug">
+                  This account can't cover the network fee
+                  {estFee ? (
+                    <> (needs ≈{formatBalance(estFee, { decimals: 4 })} XX)</>
+                  ) : null}
+                  . Add a little XX to it before signing — signer accounts pay
+                  fees from their own balance. Tip: keep ≈5 XX in each signer
+                  for fees.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -983,12 +1063,14 @@ function ApproveView({
               onClick={handleApprove}
               disabled={
                 (bytesAvailable && !hashVerified) ||
-                (!bytesAvailable && !consciousAck)
+                (!bytesAvailable && !consciousAck) ||
+                feeShortfall
               }
               className={clsx(
                 'btn-primary w-full',
                 ((bytesAvailable && !hashVerified) ||
-                  (!bytesAvailable && !consciousAck)) &&
+                  (!bytesAvailable && !consciousAck) ||
+                  feeShortfall) &&
                   'opacity-50 cursor-not-allowed'
               )}
             >

@@ -31,6 +31,7 @@ import {
   Users,
 } from 'lucide-react';
 import BigNumber from 'bignumber.js';
+import { BN } from '@polkadot/util';
 import { TopBar } from '@/components/layout';
 import {
   AddressChip,
@@ -219,12 +220,88 @@ function ProposeView({ address }: { address: string }) {
     transferable !== null &&
     parsedAmount.isLessThanOrEqualTo(transferable);
 
+  // Pre-flight cost check: the PROPOSER pays the network fee AND reserves a
+  // multisig deposit, both from its own account (not the multisig's). Estimate
+  // the total so we can block before signing instead of failing mid-broadcast.
+  const { balance: signerBalance } = useBalance(signerAddress);
+  const [estCost, setEstCost] = useState<BN | null>(null);
+  useEffect(() => {
+    if (!api || !signerAddress || !recipientValid || !parsedAmount) {
+      setEstCost(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const dest = recipient.trim();
+        const value = parsedAmount.toFixed(0);
+        const innerExt = allowReaping
+          ? (api.tx.balances.transferAllowDeath ?? api.tx.balances.transfer)(
+              dest,
+              value
+            )
+          : api.tx.balances.transferKeepAlive(dest, value);
+        const innerCall = innerExt.method;
+        const otherSignatories = multisig.signers
+          .map((s) => s.address)
+          .filter((a) => a !== signerAddress)
+          .sort();
+        const tx =
+          multisig.threshold === 1
+            ? api.tx.multisig.asMultiThreshold1(otherSignatories, innerCall)
+            : api.tx.multisig.asMulti(
+                multisig.threshold,
+                otherSignatories,
+                null,
+                innerCall,
+                STATIC_INNER_CALL_WEIGHT
+              );
+        const info = await tx.paymentInfo(signerAddress);
+        let cost = info.partialFee.toBn();
+        // Proposing a new (threshold ≥ 2) multisig op reserves a deposit from
+        // the proposer: DepositBase + DepositFactor * signatories.
+        if (multisig.threshold >= 2) {
+          try {
+            const base = new BN(api.consts.multisig.depositBase.toString());
+            const factor = new BN(api.consts.multisig.depositFactor.toString());
+            cost = cost.add(base.add(factor.muln(multisig.signers.length)));
+          } catch {
+            /* consts unavailable — fall back to a fee-only estimate */
+          }
+        }
+        if (!cancelled) setEstCost(cost);
+      } catch {
+        if (!cancelled) setEstCost(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    api,
+    signerAddress,
+    recipient,
+    recipientValid,
+    parsedAmount,
+    allowReaping,
+    multisig.threshold,
+  ]);
+
+  // Only a hard shortfall blocks — estCost null (still estimating) never blocks.
+  const feeShortfall = !!(
+    signerBalance &&
+    estCost &&
+    signerBalance.transferable.lt(estCost)
+  );
+
   const canContinue =
     recipientValid &&
     !recipientIsMultisig &&
     amountValid &&
     hasEligibleSigner &&
     !!signerAddress &&
+    !feeShortfall &&
     (!senderBelowED || allowReaping);
 
   const isSubmitting =
@@ -497,11 +574,39 @@ function ProposeView({ address }: { address: string }) {
               ))}
             </select>
           )}
-          <p className="text-xs text-ink-400 leading-relaxed">
-            This account signs the proposal on chain and pays the
-            extrinsic fee. The funds themselves still come from the
-            multisig above.
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-ink-400 leading-relaxed">
+              Signs the proposal and pays the network fee from its own
+              balance. The funds themselves still come from the multisig
+              above.
+            </p>
+            {signerBalance && (
+              <p
+                className={`text-xs font-mono numeric flex-shrink-0 ${
+                  feeShortfall ? 'text-danger' : 'text-ink-300'
+                }`}
+              >
+                {formatBalance(signerBalance.transferable, { decimals: 4 })} XX
+              </p>
+            )}
+          </div>
+          {feeShortfall && (
+            <div className="flex items-start gap-2 p-2.5 rounded-xl bg-danger/10 border border-danger/30">
+              <AlertTriangle
+                size={14}
+                className="text-danger flex-shrink-0 mt-0.5"
+              />
+              <p className="text-xs text-ink-200 leading-snug">
+                This account can't cover the cost of proposing
+                {estCost ? (
+                  <> (≈{formatBalance(estCost, { decimals: 4 })} XX)</>
+                ) : null}
+                . Add a little XX to it first — signer accounts pay the network
+                fee and the multisig deposit from their own balance. Tip: keep
+                ≈5 XX in each signer for fees.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Recipient — mirrors Send's affordance row so the user can pick
