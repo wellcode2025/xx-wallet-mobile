@@ -24,6 +24,9 @@ import {
   QrCode,
   Send,
   Share2,
+  Pencil,
+  X,
+  AlertTriangle,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import clsx from 'clsx';
@@ -73,7 +76,27 @@ function MultisigView({ address }: { address: string }) {
     useMultisigActivity(address);
   const { pending } = usePendingMultisigs(address);
   const stalenessOf = useStaleness();
+  const renameMultisig = useMultisigsStore((s) => s.renameMultisig);
+  const removeMultisig = useMultisigsStore((s) => s.removeMultisig);
   const [exportOpen, setExportOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(multisig.localName);
+  const [forgetOpen, setForgetOpen] = useState(false);
+
+  const renameTrimmed = renameDraft.trim();
+  const renameValid =
+    renameTrimmed.length > 0 &&
+    renameTrimmed.length <= 64 &&
+    renameTrimmed !== multisig.localName;
+  const handleRename = () => {
+    if (!renameValid) return;
+    renameMultisig(address, renameTrimmed);
+    setRenameOpen(false);
+  };
+  const handleForget = () => {
+    removeMultisig(address);
+    navigate('/', { replace: true });
+  };
 
   // The user can only propose at this multisig if they're a signer of it.
   // Defensive check — for a multisig that's been imported, this should
@@ -265,6 +288,30 @@ function MultisigView({ address }: { address: string }) {
           <Share2 size={16} strokeWidth={2} />
           Export config to share with cosigners
         </button>
+
+        {/* Manage — rename or forget. A multisig has no key of its own, so
+            "forget" only removes the local record; it's reversible (re-import
+            or re-derive from the same signers + threshold). Framed gently so
+            nobody mistakes it for destroying an on-chain account. */}
+        <div className="space-y-2 pt-1">
+          <button
+            onClick={() => {
+              setRenameDraft(multisig.localName);
+              setRenameOpen(true);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
+          >
+            <Pencil size={18} className="text-ink-400" />
+            <span className="text-sm text-ink-100">Rename</span>
+          </button>
+          <button
+            onClick={() => setForgetOpen(true)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
+          >
+            <X size={18} className="text-ink-400" />
+            <span className="text-sm text-ink-200">Forget multisig</span>
+          </button>
+        </div>
       </div>
 
       {/* Export sheet — produces a config JSON that other signers can
@@ -279,6 +326,90 @@ function MultisigView({ address }: { address: string }) {
         onClose={() => setExportOpen(false)}
         address={address}
       />
+
+      {/* Rename — local nickname only; doesn't touch the shared address. */}
+      <Sheet
+        open={renameOpen}
+        onClose={() => setRenameOpen(false)}
+        title="Rename multisig"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2 block">
+              New name
+            </label>
+            <input
+              type="text"
+              value={renameDraft}
+              onChange={(e) => setRenameDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && renameValid) handleRename();
+              }}
+              maxLength={64}
+              autoFocus
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
+              className="input-base"
+              placeholder="e.g. Treasury vault"
+            />
+            <p className="text-xs text-ink-400 mt-2">
+              Local label, only visible to you. It doesn't change the shared
+              on-chain address — other signers can name it differently.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setRenameOpen(false)}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRename}
+              disabled={!renameValid}
+              className="btn-primary"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </Sheet>
+
+      {/* Forget — removes the local record only; reversible. */}
+      <Sheet
+        open={forgetOpen}
+        onClose={() => setForgetOpen(false)}
+        title="Forget multisig"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-ink-800 border border-ink-700/50">
+            <AlertTriangle
+              size={20}
+              className="text-ink-300 flex-shrink-0 mt-0.5"
+            />
+            <div className="text-sm text-ink-200">
+              <p className="font-medium mb-1">Removes it from this wallet only.</p>
+              <p className="text-ink-300 text-xs leading-relaxed">
+                The on-chain multisig and its funds are untouched. You can bring
+                it back any time by re-importing its config or re-deriving it
+                from the same signers and threshold. No keys are lost.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setForgetOpen(false)}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+            <button onClick={handleForget} className="btn-primary">
+              Forget
+            </button>
+          </div>
+        </div>
+      </Sheet>
     </>
   );
 }
