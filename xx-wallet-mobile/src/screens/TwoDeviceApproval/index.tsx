@@ -47,15 +47,18 @@ type Step =
   | 'thisDevice'
   | 'secondDevice'
   | 'backupIntro'
+  | 'backupExisting'
   | 'backupGen'
   | 'backupReveal'
   | 'review'
   | 'done';
 
 interface BackupKey {
-  quantumMnemonic: string;
-  standardMnemonic: string;
   address: string;
+  /** Present only when the backup was generated in-flow; absent when the
+   *  user supplied the address of a key they already hold. */
+  quantumMnemonic?: string;
+  standardMnemonic?: string;
 }
 
 export function TwoDeviceApproval() {
@@ -76,12 +79,17 @@ export function TwoDeviceApproval() {
   const [secondError, setSecondError] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
 
-  // signer 3 — offline backup, generated here, private key NOT persisted
+  // signer 3 — offline backup. Either generated here (private key NOT
+  // persisted) or an existing cold key the user supplies by address.
   const [backup, setBackup] = useState<BackupKey | null>(null);
   const [backupRevealed, setBackupRevealed] = useState(false);
   const [backupAck, setBackupAck] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [copied, setCopied] = useState<'quantum' | 'standard' | null>(null);
+  // "Use existing key" path
+  const [backupInput, setBackupInput] = useState('');
+  const [backupError, setBackupError] = useState<string | null>(null);
+  const [backupScannerOpen, setBackupScannerOpen] = useState(false);
 
   const [name, setName] = useState('Protected account');
   const [submitting, setSubmitting] = useState(false);
@@ -157,10 +165,37 @@ export function TwoDeviceApproval() {
     setStep('backupIntro');
   };
 
+  // "Use a key I already have" — only the address is taken. Same anti-footgun
+  // guards as the second-device step, plus: must differ from BOTH devices, and
+  // must NOT be a key on this device (else this device holds 2 of 3 keys).
+  const handleBackupExistingContinue = () => {
+    const trimmed = backupInput.trim();
+    if (!isValidXxAddress(trimmed)) {
+      setBackupError('Not a valid xx network address — they start with "6".');
+      return;
+    }
+    if (trimmed === thisDevice || trimmed === secondDevice) {
+      setBackupError(
+        'That address is already one of your two devices. The backup must be a third, separate key.'
+      );
+      return;
+    }
+    if (accounts.some((a) => a.address === trimmed)) {
+      setBackupError(
+        'That key is on this device. The backup must be one you keep offline — otherwise this device would hold two of the three keys.'
+      );
+      return;
+    }
+    setBackup({ address: trimmed });
+    setBackupError(null);
+    setStep('review');
+  };
+
   const handleCopy = async (kind: 'quantum' | 'standard') => {
     if (!backup) return;
     const text =
       kind === 'quantum' ? backup.quantumMnemonic : backup.standardMnemonic;
+    if (!text) return;
     if (await copyToClipboard(text)) {
       setCopied(kind);
       setTimeout(() => setCopied((c) => (c === kind ? null : c)), 1500);
@@ -228,7 +263,7 @@ export function TwoDeviceApproval() {
               <StepLine
                 icon={<HardDrive size={16} className="text-ink-300" />}
                 title="An offline backup"
-                body="We generate it now; you write down its phrase and keep it offline. It's your safety net if a device is lost."
+                body="A fresh key we generate, or a cold key you already have. Kept offline — your safety net if a device is lost."
               />
             </div>
 
@@ -372,34 +407,117 @@ export function TwoDeviceApproval() {
             <SectionHeader
               icon={<HardDrive size={18} className="text-xx-500" />}
               title="Your offline backup key"
-              body="This is the third key — your safety net. We'll generate it now and show you its recovery phrase once."
+              body="The third key — your safety net if a device is lost. Generate a fresh one, or use a cold key you already have."
             />
-
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-warning/10 border border-warning/30">
-              <AlertTriangle
-                size={18}
-                className="text-warning flex-shrink-0 mt-0.5"
-              />
-              <div className="text-sm text-ink-200 space-y-2">
-                <p className="font-medium">Store this one offline</p>
-                <p className="text-ink-300 text-xs leading-relaxed">
-                  Write the phrase on paper and keep it somewhere safe —{' '}
-                  <span className="text-ink-100 font-medium">
-                    not on this phone
-                  </span>
-                  . The wallet does not keep this key; if it lived here too,
-                  this single device would hold two of the three keys and could
-                  spend on its own.
-                </p>
-              </div>
-            </div>
 
             <button
               onClick={() => setStep('backupGen')}
+              className="w-full flex items-start gap-3 p-3 rounded-2xl bg-xx-500/10 border border-xx-500/30 active:bg-xx-500/20 text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-ink-900 border border-xx-500/40 flex items-center justify-center flex-shrink-0">
+                <HardDrive size={16} strokeWidth={2} className="text-xx-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink-100">
+                  Generate a new backup key
+                </p>
+                <p className="text-sm text-ink-300 leading-snug mt-0.5">
+                  We create it and show its recovery phrase once — write it down
+                  and store it offline. Best if you don't already have a cold
+                  key.
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setStep('backupExisting')}
+              className="w-full flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-ink-900 border border-ink-700 flex items-center justify-center flex-shrink-0">
+                <KeyRound size={16} strokeWidth={2} className="text-ink-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink-100">
+                  Use a key I already have
+                </p>
+                <p className="text-sm text-ink-300 leading-snug mt-0.5">
+                  Enter the address of an existing cold key — a hardware wallet,
+                  paper wallet, or an offline device. Only its address is used.
+                </p>
+              </div>
+            </button>
+
+            <p className="text-xs text-ink-400 leading-relaxed">
+              Either way, the backup must stay{' '}
+              <span className="text-ink-200 font-medium">offline</span> — not on
+              either of your two devices. If it shared a device with another
+              signer, that device would hold two of the three keys and could
+              spend on its own.
+            </p>
+          </>
+        )}
+
+        {step === 'backupExisting' && (
+          <>
+            <SectionHeader
+              icon={<KeyRound size={18} className="text-xx-500" />}
+              title="Your existing backup key"
+              body="Enter or scan the address of a cold key you control. Only its address is used — never its keys or recovery phrase."
+            />
+
+            <button
+              onClick={() => setBackupScannerOpen(true)}
+              className="btn-secondary w-full"
+            >
+              <QrCode size={16} strokeWidth={2} />
+              Scan the backup key
+            </button>
+
+            <div className="card space-y-2">
+              <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
+                Or paste its address
+              </label>
+              <textarea
+                value={backupInput}
+                onChange={(e) => {
+                  setBackupInput(e.target.value);
+                  setBackupError(null);
+                }}
+                placeholder="6…"
+                className="input-base min-h-[80px] py-3 font-mono text-sm resize-none"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+              {backupError && (
+                <p className="text-xs text-danger leading-snug">{backupError}</p>
+              )}
+            </div>
+
+            <p className="text-xs text-ink-400 leading-relaxed">
+              This must be a third, separate key — not either of your two
+              devices, and not a key stored on this phone.
+            </p>
+
+            <button
+              onClick={handleBackupExistingContinue}
+              disabled={!backupInput.trim()}
               className="btn-primary w-full"
             >
-              Generate backup key
+              Continue
+              <ArrowRight size={16} strokeWidth={2} />
             </button>
+
+            {backupScannerOpen && (
+              <QrScanner
+                onScan={(result) => {
+                  setBackupInput(result.trim());
+                  setBackupError(null);
+                  setBackupScannerOpen(false);
+                }}
+                onClose={() => setBackupScannerOpen(false)}
+              />
+            )}
           </>
         )}
 
@@ -456,7 +574,7 @@ export function TwoDeviceApproval() {
               accent="text-xx-cyan"
               accentBg="bg-xx-cyan/10"
               accentBorder="border-xx-cyan/40"
-              mnemonic={backup.quantumMnemonic}
+              mnemonic={backup.quantumMnemonic ?? ''}
               revealed={backupRevealed}
               onReveal={() => setBackupRevealed(true)}
               onCopy={() => handleCopy('quantum')}
@@ -468,7 +586,7 @@ export function TwoDeviceApproval() {
               accent="text-xx-500"
               accentBg="bg-xx-500/10"
               accentBorder="border-xx-500/40"
-              mnemonic={backup.standardMnemonic}
+              mnemonic={backup.standardMnemonic ?? ''}
               revealed={backupRevealed}
               onReveal={() => setBackupRevealed(true)}
               onCopy={() => handleCopy('standard')}
