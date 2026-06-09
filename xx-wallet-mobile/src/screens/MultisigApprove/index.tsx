@@ -37,6 +37,7 @@ import {
   Upload,
   X,
   Loader2,
+  Send,
 } from 'lucide-react';
 import { hexToU8a } from '@polkadot/util';
 import clsx from 'clsx';
@@ -1067,6 +1068,24 @@ function ApproveView({
                   </p>
                 )}
               </div>
+              {/* Re-open the share screen for this pending proposal. The call
+                  bytes were cached locally at propose time (and persist), so
+                  the proposer can bring the QR / file / copy back up any time
+                  before it executes or is cancelled — not only right after
+                  proposing. */}
+              {bytesAvailable && (
+                <button
+                  onClick={() =>
+                    navigate(`/multisig/${address}/share/${callHash}`)
+                  }
+                  className="btn-primary w-full"
+                >
+                  <Send size={16} strokeWidth={2} />
+                  {isTwoDevice
+                    ? 'Send to your second device'
+                    : 'Share call data with cosigners'}
+                </button>
+              )}
               <button
                 onClick={handleCancelTap}
                 className={clsx(
