@@ -8,7 +8,6 @@ import {
   DownloadCloud,
   Loader2,
   Package,
-  Trash2,
   Plus,
   Globe,
   Info,
@@ -18,7 +17,6 @@ import {
   ArrowRight,
   PlusCircle,
   FileJson,
-  Pencil,
   X,
 } from 'lucide-react';
 import {
@@ -33,14 +31,14 @@ import {
 } from '@/store';
 import { XX_ENDPOINTS } from '@/api';
 import { TopBar } from '@/components/layout';
-import { AddressIcon, Sheet } from '@/components/ui';
+import { AddressIcon, RevealableAddress, Sheet } from '@/components/ui';
 import { xxKeyring } from '@/keyring';
 import { Users } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Settings() {
   const navigate = useNavigate();
-  const { accounts, activeAddress, remove, rename } = useAccountsStore();
+  const { accounts, activeAddress } = useAccountsStore();
   const endpoint = useSettingsStore((s) => s.endpoint);
   const customEndpoint = useSettingsStore((s) => s.customEndpoint);
   const setEndpoint = useSettingsStore((s) => s.setEndpoint);
@@ -73,21 +71,11 @@ export function Settings() {
   };
 
   const [endpointOpen, setEndpointOpen] = useState(false);
-  const [toRemove, setToRemove] = useState<string | null>(null);
-  const [toRename, setToRename] = useState<string | null>(null);
-  const [renameDraft, setRenameDraft] = useState('');
   const [syncOpen, setSyncOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);
   const [customDraft, setCustomDraft] = useState('');
   const [customError, setCustomError] = useState<string | null>(null);
-
-  const renameTarget = toRename ? accounts.find((a) => a.address === toRename) : null;
-  const renameTrimmed = renameDraft.trim();
-  const renameValid =
-    renameTrimmed.length > 0 &&
-    renameTrimmed.length <= 50 &&
-    renameTrimmed !== renameTarget?.name;
 
   const isCustomActive = !XX_ENDPOINTS.some((e) => e.url === endpoint);
 
@@ -115,47 +103,6 @@ export function Settings() {
     }
     setCustomEndpoint(url);
     await handleSwitchEndpoint(url);
-  };
-
-  const handleExport = (address: string) => {
-    try {
-      const json = xxKeyring.exportJson(address);
-      const blob = new Blob([JSON.stringify(json, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `xx-wallet-${address.slice(0, 8)}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleRemove = () => {
-    if (!toRemove) return;
-    remove(toRemove);
-    setToRemove(null);
-    // If this was the last account, navigate back to onboarding
-    const remaining = useAccountsStore.getState().accounts;
-    if (remaining.length === 0) {
-      navigate('/onboarding', { replace: true });
-    }
-  };
-
-  const openRename = (address: string) => {
-    const acct = accounts.find((a) => a.address === address);
-    if (!acct) return;
-    setRenameDraft(acct.name);
-    setToRename(address);
-  };
-
-  const handleRename = () => {
-    if (!toRename || !renameValid) return;
-    rename(toRename, renameTrimmed);
-    setToRename(null);
   };
 
   const currentEndpointName =
@@ -231,10 +178,11 @@ export function Settings() {
           }
         >
           {accounts.map((acct) => (
-            <div
+            <button
               key={acct.address}
+              onClick={() => navigate(`/account/${acct.address}`)}
               className={clsx(
-                'flex items-center gap-3 p-3 rounded-2xl border',
+                'w-full flex items-center gap-3 p-3 rounded-2xl border text-left active:bg-ink-700 transition-colors',
                 acct.address === activeAddress
                   ? 'bg-ink-800 border-xx-500/30'
                   : 'bg-ink-800 border-ink-700/50'
@@ -242,35 +190,23 @@ export function Settings() {
             >
               <AddressIcon address={acct.address} size={36} />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{acct.name}</p>
-                <p className="font-mono text-xs text-ink-400 truncate">
-                  {acct.address.slice(0, 14)}…
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm truncate">{acct.name}</p>
+                  {acct.address === activeAddress && (
+                    <span className="text-[10px] uppercase tracking-wider text-xx-500 font-semibold flex-shrink-0">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <RevealableAddress
+                  address={acct.address}
+                  start={14}
+                  end={6}
+                  className="mt-0.5"
+                />
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => openRename(acct.address)}
-                  className="p-2 rounded-full active:bg-ink-700"
-                  aria-label="Rename"
-                >
-                  <Pencil size={18} className="text-ink-400" />
-                </button>
-                <button
-                  onClick={() => handleExport(acct.address)}
-                  className="p-2 rounded-full active:bg-ink-700"
-                  aria-label="Export"
-                >
-                  <Download size={18} className="text-ink-400" />
-                </button>
-                <button
-                  onClick={() => setToRemove(acct.address)}
-                  className="p-2 rounded-full active:bg-ink-700"
-                  aria-label="Remove"
-                >
-                  <Trash2 size={18} className="text-danger/80" />
-                </button>
-              </div>
-            </div>
+              <ChevronRight size={18} className="text-ink-400 flex-shrink-0" />
+            </button>
           ))}
         </Section>
 
@@ -540,70 +476,6 @@ export function Settings() {
         </ul>
       </Sheet>
 
-      {/* Rename account */}
-      <Sheet
-        open={toRename !== null}
-        onClose={() => setToRename(null)}
-        title="Rename account"
-      >
-        <div className="space-y-4">
-          {renameTarget && (
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-ink-900 border border-ink-800">
-              <AddressIcon address={renameTarget.address} size={36} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
-                  Current name
-                </p>
-                <p className="text-sm font-medium text-ink-100 truncate">
-                  {renameTarget.name}
-                </p>
-                <p className="font-mono text-xs text-ink-400 truncate">
-                  {renameTarget.address.slice(0, 14)}…
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2 block">
-              New name
-            </label>
-            <input
-              type="text"
-              value={renameDraft}
-              onChange={(e) => setRenameDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && renameValid) handleRename();
-              }}
-              maxLength={50}
-              autoFocus
-              autoCapitalize="words"
-              autoCorrect="off"
-              spellCheck={false}
-              className="input-base"
-              placeholder="e.g. Foundation Multisig"
-            />
-            <p className="text-xs text-ink-400 mt-2">
-              Updates the display name and the keystore JSON's metadata, so an
-              export of this account will carry the new name to other devices.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => setToRename(null)} className="btn-secondary">
-              Cancel
-            </button>
-            <button
-              onClick={handleRename}
-              disabled={!renameValid}
-              className="btn-primary"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      </Sheet>
-
       {/* Batch export — bundle several accounts into one file shaped for
           polkadot.js-style "import all accounts" flows (including the
           official xx desktop wallet's). */}
@@ -612,36 +484,6 @@ export function Settings() {
         onClose={() => setBatchOpen(false)}
       />
 
-      {/* Remove confirmation */}
-      <Sheet
-        open={toRemove !== null}
-        onClose={() => setToRemove(null)}
-        title="Remove account"
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/30">
-            <AlertTriangle size={20} className="text-danger flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-ink-200">
-              <p className="font-medium mb-1">This cannot be undone.</p>
-              <p className="text-ink-300 text-xs leading-relaxed">
-                Make sure you have your recovery phrase or keystore backup.
-                Without it, removed accounts cannot be restored.
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => setToRemove(null)} className="btn-secondary">
-              Cancel
-            </button>
-            <button
-              onClick={handleRemove}
-              className="btn-primary bg-danger text-white active:bg-danger/80"
-            >
-              Remove
-            </button>
-          </div>
-        </div>
-      </Sheet>
     </>
   );
 }

@@ -5,6 +5,7 @@ export * from './ConnectionBadge';
 export * from './IOSInstallBanner';
 export * from './LoadingIndicator';
 export * from './QrScanner';
+export * from './RevealableAddress';
 export * from './Sheet';
 export * from './SparkBarChart';
 export * from './StakingStatusBadge';

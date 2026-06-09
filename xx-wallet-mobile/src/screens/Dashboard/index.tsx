@@ -27,7 +27,13 @@ import {
 import { formatBalance, splitBalance } from '@/utils';
 import { XX_SYMBOL } from '@/api';
 import { TopBar } from '@/components/layout';
-import { AddressIcon, AddressChip, Sheet, TransactionItem } from '@/components/ui';
+import {
+  AddressIcon,
+  AddressChip,
+  RevealableAddress,
+  Sheet,
+  TransactionItem,
+} from '@/components/ui';
 import clsx from 'clsx';
 
 export function Dashboard() {
@@ -359,6 +365,10 @@ export function Dashboard() {
                     hideBalances={hideBalances}
                     onClick={() => {
                       setActive(acct.address);
+                      setSwitcherOpen(false);
+                    }}
+                    onManage={() => {
+                      navigate(`/account/${acct.address}`);
                       setSwitcherOpen(false);
                     }}
                   />
@@ -701,12 +711,14 @@ function AccountSwitcherRow({
   isActive,
   hideBalances,
   onClick,
+  onManage,
 }: {
   address: string;
   name: string;
   isActive: boolean;
   hideBalances: boolean;
   onClick: () => void;
+  onManage: () => void;
 }) {
   const { balance } = useBalance(address);
   return (
@@ -722,10 +734,8 @@ function AccountSwitcherRow({
       <AddressIcon address={address} size={36} />
       <div className="flex-1 min-w-0 text-left">
         <p className="font-medium text-sm truncate">{name}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <p className="font-mono text-xs text-ink-400 truncate">
-            {address.slice(0, 10)}…
-          </p>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <RevealableAddress address={address} start={10} end={6} />
           <span className="text-ink-600">·</span>
           <p className="font-mono text-xs text-ink-300 numeric flex-shrink-0">
             {hideBalances
@@ -736,6 +746,24 @@ function AccountSwitcherRow({
           </p>
         </div>
       </div>
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label="Manage account"
+        onClick={(e) => {
+          e.stopPropagation();
+          onManage();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
+            onManage();
+          }
+        }}
+        className="flex-shrink-0 p-1 -mr-1 text-ink-400 active:text-ink-200 cursor-pointer"
+      >
+        <ChevronRight size={18} strokeWidth={2} />
+      </span>
     </button>
   );
 }
