@@ -8,8 +8,8 @@
  *   3. Known multisigs (by their derived address) — labeled 'multisig'
  *   4. Otherwise → null name, just the truncated fragment
  *
- * Per design doc §7.3, consumers MUST display the address fragment
- * alongside the name. We never substitute the name alone; that would
+ * Consumers MUST display the address fragment alongside the name.
+ * We never substitute the name alone; that would
  * let a typo or a malicious imported config hide the actual address
  * behind a familiar-looking label. The AddressLabel component enforces
  * this pairing; this hook just supplies the data.

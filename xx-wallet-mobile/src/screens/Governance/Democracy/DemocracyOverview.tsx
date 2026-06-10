@@ -15,8 +15,8 @@ import { PreimagesTab } from './PreimagesTab';
  * Democracy → Overview page: three live streams (referenda, public
  * proposals, external) plus a sibling Preimages tab.
  *
- * Empty-state-tolerant by design — at observation, all three Overview
- * streams are zero. The bytes-package §6.4 invariant lives on the
+ * Empty-state-tolerant by design — in typical operation all three Overview
+ * streams are zero. The decode-from-bytes invariant lives on the
  * Preimages tab; the orphaned 3,896-byte preimage at 0xa2652f… is the
  * production fixture for the "Unable to decode" UX.
  */

@@ -8,8 +8,7 @@
  *     read of the bytes, gated by hash + address-derivation verification.
  *   - If the bytes haven't arrived yet (no cache, no paste), shows a
  *     conscious-acknowledgement path so the user can still approve at
- *     their own risk — but with the trust-decision made visible (per
- *     §6.4 update agreed with Aaron).
+ *     their own risk — but with the trust-decision made visible.
  *   - Wires the Approve / Approve-and-execute / Cancel actions. Signing
  *     itself is wired via useTx; this screen owns the UI
  *     and the verification gates.
@@ -662,7 +661,6 @@ function ApproveView({
   // The depositor (and only the depositor — chain enforces) can cancel a
   // pending multisig proposal. Cancelling removes the proposal from
   // chain storage and returns the reserved deposit to the depositor.
-  // Per design doc §6.4 + §11.1.
 
   const handleCancelTap = () => {
     resetCancel();
@@ -1096,8 +1094,7 @@ function ApproveView({
 
           {/* Stale-proposal note for non-depositor cosigners. They can't
               cancel themselves (chain enforces depositor-only), but they
-              CAN nudge the depositor to clean it up. A notification channel
-              could later offer a one-tap nudge; for now this is
+              CAN nudge the depositor to clean it up. This row is
               informational. */}
           {(userRole === 'pending-approver' ||
             userRole === 'already-approved') &&

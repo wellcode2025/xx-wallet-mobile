@@ -15,7 +15,7 @@ import { AlertTriangle, Share, X } from 'lucide-react';
  *   - The app is NOT already running standalone (display-mode standalone
  *     or navigator.standalone === true).
  *   - The user hasn't previously dismissed this banner (localStorage
- *     flag — Aaron-flagged 'one-time' in the polish prompt).
+ *     flag — shown one time).
  *
  * Includes a heads-up about iOS's storage isolation: the installed PWA
  * has a separate storage bucket from Safari, so any accounts created in

@@ -4,7 +4,8 @@
  * Source: https://github.com/xxfoundation/exchange-integration (README)
  *
  * These values are baked into the chain and must never change without
- * the xx network itself changing. Do not alter without consulting Rick.
+ * the xx network itself changing. Do not alter without verifying against
+ * the canonical source above.
  */
 
 /** SS58 prefix for xx network addresses — all xx addresses start with "6". */

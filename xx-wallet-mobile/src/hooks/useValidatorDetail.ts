@@ -1,15 +1,15 @@
 /**
- * useValidatorDetail — per-validator deep view for the slice-3 screen.
+ * useValidatorDetail — per-validator deep view.
  *
- * Architecture, settled by the slice-3 spike (validator-detail-spike.mjs):
+ * Architecture (verified against live xx network):
  *
  *   Live from chain (the source of truth for anything users might act on):
  *     - ValidatorPrefs            commission, blocked
  *     - bonded + ledger           total/active bond, cmixId (Option<H256>)
  *     - cmix_id transform         H256 bytes + [2] byte → base64, matching
  *                                 the foundation's custom derive verbatim
- *                                 (spike cross-check vs the indexer's
- *                                 cmix_id confirmed bit-identical output)
+ *                                 (cross-checked vs the indexer's
+ *                                 cmix_id, confirmed bit-identical output)
  *     - erasStakersClipped        current-era total/own/backers list
  *     - erasRewardPoints          current-era points + network share
  *     - identity                  full on-chain identity via fetchIdentity

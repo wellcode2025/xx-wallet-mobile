@@ -515,13 +515,12 @@ function validateRpcUrl(url: string): string | null {
 }
 
 /**
- * Multisig settings — for now just the stale-proposal threshold. Only
- * renders when the user actually has multisigs in their wallet, so solo
- * users don't see configuration for a feature they don't use.
+ * Multisig settings — the stale-proposal threshold. Only renders when
+ * the user actually has multisigs in their wallet, so solo users don't
+ * see configuration for a feature they don't use.
  *
- * Per design doc §6.7. Threshold defaults to 30 days; bounded 7..365 in
- * the store so a malformed input here can't break the staleness compare
- * downstream.
+ * Threshold defaults to 30 days; bounded 7..365 in the store so a
+ * malformed input here can't break the staleness compare downstream.
  */
 function MultisigSection() {
   const multisigs = useMultisigsStore((s) => s.multisigs);

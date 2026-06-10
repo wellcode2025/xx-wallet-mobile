@@ -2,7 +2,7 @@
  * useValidatorList — the current validator set with live commission,
  * total stake, and era points.
  *
- * Architecture, settled by the slice-2 spike (validator-list-spike.mjs):
+ * Architecture (verified against live xx network):
  * the indexer's validator_stats table lags the chain by ~255 eras, so
  * it cannot define the current set or carry live numbers. Chain-first:
  *

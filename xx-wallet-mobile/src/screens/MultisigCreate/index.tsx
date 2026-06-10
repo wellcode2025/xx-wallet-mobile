@@ -1,5 +1,5 @@
 /**
- * MultisigCreate — Path A manual entry flow for adding a multisig.
+ * MultisigCreate — manual entry flow for adding a multisig.
  *
  * The user picks the (threshold, signers) tuple by hand. The wallet derives
  * the address locally and shows it as a live preview so typos are caught
@@ -10,8 +10,9 @@
  * the user is actually part of — there's no use case for a multisig you
  * don't participate in, since you couldn't approve or propose at it.
  *
- * Per design doc §6.6 Path A. Path B (JSON import) and Path C (chain scan)
- * are slices 5 and 6 respectively.
+ * This is one of three ways to add a multisig; the others are import
+ * from a shared config JSON (MultisigImport) and discovery via chain
+ * scan (MultisigScan).
  */
 
 import { useMemo, useState } from 'react';

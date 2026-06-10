@@ -12,7 +12,7 @@
  * for all of them on the same render with one block-number / threshold
  * snapshot, not subscribe N times.
  *
- * Per design doc §6.7. Defaults match xx network's ~6-second block time.
+ * Defaults match xx network's ~6-second block time.
  */
 
 import { useMemo } from 'react';

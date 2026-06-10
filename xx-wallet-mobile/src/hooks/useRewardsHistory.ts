@@ -1,10 +1,10 @@
 /**
  * useRewardsHistory — per-account staking rewards from the indexer.
  *
- * Architecture, settled by the slice-4 spike (rewards-history-spike.mjs):
+ * Architecture (verified against live xx network):
  *
- *   The indexer's `staking_reward` table tracks chain liveness — at spike
- *   time the latest recorded era was 1639 with chain at active era 1640
+ *   The indexer's `staking_reward` table tracks chain liveness — when
+ *   verified, the latest recorded era was 1639 with chain at active era 1640
  *   (1-era lag, same as `transfer`). Unlike `validator_stats` (frozen
  *   2025-09-01), this table is current and can serve as the primary
  *   source for the Rewards view with no "as of <date>" framing.

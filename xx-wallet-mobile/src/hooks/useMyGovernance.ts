@@ -16,10 +16,10 @@
  * UI (mobile browsers have no easy console) for any genuinely-failed
  * reads.
  *
- * Treasury proposer bonds and bounty proposer / curator bonds are
- * deferred to a polish pass — at observation Aaron isn't a proposer
- * of any active treasury proposal and not a curator of any active
- * bounty, so the section would render empty either way.
+ * Treasury proposer bonds and bounty proposer / curator bonds are not
+ * surfaced here — in typical use the account isn't a proposer of any
+ * active treasury proposal nor a curator of any active bounty, so the
+ * section would render empty either way.
  */
 
 import { useEffect, useState } from 'react';

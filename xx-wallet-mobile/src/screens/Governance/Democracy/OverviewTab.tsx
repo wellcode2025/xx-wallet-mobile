@@ -21,8 +21,7 @@ const EXPLORER_DEMOCRACY_URL =
  * Renders the three Gov1 democracy streams in stacked sections:
  *
  *   Referenda  — currently-ongoing referenda, with end-block countdown
- *                and tally. Tap-through deferred until there's something
- *                to drill into (currently 0 active on xx).
+ *                and tally. No tap-through (typically 0 active on xx).
  *   Proposals  — open public proposals awaiting referendum launch.
  *                Each shows depositor (identity-resolved) and the
  *                preimage hash being proposed.

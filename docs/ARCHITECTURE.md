@@ -36,7 +36,8 @@ xx-wallet-mobile/
 │   │                     block→time countdowns, period-progress, pallet-account derivation)
 │   ├── hooks/            Data hooks: balances, transfers, transactions, and the staking,
 │   │                     multisig, and governance read/compute logic
-│   ├── store/            Zustand stores (accounts, address book, multisigs, settings, alerts)
+│   ├── store/            Zustand stores (accounts, address book, multisigs, settings, alerts,
+│   │                     app-lock, cached call-bytes)
 │   ├── notifications/    Pluggable notification scaffold (see "Notifications" below)
 │   ├── components/       Layout and UI primitives, plus the shared transaction footer
 │   ├── screens/          One folder per feature area
@@ -47,7 +48,8 @@ xx-wallet-mobile/
 ```
 
 The feature areas under `screens/` are: onboarding, dashboard, send, receive, transaction detail,
-settings, multisig, staking, and governance.
+per-account detail, settings, multisig (including the guided two-device-approval setup), staking,
+and governance.
 
 ## Tech choices and why
 
@@ -95,6 +97,14 @@ hour early instead of at submit time. The spikes stay in `scripts/spikes/`.
 On the xx runtime, some auto-generated codec accessors and tuple destructures silently return wrong
 values. The codebase reads enums via `.toJSON()` and structs by named field, guards decoded addresses
 (they start with "6"), and treats some "balance" runtime constants as optionally present.
+
+### Access lock is separate from signing
+The optional app lock — a PIN, with fingerprint/face unlock layered on where the device supports it
+— is an access gate only, off by default. It gates *opening* the app for privacy on a shared or lost
+phone and never participates in signing: the keys stay encrypted with the per-account password
+regardless, so the lock is a convenience, not a fund control. Real second-factor protection over
+funds comes from multisig — including the guided two-device-approval flow, which produces a 2-of-3
+"protected account" the chain itself enforces.
 
 ## Trust model for what gets signed
 

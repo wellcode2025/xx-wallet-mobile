@@ -1,5 +1,5 @@
 /**
- * Chain scan — Path C of the multisig add flow.
+ * Chain scan — discovery flow for the multisig add path.
  *
  * Discovers multisigs the user is already a signer of, by walking the
  * xx network indexer's history of multisig.asMulti / approveAsMulti /
@@ -7,9 +7,8 @@
  * tuple from each. The user's wallet then picks which discoveries to
  * persist as Multisig records.
  *
- * Per design doc §6.6 Path C and §11.5 (user-initiated only — this
- * function runs when the user explicitly taps Scan, never on a timer
- * or as part of any background refresh).
+ * User-initiated only — this function runs when the user explicitly
+ * taps Scan, never on a timer or as part of any background refresh.
  *
  * Algorithm:
  *   1. For each of the user's wallet accounts, query the indexer's

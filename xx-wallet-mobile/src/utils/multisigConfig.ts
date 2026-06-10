@@ -7,10 +7,10 @@
  *   - multisigConfig carries the multisig's CONSTITUTION — its
  *     threshold + signer set
  *
- * One leader creates a multisig in their wallet via Path A (manual
- * entry), exports as JSON via this format, distributes the file via
+ * One leader creates a multisig in their wallet via manual entry,
+ * exports as JSON via this format, distributes the file via
  * any channel they trust (Signal, email, AirDrop). Every other signer
- * imports the JSON via Path B and the receiving wallet's
+ * imports the JSON and the receiving wallet's
  * `parseMultisigConfig` does the integrity check: re-derives the
  * multisig address locally from the JSON's (threshold, signers) and
  * refuses if it doesn't match the JSON's claimed address. That single
@@ -28,7 +28,7 @@
  *
  * The config JSON carries a {threshold, signers, optional name} shape; on
  * import the config is verified by re-deriving the address from its
- * parameters (Path B import flow).
+ * parameters.
  */
 
 import { isValidXxAddress } from './address';

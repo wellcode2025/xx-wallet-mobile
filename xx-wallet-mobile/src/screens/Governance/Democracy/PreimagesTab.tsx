@@ -17,7 +17,8 @@ import type { PreimageEntry } from '@/hooks';
  *   - Length in bytes + deposit amount + depositor (identity-resolved)
  *   - Either the decoded section.method (truncated) with an expand to
  *     show full literal form, OR the canonical "Unable to decode
- *     preimage bytes into a valid Call" banner (per §6.4)
+ *     preimage bytes into a valid Call" banner (decode from bytes,
+ *     never depositor-supplied text)
  *
  * The decoder uses safeDecodeCall — failures are surfaced to the user
  * with the exact wording the web wallet uses, never swallowed or

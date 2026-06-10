@@ -38,7 +38,7 @@ src/
 ├── staking/         Sequential-Phragmén pass + validator selection
 ├── governance/      Cross-cutting Gov1 utilities
 ├── hooks/           Data + compute hooks for balances, staking, multisig, governance
-├── store/           Zustand stores (accounts, contacts, multisigs, settings, alerts)
+├── store/           Zustand stores (accounts, contacts, multisigs, settings, alerts, app-lock)
 ├── notifications/   Pluggable notification scaffold
 ├── components/      Layout and UI primitives
 ├── screens/         One folder per feature area

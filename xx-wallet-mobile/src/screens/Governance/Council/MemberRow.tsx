@@ -10,13 +10,13 @@ import { formatBalance } from '@/utils';
  * Renders:
  *   - AddressIcon (32px polkadot identicon)
  *   - Identity-resolved display name with truncated SS58 below
- *     (per multisig design §7.3 — name MUST be paired with SS58)
+ *     (name MUST be paired with SS58, so a name can never hide the
+ *     real address)
  *   - Prime crown badge if this member is the council/committee prime
  *   - Backing stake on the right (council members + runners-up have
  *     this; tech-comm members don't)
  *
- * No tap-through — clicking a member is a no-op for now. A future
- * iteration may add a per-member detail screen with vote history.
+ * No tap-through — clicking a member is a no-op.
  */
 export function MemberRow({
   address,

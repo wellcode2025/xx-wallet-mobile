@@ -12,7 +12,7 @@ import { DEFAULT_LEVERS, type QualityLevers } from '../staking';
  * the user can't accidentally flag every proposal as stale within a day
  * (eroding the signal); 365 days max so dead-letter cost (reserved
  * deposits) doesn't get to accumulate forever before the wallet
- * surfaces it. Default 30 days matches the design doc §6.7 default.
+ * surfaces it. Default is 30 days.
  */
 export const STALE_THRESHOLD_DAYS_DEFAULT = 30;
 export const STALE_THRESHOLD_DAYS_MIN = 7;

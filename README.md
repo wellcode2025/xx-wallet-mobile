@@ -102,15 +102,15 @@ experience without asking you to trust anything new.
 - **Import anything xx.** Restore from a mnemonic or from a JSON keystore — including v3 keystores
   exported by `wallet.xx.network`, which use a stronger scrypt setting that the standard libraries
   reject and this wallet handles directly.
-- **Multiple accounts** with rename, encrypted export, and a batch export that imports cleanly into
-  the official desktop wallet.
+- **Multiple accounts** with a per-account screen for the full address and QR, rename, encrypted
+  export, and removal — plus a batch export that imports cleanly into the official desktop wallet.
 
 ### Send & receive
 - Sends use `transferKeepAlive` so you can't accidentally reap your own account, with a live
   signing → broadcasting → in-block → finalized status flow.
-- A built-in address book lives right in the Send screen, with on-chain identity lookup, batch
-  import/export, existential-deposit warnings, a Max button that leaves room for fees, and a
-  self-send guard.
+- A built-in address book lives right in the Send screen, with on-chain identity lookup, QR-scan to
+  save a new contact, batch import/export, existential-deposit warnings, a Max button that leaves
+  room for fees, and a self-send guard. Your own accounts also appear as quick recipients.
 - Receive by QR or shareable address, with fallbacks that work even on plain HTTP.
 
 ### Staking
@@ -146,11 +146,18 @@ wallet's governance surface, consolidated for mobile:
 - Propose and approve calls with hash-gated decoding from real call bytes, share call data with
   cosigners offline (file / QR / share sheet / paste), and reclaim deposits from your own stale
   proposals. No central server is required for any of it.
+- **Two-device approval** — a guided setup that turns multisig into a second factor on your funds:
+  a protected account that needs approval from a second device before anything can be sent, with a
+  cold backup key so losing one device doesn't lock you out. See
+  [docs/two-device-approval.md](docs/two-device-approval.md).
 
 ### Security & privacy
 - Non-custodial. No backend, no telemetry, no analytics, no third-party scripts.
 - Keys are stored encrypted on-device and decrypted only momentarily to sign.
 - The Sleeve key-generation module is integrity-checked at runtime against a build-time hash.
+- **Optional app lock** — an opt-in screen lock (a PIN, with fingerprint / face unlock layered on
+  where the device supports it), off by default. It gates opening the app for privacy on a shared or
+  lost phone; it never gates signing, which always stays behind your wallet password.
 - Ships with a Content Security Policy, HSTS, and related hardening headers.
 
 ### Installable PWA

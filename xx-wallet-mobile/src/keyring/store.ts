@@ -5,14 +5,12 @@
  * Private keys are NEVER stored unencrypted — they are decrypted only when
  * needed to sign a transaction, and re-encrypted immediately after.
  *
- * This implementation uses standard sr25519 accounts. Full Sleeve (dual-phrase,
- * quantum-secure) support will be added later.
+ * This implementation uses standard sr25519 accounts.
  *
  * IMPORTANT: The encryption here relies on the user's password + browser's
- * localStorage. This is acceptable for now but on a real device we should
- * consider moving to the WebCrypto API with a proper key derivation function
- * and potentially the device's secure storage (e.g., via Credential Management
- * API where available).
+ * localStorage. A hardened deployment would consider the WebCrypto API with
+ * a proper key derivation function and potentially the device's secure
+ * storage (e.g., via Credential Management API where available).
  *
  * SCRYPT COMPATIBILITY NOTE:
  * The official wallet.xx.network exports v3 keystore JSON with scrypt N=131072

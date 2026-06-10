@@ -2,7 +2,7 @@
  * Tests for the IdentityResolver caching + coalescing layer.
  *
  * What we cover:
- *   - displayName: pure-function pairing rule (§7.3 of multisig design)
+ *   - displayName: pure-function name-and-fragment pairing rule
  *   - cache hit: a second resolve doesn't re-call fetchIdentity
  *   - cache miss caching: a null result is cached and doesn't re-fetch
  *   - promise coalescing: two simultaneous resolves share one fetch

@@ -6,10 +6,9 @@ import type { CouncilMotion } from '@/hooks';
  * usual case on xx).
  *
  * Motion bodies (`council.voting`, `council.proposalOf`) aren't
- * fetched — at observation there are 0 live motions so the detail
- * wiring would be untestable. When motions become regular the row
- * taps would expand into a detail panel; for now we render the hash
- * list as a placeholder.
+ * fetched — in typical operation there are 0 live motions. This section
+ * renders the hash list; row taps can later expand into a detail panel
+ * when motions become regular.
  */
 export function MotionsSection({
   title,

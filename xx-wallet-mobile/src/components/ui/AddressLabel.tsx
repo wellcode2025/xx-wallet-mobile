@@ -3,10 +3,10 @@
  * address is known (own account, address book contact, or known
  * multisig), or as just the truncated fragment when it isn't.
  *
- * Design doc §7.3 rule: never show the name alone. The address
- * fragment is always present so the user can tell at a glance what's
- * actually being signed. A typo'd contact entry or a malicious import
- * can't hide behind a familiar-looking label.
+ * Never show the name alone — the address fragment is always present so
+ * the user can tell at a glance what's actually being signed. A typo'd
+ * contact entry or a malicious import can't hide behind a familiar-looking
+ * label.
  *
  * Two visual variants:
  *   - default (inline): "Operations" [6Wwj…PojL] — fits in dense rows
@@ -32,9 +32,9 @@ interface AddressLabelProps {
   unquoted?: boolean;
   /** Fallback name used only when the address isn't a known own
    *  account / contact / multisig — e.g. a validator's on-chain
-   *  identity display. Still paired with the fragment per the §7.3
-   *  rule, so a self-set identity can't hide the real address. A known
-   *  local label always wins over this. */
+   *  identity display. Still paired with the fragment, so a self-set
+   *  identity can't hide the real address. A known local label always
+   *  wins over this. */
   nameOverride?: string;
 }
 

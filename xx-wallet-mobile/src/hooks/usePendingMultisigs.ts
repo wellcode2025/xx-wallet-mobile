@@ -18,7 +18,7 @@
  * enough at the foundation's scale (a handful of pending items at most)
  * and gives responsive updates without per-key subscription bookkeeping.
  *
- * Authority note: per design doc §4, pending state ALWAYS comes from the
+ * Authority note: pending state ALWAYS comes from the
  * chain — never the indexer. The indexer is for historical activity only.
  * "Is this proposal still pending?" is the kind of question where staleness
  * matters and the chain is the single source of truth.

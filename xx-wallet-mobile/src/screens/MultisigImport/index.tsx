@@ -1,5 +1,5 @@
 /**
- * MultisigImport — Path B import flow for adding a multisig from a
+ * MultisigImport — import flow for adding a multisig from a
  * shared config JSON.
  *
  * Two phases:
@@ -12,7 +12,7 @@
  *      Save behind an explicit "I verified the signers out-of-band"
  *      acknowledgement.
  *
- * Per design doc §6.6 Path B. Allows import of multisigs the user
+ * Allows import of multisigs the user
  * isn't a signer of (read-only watching is a legitimate use case;
  * the wallet shows them the multisig but propose/approve actions
  * stay disabled because no eligible-signer accounts intersect with

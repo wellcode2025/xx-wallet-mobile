@@ -16,8 +16,7 @@
  * events (proposals created or partially approved) are part of the
  * lifecycle but belong to the pending-actions list, handled separately.
  *
- * Indexer schema and query patterns confirmed against `indexer.xx.network`
- * (`scripts/spikes/multisig-spike-address.mjs`).
+ * Indexer schema and query patterns confirmed against `indexer.xx.network`.
  *
  * Degradation: if the indexer is unreachable, returns an error and an empty
  * list. The wallet itself remains operable (signing path doesn't depend on

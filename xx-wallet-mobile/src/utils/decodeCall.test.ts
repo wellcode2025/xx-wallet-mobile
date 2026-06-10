@@ -135,7 +135,7 @@ describe('normalizeCallBytes', () => {
 // throws, safeDecodeCall returns { ok: false } with the canonical rawHex,
 // surfacing the throw's message without swallowing it. We synthesize a
 // stub registry that always throws — exactly the failure mode the orphaned
-// 3,896-byte preimage at 0xa2652f1879c182… produced in the governance spike
+// 3,896-byte preimage at 0xa2652f1879c182… produces on chain
 // ("Unable to find Call with index [35, 35]").
 // ---------------------------------------------------------------------------
 
@@ -158,7 +158,7 @@ describe('safeDecodeCall', () => {
     const api = apiThatThrows(
       'createType(Call):: findMetaCall: Unable to find Call with index [35, 35]/[35,35]'
     );
-    // Reproduces the orphaned-preimage failure from the governance spike at
+    // Reproduces the orphaned-preimage failure observed on chain at
     // hash 0xa2652f1879c182… — call index bytes that don't map to any
     // registered call in xxnetwork v206 metadata.
     const result = safeDecodeCall('0x2323deadbeef', api);

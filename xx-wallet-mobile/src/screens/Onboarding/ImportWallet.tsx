@@ -27,8 +27,7 @@ type Method = 'mnemonic' | 'json';
  * in sessionStorage doesn't change that property. But the user's
  * keystroke-level password (here or anywhere else) should live in
  * React memory only and be wiped on a real submit failure or
- * navigation. (Same posture as memory item
- * deferred_xx_wallet_items.md: sessionStorage password trade-off.)
+ * navigation.
  */
 const STORAGE_KEY_METHOD = 'xx-wallet:import:method';
 const STORAGE_KEY_JSON_CONTENT = 'xx-wallet:import:jsonContent';

@@ -14,10 +14,10 @@ import { formatBalance } from '@/utils';
  * own account.
  *
  * The sheet auto-targets the signer — the user picks "Signed by" in
- * TxFooter, and target = signer. If a future flow wants to release
- * locks for a different account (e.g. a custody pattern) the sheet
- * can grow a target picker, but for now the 1:1 signer=target case
- * covers everything the lock-releasable notification surfaces.
+ * TxFooter, and target = signer. This 1:1 signer=target case covers
+ * everything the lock-releasable notification surfaces; a target picker
+ * could be added if a flow ever needs to release locks for a different
+ * account (e.g. a custody pattern).
  */
 
 interface UnlockSheetProps {

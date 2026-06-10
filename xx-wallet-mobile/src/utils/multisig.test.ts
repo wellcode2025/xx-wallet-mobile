@@ -10,7 +10,7 @@
  *   different from what they thought they were approving at.
  * - The fixture below pins the derivation against the live foundation
  *   operations multisig (`6Zihn…HnU8M`, 2-of-4 over the four known signer
- *   accounts) observed in the multisig spike. If this test fails, either
+ *   accounts) observed on the live chain. If this test fails, either
  *   the wallet's derivation is wrong, the live chain data was misinterpreted,
  *   or @polkadot/util-crypto's createKeyMulti behavior changed.
  */
@@ -28,18 +28,17 @@ import {
   multisigAddressMatches,
 } from './multisig';
 
-// The foundation operations multisig, observed live during the multisig
-// spike (see scripts/spikes/multisig-spike-address.mjs). Address, threshold,
-// and signer set were extracted from real `multisig.asMulti` extrinsics on
-// `wss://rpc.xx.network`.
+// The foundation operations multisig, observed live on chain. Address,
+// threshold, and signer set were extracted from real `multisig.asMulti`
+// extrinsics on `wss://rpc.xx.network`.
 const FOUNDATION_OPS = {
   address: '6ZihnXBA64KAFFGfdYHxKWeWKLpw28pxPANjuSWsPp1HnU8M',
   threshold: 2,
   signers: [
-    '6WwjYDmMb3MuoXvWHN357UzHY9VsJpFbJYbgQ1Vz1aY2PojL', // Aaron
-    '6YDEf5Q78EFHbmiJRFqfpNpiGQjMZf1Cqpy2Dmi8FRYJVTCQ', // Rick
-    '6Z4ibreHzd4SJR7EnBwMHC1WBG4xPG7baMtGxt4Dk5JCwv1n', // Keith
-    '6aA1Mm6FNw9YXGra7NGu4tmDjgJdrNkDD6JPdJFXs35QKGKp', // Jim
+    '6WwjYDmMb3MuoXvWHN357UzHY9VsJpFbJYbgQ1Vz1aY2PojL', // signer 1
+    '6YDEf5Q78EFHbmiJRFqfpNpiGQjMZf1Cqpy2Dmi8FRYJVTCQ', // signer 2
+    '6Z4ibreHzd4SJR7EnBwMHC1WBG4xPG7baMtGxt4Dk5JCwv1n', // signer 3
+    '6aA1Mm6FNw9YXGra7NGu4tmDjgJdrNkDD6JPdJFXs35QKGKp', // signer 4
   ],
 };
 

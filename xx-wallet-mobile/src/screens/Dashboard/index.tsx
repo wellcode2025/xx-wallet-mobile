@@ -36,8 +36,8 @@ export function Dashboard() {
   const multisigs = useMultisigsStore((s) => s.multisigs);
   const { hideBalances, toggleHideBalances } = useSettingsStore();
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  // Chooser sheet for "+ Add multisig" — Path A (manual) vs Path B
-  // (import from JSON). Path C (chain scan) is added separately.
+  // Chooser sheet for "+ Add multisig" — manual entry vs import from
+  // JSON. Chain-scan discovery is added separately.
   const [addChooserOpen, setAddChooserOpen] = useState(false);
   // Chooser sheet for "+ Add account" — Create new (Sleeve) vs
   // Import existing (mnemonic or keystore). Mirrors the Add multisig
@@ -97,7 +97,7 @@ export function Dashboard() {
             corner whenever there's anything in the Pending actions list,
             so the user notices on the next Dashboard open without us
             shoving a banner in their face. The badge disappears when
-            there's nothing pending. Per design doc §6.1 (Option C). */}
+            there's nothing pending. */}
         <button
           onClick={() => setSwitcherOpen(true)}
           className="relative w-full flex items-center gap-3 p-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800"
@@ -481,8 +481,8 @@ export function Dashboard() {
         </div>
       </Sheet>
 
-      {/* Add multisig chooser — Path A vs Path B. Each row is a
-          self-contained block describing what the path does so the
+      {/* Add multisig chooser — manual entry vs JSON import. Each row is
+          a self-contained block describing what the option does so the
           user can pick without remembering which is which. */}
       <Sheet
         open={addChooserOpen}

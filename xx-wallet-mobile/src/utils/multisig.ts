@@ -91,9 +91,9 @@ export function deriveMultisigAddress(
  * Verify that a claimed multisig address matches what (threshold, signers)
  * derives to.
  *
- * This is the central security check used during JSON config import (Path B
- * in the design doc) and during approval-time verification of out-of-band
- * call data. Mismatch is the caller's signal to refuse the operation
+ * This is the central security check used during JSON config import and
+ * during approval-time verification of out-of-band call data. Mismatch
+ * is the caller's signal to refuse the operation
  * entirely — never to render a "this might be wrong" warning and proceed.
  *
  * Returns false (rather than throwing) on bad input. The check is meant to
@@ -161,8 +161,7 @@ export function canonicalConfigJson(
  * Async because WebCrypto's `subtle.digest` is async and the wallet runs
  * in browser contexts. On HTTP dev contexts where `crypto.subtle` is
  * unavailable we fall back to a non-cryptographic but stable hash so the
- * wallet remains operable in the LAN-dev workflow we documented (see
- * deferred memory: secure-context API pattern). This fallback is fine for
+ * wallet remains operable in a LAN-dev workflow. This fallback is fine for
  * configHash because it's a *dedup* signal, not a security primitive — the
  * security primitive is `multisigAddressMatches`, which is independent of
  * this and covered by SubtleCrypto-free derivation.

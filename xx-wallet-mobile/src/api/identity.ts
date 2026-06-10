@@ -17,11 +17,11 @@ const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
  * Each flag reflects *current* on-chain role, not history. An ex-validator
  * who has chilled returns `validator: false`.
  *
- * NOTE (2026-05-13): currently unused in production; kept as a seed for
+ * NOTE: currently unused in production; kept as a seed for
  * read-only staking views and active staking.
  *
- * The staking feasibility spike (scripts/spikes/staking-spike.mjs) confirmed
- * these flags populate reliably for known role-holders. An earlier version
+ * Confirmed against live xx network: these flags populate reliably for
+ * known role-holders. An earlier version
  * of this code queried `where: { id: ... }` and silently 500'd because the
  * indexer's primary key is `account_id`; an earlier "data population isn't
  * reliable" note was an artifact of that schema-key bug. The

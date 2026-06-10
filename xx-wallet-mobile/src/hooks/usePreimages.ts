@@ -13,7 +13,8 @@
  *      safeDecodeCall(bytes, api) returns a discriminated result. The
  *      caller renders the decoded form on success or the canonical
  *      "Unable to decode preimage bytes into a valid Call" banner on
- *      failure — this is the §6.4 trust-model invariant in production.
+ *      failure — this is the decode-from-bytes trust-model invariant in
+ *      production.
  *
  * Sort: by length descending. Larger preimages are generally the most
  * interesting (recursive batches, complex scheduler calls) and tend to

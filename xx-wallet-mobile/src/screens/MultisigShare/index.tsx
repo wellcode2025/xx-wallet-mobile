@@ -3,9 +3,9 @@
  * to other cosigners.
  *
  * Reached after MultisigPropose succeeds (or by re-opening a proposal
- * the user has cached bytes for, via a future "share again" affordance).
+ * the user has cached bytes for, via the "share again" affordance).
  *
- * Three first-class share affordances per design doc §6.5 — none of them
+ * Three first-class share affordances — none of them
  * "fallbacks", all expected to be used in real workflows:
  *   1. Download as .json file (PRIMARY, most flexible — the user picks
  *      whatever secure channel they trust to deliver the file)
@@ -17,8 +17,6 @@
  * Any of these three lets the user hand off the bytes-package JSON;
  * the receiving wallet's parseBytesPackage validates everything before
  * surfacing the proposal for approval.
- *
- * Per §6.5 of the design doc.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -229,8 +227,7 @@ function ShareView({
   };
 
   // Defensive: if we lost the cached bytes (e.g., browser data cleared
-  // mid-flow), bounce back to the multisig detail. Recovery via re-fetching
-  // could be added later, but for now we just return.
+  // mid-flow), bounce back to the multisig detail.
   if (!cachedEntry) {
     return (
       <>

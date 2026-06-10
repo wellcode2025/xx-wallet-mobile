@@ -12,9 +12,9 @@ import { type BountyStatus, statusLabel } from '@/hooks';
  *   - proposed         → ink-300 (neutral; council must approve)
  *   - unknown          → danger (red; surface the surprise)
  *
- * Per the trust-decisions-visible rule we never collapse an unknown
- * variant into a friendly fallback — the badge says "Status: unknown"
- * loudly so users (and Aaron) notice if the runtime adds a new variant.
+ * We never collapse an unknown variant into a friendly fallback — the
+ * badge says "Status: unknown" loudly so users notice if the runtime
+ * adds a new variant.
  */
 export function BountyStatusBadge({ status }: { status: BountyStatus }) {
   const cls = badgeColors(status.kind);

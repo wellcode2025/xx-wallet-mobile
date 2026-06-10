@@ -682,7 +682,8 @@ function SignerRow({ address, label }: { address: string; label?: string }) {
         {label ? (
           // Multisig record carries an explicit per-signer label — most
           // specific source, prefer it over address-book lookup. Still
-          // pair with the truncated address per design doc §7.3.
+          // pair with the truncated address so a name can never hide
+          // what's being signed.
           <>
             <p className="text-sm font-medium text-ink-100 truncate">{label}</p>
             <p className="font-mono text-xs text-ink-400 truncate">

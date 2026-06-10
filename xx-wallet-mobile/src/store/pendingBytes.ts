@@ -4,7 +4,7 @@
  * Why this store exists:
  *
  * On xx network, pending multisig proposals only carry the call HASH on
- * chain — never the full call bytes (per design doc §3 / spike findings).
+ * chain — never the full call bytes.
  * To render a description of "what does this proposal do?" the wallet
  * needs the full bytes, which arrive out-of-band from one of two sources:
  *
@@ -25,8 +25,8 @@
  * Storage size considerations: a transferKeepAlive call serializes to
  * roughly 100 bytes of hex (~200 chars). Even a hundred pending bytes
  * across a hundred multisigs is well under any reasonable localStorage
- * cap. We don't bound this store's size for now; if it ever balloons,
- * we'll add eviction in a polish pass.
+ * cap. This store's size is unbounded; entries are small enough that
+ * this stays well within localStorage limits.
  *
  * This is the call-bytes cache half of the multisig data model (the other
  * half being the known-multisigs store). The approval flow decodes from

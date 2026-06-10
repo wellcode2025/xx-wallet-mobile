@@ -1,11 +1,11 @@
 /**
- * MultisigScan — Path C of the multisig add flow.
+ * MultisigScan — discovery flow for adding a multisig via chain scan.
  *
  * User-initiated chain scan. Walks the indexer for past multisig
  * activity involving any of the user's wallet accounts and surfaces
  * the discovered multisigs for selective import. Never runs
- * automatically — per design doc §11.5, auto-scanning the chain on
- * behalf of the user would feel like surveillance.
+ * automatically — auto-scanning the chain on behalf of the user
+ * would feel like surveillance.
  *
  * Discovered multisigs are filtered against what's already in the
  * user's local store; only NEW ones are offered. Each row has a
@@ -13,8 +13,8 @@
  * multisigs they no longer care about, and we shouldn't force-import
  * everything.
  *
- * The "verify with cosigner out-of-band" gate from Path B applies
- * here too (anyone can put your address into a multisig signer set
+ * The "verify with cosigner out-of-band" gate from the JSON-import
+ * flow applies here too (anyone can put your address into a multisig signer set
  * on chain; that alone is not proof you should sign for it).
  */
 
@@ -165,7 +165,7 @@ export function MultisigScan() {
         });
 
         // Auto-add labeled cosigners to the address book, same logic
-        // as the Path B import flow. Skip own accounts, skip already-
+        // as the JSON-import flow. Skip own accounts, skip already-
         // existing contacts, skip unlabeled signers.
         for (const signer of signersWithLabels) {
           if (!signer.label) continue;
@@ -303,7 +303,7 @@ export function MultisigScan() {
 
             {newDiscoveries.length > 0 && (
               <>
-                {/* Verify gate — same as Path B import */}
+                {/* Verify gate — same as the JSON-import flow */}
                 <div className="card border border-amber-500/30 bg-amber-500/5 space-y-2">
                   <div className="flex items-center gap-2">
                     <Key
