@@ -106,7 +106,11 @@ app existing.
 The friendly framing follows the account to your other devices in three ways:
 
 1. **Config import (the guided path).** After setup, the wizard prompts you to
-   share the account's config with your second device. The config carries the
+   share the account's config with your second device. On that second device,
+   open the same two-device approval wizard and choose **"I already created
+   one on my other device"** — it walks you through scanning the config QR.
+   (Don't run the create flow again on the second device: that would make a
+   new, different protected account.) The config carries the
    protected-account hint; when your other device imports it, it asks once
    whether to use the same framing.
 2. **Chain scan.** If a device discovers the account by scanning chain history

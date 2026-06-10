@@ -19,8 +19,8 @@
  * the multisig's signer set).
  */
 
-import { useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   Check,
@@ -97,6 +97,21 @@ export function MultisigImport() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteContent, setPasteContent] = useState('');
+  const location = useLocation();
+
+  // Deep-link support: the two-device wizard's "join existing" path lands
+  // here with { state: { openScanner: true } } so a second-device user
+  // goes straight into scanning the config QR their first device is
+  // showing. Consume once and clear so back/refresh doesn't reopen the
+  // camera. (QrScanner itself degrades to a paste input on HTTP.)
+  useEffect(() => {
+    if ((location.state as { openScanner?: boolean } | null)?.openScanner) {
+      setScannerOpen(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // Mount-only: the flag is a one-shot navigation payload.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Take a raw string (file contents, scanned QR text, pasted JSON)
    *  and route to whichever review phase fits its shape:

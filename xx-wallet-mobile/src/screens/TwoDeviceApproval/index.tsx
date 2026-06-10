@@ -44,6 +44,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 
 type Step =
   | 'intro'
+  | 'join'
   | 'thisDevice'
   | 'secondDevice'
   | 'backupIntro'
@@ -278,9 +279,71 @@ export function TwoDeviceApproval() {
               onClick={() => setStep('thisDevice')}
               className="btn-primary w-full"
             >
-              Get started
+              Create a new protected account
               <ArrowRight size={16} strokeWidth={2} />
             </button>
+
+            {/* The other half of the fork. A user on their SECOND device
+                naturally taps this same wizard entry — without this path
+                they'd walk the create flow again and mint a second,
+                different protected account (new backup key, new address).
+                Joining is an import, not a creation; we route there with
+                guidance rather than duplicating the import flow here. */}
+            <button
+              onClick={() => setStep('join')}
+              className="btn-ghost w-full text-ink-300"
+            >
+              I already created one on my other device
+            </button>
+          </>
+        )}
+
+        {step === 'join' && (
+          <>
+            <SectionHeader
+              icon={<QrCode size={18} className="text-xx-500" />}
+              title="Set up this device"
+              body="Your protected account already exists on the chain — this device just needs to learn about it. Bring its config over from the device that created it."
+            />
+
+            <div className="card space-y-3">
+              <StepLine
+                icon={<Smartphone size={16} className="text-ink-300" />}
+                title="On your other device"
+                body={
+                  'Open the protected account, tap the ⋮ menu, choose ' +
+                  '"Export config", then "Show QR code".'
+                }
+              />
+              <StepLine
+                icon={<QrCode size={16} className="text-ink-300" />}
+                title="On this device"
+                body="Scan that QR code here. You'll review the signers and confirm before anything is saved."
+              />
+            </div>
+
+            <button
+              onClick={() =>
+                navigate('/multisig/import', { state: { openScanner: true } })
+              }
+              className="btn-primary w-full"
+            >
+              <QrCode size={16} strokeWidth={2} />
+              Scan the config QR code
+            </button>
+            <button
+              onClick={() => navigate('/multisig/import')}
+              className="btn-secondary w-full"
+            >
+              Use a file or paste instead
+            </button>
+
+            <p className="text-xs text-ink-400 leading-relaxed">
+              One thing to check first: when the account was created, your
+              other device scanned an address from THIS device as the second
+              signer. That account must still be in this wallet — otherwise
+              you can view the protected account but not approve from here.
+            </p>
           </>
         )}
 
