@@ -393,6 +393,7 @@ export function Dashboard() {
                         signerCount={m.signers.length}
                         pendingCount={pendingCount}
                         hideBalances={hideBalances}
+                        isProtected={m.preset === 'two-device'}
                         onClick={() => {
                           navigate(`/multisig/${m.address}`);
                           setSwitcherOpen(false);
@@ -771,6 +772,7 @@ function MultisigSwitcherRow({
   signerCount,
   pendingCount,
   hideBalances,
+  isProtected,
   onClick,
 }: {
   address: string;
@@ -779,6 +781,9 @@ function MultisigSwitcherRow({
   signerCount: number;
   pendingCount: number;
   hideBalances: boolean;
+  /** Two-device-approval protected account — adds a shield glyph to the
+   *  threshold pill. The M-of-N stays visible either way. */
+  isProtected: boolean;
   onClick: () => void;
 }) {
   const { balance } = useBalance(address);
@@ -791,8 +796,15 @@ function MultisigSwitcherRow({
       <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="font-medium text-sm truncate">{localName}</p>
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium flex-shrink-0">
-            <Users size={9} strokeWidth={2.25} />
+          <span
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium flex-shrink-0"
+            title={isProtected ? 'Protected account' : undefined}
+          >
+            {isProtected ? (
+              <ShieldCheck size={9} strokeWidth={2.25} />
+            ) : (
+              <Users size={9} strokeWidth={2.25} />
+            )}
             {threshold}-of-{signerCount}
           </span>
           {pendingCount > 0 && (

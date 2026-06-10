@@ -83,6 +83,12 @@ export function MultisigImport() {
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [localName, setLocalName] = useState<string>('');
   const [verified, setVerified] = useState(false);
+  // Whether to honor the config's protected-account hint
+  // (suggestedPreset). Sender-suggested, receiver-confirmed: defaults
+  // to ON when the hint is present (the sender is usually the user's
+  // own first device), but the user can decline and import it as a
+  // regular multisig.
+  const [acceptPreset, setAcceptPreset] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -124,6 +130,7 @@ export function MultisigImport() {
       setLocalName(result.config.suggestedName ?? '');
       setLabels({});
       setVerified(false);
+      setAcceptPreset(result.config.suggestedPreset === 'two-device');
       setSaveError(null);
       setPhase('review');
       return;
@@ -209,10 +216,17 @@ export function MultisigImport() {
     let saveSigners: string[];
     let saveThreshold: number;
     let suggestedNameFallback: string | undefined;
+    let savePreset: 'two-device' | undefined;
     if (phase === 'review' && parsed) {
       saveSigners = parsed.signers;
       saveThreshold = parsed.threshold;
       suggestedNameFallback = parsed.suggestedName;
+      // Only applied when the config suggested it AND the user kept the
+      // acknowledgement checked — never silently.
+      savePreset =
+        parsed.suggestedPreset === 'two-device' && acceptPreset
+          ? 'two-device'
+          : undefined;
     } else if (phase === 'legacy-review' && legacySigners) {
       saveSigners = legacySigners;
       saveThreshold = legacyThreshold;
@@ -236,6 +250,7 @@ export function MultisigImport() {
         threshold: saveThreshold,
         signers: signersWithLabels,
         localName: finalNickname,
+        preset: savePreset,
       });
 
       // Auto-add cosigner addresses to the address book so they show by
@@ -513,6 +528,44 @@ export function MultisigImport() {
             </div>
           )}
         </div>
+
+        {/* Protected-account hint — present only when the config carries
+            suggestedPreset. Sender-suggested, receiver-confirmed: the
+            checkbox defaults ON (the sender is usually the user's own
+            first device sharing its protected account), but unchecking
+            imports it as a regular multisig. The wallet never applies
+            the framing silently — this card is the consent surface. */}
+        {parsed.suggestedPreset === 'two-device' && (
+          <div className="card border border-xx-500/30 bg-xx-500/5 space-y-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck
+                size={14}
+                className="text-xx-500"
+                strokeWidth={2.25}
+              />
+              <p className="text-xs font-medium text-ink-100">
+                Set up as a protected account
+              </p>
+            </div>
+            <p className="text-xs text-ink-200 leading-snug">
+              The sender created this as a two-device approval (protected
+              account). On chain it's a regular 2-of-3 multisig — the label
+              only changes how this wallet talks about spending from it.
+            </p>
+            <label className="flex items-start gap-2 mt-1 text-xs text-ink-200 leading-snug cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={acceptPreset}
+                onChange={(e) => setAcceptPreset(e.target.checked)}
+                className="mt-0.5 w-3.5 h-3.5 accent-xx-500 flex-shrink-0"
+              />
+              <span>
+                Use protected-account language for this multisig. Uncheck
+                to treat it as a regular multisig.
+              </span>
+            </label>
+          </div>
+        )}
 
         {/* Local nickname */}
         <div className="card space-y-2">

@@ -731,14 +731,32 @@ export function TwoDeviceApproval() {
                 Move funds into it to protect them. Spending now needs approval
                 from a second device — propose on one, approve on the other.
               </p>
+              <p className="text-xs text-ink-400 leading-relaxed">
+                One more step: share this account's config with your second
+                device so it shows up there too. On your other device — and on
+                block explorers — this account appears as what it really is, a
+                2-of-3 multisig. The protection is enforced by the chain, not
+                by this app.
+              </p>
             </div>
 
             <button
-              onClick={() => navigate(`/multisig/${createdAddress}`, { replace: true })}
+              onClick={() =>
+                navigate(`/multisig/${createdAddress}`, {
+                  replace: true,
+                  state: { openExport: true },
+                })
+              }
               className="btn-primary w-full"
             >
-              View protected account
+              Set up your second device
               <ArrowRight size={16} strokeWidth={2} />
+            </button>
+            <button
+              onClick={() => navigate(`/multisig/${createdAddress}`, { replace: true })}
+              className="btn-secondary w-full"
+            >
+              View protected account
             </button>
             <button
               onClick={() => navigate('/', { replace: true })}

@@ -338,6 +338,103 @@ describe('parseMultisigConfig — refuses tampered or malformed input', () => {
   });
 });
 
+describe('suggestedPreset — the protected-account hint', () => {
+  // A 2-of-3 — the only shape the two-device preset is valid on.
+  const TWO_OF_THREE_SIGNERS = FOUNDATION_SIGNERS.slice(0, 3);
+  function twoOfThreeAddress() {
+    return deriveMultisigAddress(2, TWO_OF_THREE_SIGNERS);
+  }
+
+  it('round-trips through build → serialize → parse', () => {
+    const cfg = buildMultisigConfig({
+      multisigAddress: twoOfThreeAddress(),
+      threshold: 2,
+      signers: TWO_OF_THREE_SIGNERS,
+      preset: 'two-device',
+    });
+    expect(cfg.suggestedPreset).toBe('two-device');
+    const parsed = parseMultisigConfig(serializeMultisigConfig(cfg));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.config.suggestedPreset).toBe('two-device');
+    }
+  });
+
+  it('is absent from the built config when not requested', () => {
+    const cfg = buildMultisigConfig({
+      multisigAddress: twoOfThreeAddress(),
+      threshold: 2,
+      signers: TWO_OF_THREE_SIGNERS,
+    });
+    expect('suggestedPreset' in cfg).toBe(false);
+  });
+
+  it('build throws when preset is set on a non-2-of-3 shape', () => {
+    // 2-of-4 — right threshold, wrong signer count.
+    expect(() =>
+      buildMultisigConfig({
+        multisigAddress: FOUNDATION_ADDRESS,
+        threshold: FOUNDATION_THRESHOLD,
+        signers: FOUNDATION_SIGNERS,
+        preset: 'two-device',
+      })
+    ).toThrow(/only applies to a 2-of-3/i);
+  });
+
+  it('build throws on an unknown preset value', () => {
+    expect(() =>
+      buildMultisigConfig({
+        multisigAddress: twoOfThreeAddress(),
+        threshold: 2,
+        signers: TWO_OF_THREE_SIGNERS,
+        preset: 'three-device' as unknown as 'two-device',
+      })
+    ).toThrow(/unknown preset/i);
+  });
+
+  it('parse refuses an unknown suggestedPreset value', () => {
+    const cfg = buildMultisigConfig({
+      multisigAddress: twoOfThreeAddress(),
+      threshold: 2,
+      signers: TWO_OF_THREE_SIGNERS,
+    });
+    const bad = { ...cfg, suggestedPreset: 'three-device' };
+    const parsed = parseMultisigConfig(bad as unknown);
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) {
+      expect(parsed.reason).toMatch(/unknown suggestedPreset/i);
+    }
+  });
+
+  it('parse refuses suggestedPreset on a non-2-of-3 config (fail closed)', () => {
+    // Valid 2-of-4 config with the hint bolted on — malformed/tampered.
+    const cfg = buildMultisigConfig({
+      multisigAddress: FOUNDATION_ADDRESS,
+      threshold: FOUNDATION_THRESHOLD,
+      signers: FOUNDATION_SIGNERS,
+    });
+    const bad = { ...cfg, suggestedPreset: 'two-device' };
+    const parsed = parseMultisigConfig(bad as unknown);
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) {
+      expect(parsed.reason).toMatch(/requires a 2-of-3/i);
+    }
+  });
+
+  it('configs without the field still parse (back-compat)', () => {
+    const cfg = buildMultisigConfig({
+      multisigAddress: twoOfThreeAddress(),
+      threshold: 2,
+      signers: TWO_OF_THREE_SIGNERS,
+    });
+    const parsed = parseMultisigConfig(serializeMultisigConfig(cfg));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.config.suggestedPreset).toBeUndefined();
+    }
+  });
+});
+
 describe('parseMultisigConfig — equivalence: a config built for ANY multisig validates', () => {
   // Sanity: prove the validator isn't accidentally pinned to the
   // foundation example. Build a config for a synthetic 3-of-3, parse

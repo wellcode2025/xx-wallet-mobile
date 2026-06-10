@@ -61,11 +61,13 @@ export interface Multisig {
   /** sha256 of canonical {threshold, sortedSigners} JSON. Used to detect
    *  duplicate imports of the same configuration regardless of source. */
   configHash: string;
-  /** Local UI hint marking how this multisig was set up. 'two-device' means
-   *  it was created via the guided two-device-approval wizard (a 2-of-3
-   *  framed as device + device + offline backup); the spend flow reframes
-   *  its copy accordingly. Purely cosmetic — not part of configHash, and
-   *  absent for manually-added multisigs. */
+  /** Local UI hint marking this multisig as a two-device-approval
+   *  "protected account" (a 2-of-3 framed as device + device + offline
+   *  backup); the spend flow reframes its copy accordingly. Set by the
+   *  guided wizard, accepted as a suggestion at config import, asserted
+   *  by the user at chain scan, or toggled on the detail screen. Purely
+   *  cosmetic — a local assertion, never a verified fact (the chain
+   *  carries no such flag), and not part of configHash. */
   preset?: 'two-device';
   importedAt: number;
   /** Updated by store consumers (e.g., the multisig detail screen) when
@@ -97,6 +99,10 @@ interface MultisigsState {
    *  immutable — to "edit" them, remove and re-add. */
   renameMultisig(address: string, newName: string): void;
   setSignerLabel(address: string, signerAddress: string, label: string): void;
+
+  /** Set or clear the protected-account marker. Local-only, like rename —
+   *  doesn't touch the cryptographic fields or configHash. */
+  setPreset(address: string, preset: 'two-device' | undefined): void;
 
   removeMultisig(address: string): void;
 
@@ -164,6 +170,19 @@ export const useMultisigsStore = create<MultisigsState>()(
           multisigs: get().multisigs.map((m) =>
             m.address === address ? { ...m, localName: trimmed } : m
           ),
+        });
+      },
+
+      setPreset(address, preset) {
+        set({
+          multisigs: get().multisigs.map((m) => {
+            if (m.address !== address) return m;
+            if (preset) return { ...m, preset };
+            // Drop the key entirely on clear so the record matches the
+            // never-marked shape (keeps persisted JSON tidy).
+            const { preset: _, ...rest } = m;
+            return rest;
+          }),
         });
       },
 

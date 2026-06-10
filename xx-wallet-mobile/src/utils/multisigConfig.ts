@@ -55,6 +55,13 @@ export interface MultisigConfig {
    *  local nickname; this is just a starting suggestion. Capped at
    *  64 chars to prevent abuse. */
   suggestedName?: string;
+  /** Optional sender-suggested setup-origin hint: 'two-device' marks a
+   *  protected account created via the two-device-approval wizard.
+   *  Same trust class as suggestedName — the receiving wallet shows it
+   *  and lets the user confirm or decline; it is never auto-applied
+   *  silently. Only valid on an exactly-2-of-3 config. Older wallets
+   *  ignore unknown fields, so this needs no version bump. */
+  suggestedPreset?: 'two-device';
   /** Informational only — which signer created the config. The wallet
    *  does NOT authenticate this; it's purely for audit/UX context. */
   createdBy?: string;
@@ -72,6 +79,9 @@ export interface BuildInput {
   signers: string[];
   suggestedName?: string;
   createdBy?: string;
+  /** Setup-origin hint to carry as suggestedPreset. Caller bug to pass
+   *  this on anything but an exactly-2-of-3 config — build throws. */
+  preset?: 'two-device';
 }
 
 /**
@@ -132,6 +142,20 @@ export function buildMultisigConfig(input: BuildInput): MultisigConfig {
       `buildMultisigConfig: createdBy must be a valid xx address (got ${input.createdBy}).`
     );
   }
+  if (input.preset !== undefined) {
+    if (input.preset !== 'two-device') {
+      throw new Error(
+        `buildMultisigConfig: unknown preset: ${String(input.preset)}`
+      );
+    }
+    if (input.threshold !== 2 || input.signers.length !== 3) {
+      throw new Error(
+        'buildMultisigConfig: the two-device preset only applies to a ' +
+          `2-of-3 multisig (got ${input.threshold}-of-${input.signers.length}). ` +
+          'Refusing to export an inconsistent hint.'
+      );
+    }
+  }
 
   // Sort signers for canonical form. Same set in any input order
   // produces the same exported JSON (and thus the same configHash).
@@ -148,6 +172,7 @@ export function buildMultisigConfig(input: BuildInput): MultisigConfig {
           suggestedName: input.suggestedName.slice(0, SUGGESTED_NAME_MAX_LEN),
         }
       : {}),
+    ...(input.preset ? { suggestedPreset: input.preset } : {}),
     ...(input.createdBy ? { createdBy: input.createdBy } : {}),
     createdAt: new Date().toISOString(),
   };
@@ -362,6 +387,28 @@ export function parseMultisigConfig(input: unknown): MultisigConfigParseResult {
     }
     suggestedName = obj.suggestedName.slice(0, SUGGESTED_NAME_MAX_LEN);
   }
+  let suggestedPreset: 'two-device' | undefined;
+  if (obj.suggestedPreset !== undefined) {
+    if (obj.suggestedPreset !== 'two-device') {
+      return {
+        ok: false,
+        reason: `Unknown suggestedPreset: ${String(obj.suggestedPreset)}. This wallet only handles 'two-device'.`,
+      };
+    }
+    // The hint is only meaningful on an exactly-2-of-3 config. Any other
+    // shape claiming it is malformed or tampered — fail closed rather
+    // than silently dropping the inconsistency.
+    if ((obj.threshold as number) !== 2 || obj.signers.length !== 3) {
+      return {
+        ok: false,
+        reason:
+          'suggestedPreset "two-device" requires a 2-of-3 multisig, but this ' +
+          `config is ${obj.threshold}-of-${obj.signers.length}. The config is ` +
+          'malformed — refusing.',
+      };
+    }
+    suggestedPreset = obj.suggestedPreset;
+  }
   let createdBy: string | undefined;
   if (obj.createdBy !== undefined) {
     if (typeof obj.createdBy !== 'string' || !isValidXxAddress(obj.createdBy)) {
@@ -391,6 +438,7 @@ export function parseMultisigConfig(input: unknown): MultisigConfigParseResult {
       // canonical ordering regardless of how the sender wrote the JSON.
       signers: [...(obj.signers as string[])].sort(),
       ...(suggestedName ? { suggestedName } : {}),
+      ...(suggestedPreset ? { suggestedPreset } : {}),
       ...(createdBy ? { createdBy } : {}),
       ...(createdAt ? { createdAt } : {}),
     },

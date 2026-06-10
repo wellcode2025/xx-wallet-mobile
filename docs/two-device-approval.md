@@ -95,6 +95,31 @@ approving device. The wallet shows the approver the **decoded** transaction —
 exactly what is being signed, derived from the transaction's own bytes, never
 from a description the other side typed. You always approve what you can see.
 
+## What it looks like on other devices
+
+The "protected account" name is a label this wallet puts on the setup. On the
+blockchain — and on block explorers, and in any other wallet — the account is
+what it really is: a regular 2-of-3 multisig. That's a feature, not a leak: it
+means the protection comes from the chain itself and doesn't depend on this
+app existing.
+
+The friendly framing follows the account to your other devices in three ways:
+
+1. **Config import (the guided path).** After setup, the wizard prompts you to
+   share the account's config with your second device. The config carries the
+   protected-account hint; when your other device imports it, it asks once
+   whether to use the same framing.
+2. **Chain scan.** If a device discovers the account by scanning chain history
+   instead, the wallet can't tell a protected account from any other 2-of-3 —
+   so when a discovered multisig has the right shape and includes one of your
+   own accounts, it asks whether this is a protected account you set up.
+3. **Manual toggle.** On any 2-of-3 multisig's detail screen, the ⋮ menu has
+   "Mark as protected account" / "Treat as regular multisig".
+
+The label only changes the language the wallet uses on spend screens. Marking
+or unmarking it never changes anything on chain, and never changes who can
+spend.
+
 ## What it does and doesn't protect against
 
 **Protects against:**

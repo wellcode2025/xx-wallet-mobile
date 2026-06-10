@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Users,
   ExternalLink,
@@ -25,6 +25,7 @@ import {
   Send,
   Share2,
   Pencil,
+  ShieldCheck,
   X,
   AlertTriangle,
   MoreVertical,
@@ -79,7 +80,23 @@ function MultisigView({ address }: { address: string }) {
   const stalenessOf = useStaleness();
   const renameMultisig = useMultisigsStore((s) => s.renameMultisig);
   const removeMultisig = useMultisigsStore((s) => s.removeMultisig);
+  const setPreset = useMultisigsStore((s) => s.setPreset);
   const [exportOpen, setExportOpen] = useState(false);
+  const location = useLocation();
+
+  // Deep-link support: the two-device wizard's "Set up your second
+  // device" CTA lands here with { state: { openExport: true } } so the
+  // user goes straight from creating the protected account to sharing
+  // its config. Consume the flag once and clear it so back/refresh
+  // doesn't reopen the sheet.
+  useEffect(() => {
+    if ((location.state as { openExport?: boolean } | null)?.openExport) {
+      setExportOpen(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // Mount-only: the flag is a one-shot navigation payload.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(multisig.localName);
@@ -128,10 +145,21 @@ function MultisigView({ address }: { address: string }) {
         <div className="flex flex-col items-center text-center space-y-3 pt-2">
           <AddressIcon address={address} size={56} />
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium">
-              <Users size={12} strokeWidth={2.25} />
-              {multisig.threshold}-of-{multisig.signers.length} multisig
-            </span>
+            {/* The protected-account pill keeps the 2-of-3 primitive
+                visible — the friendly name must never hide what this
+                actually is on chain. */}
+            {multisig.preset === 'two-device' ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium">
+                <ShieldCheck size={12} strokeWidth={2.25} />
+                Protected account · {multisig.threshold}-of-
+                {multisig.signers.length} multisig
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-xx-500/10 text-xx-500 text-xs font-medium">
+                <Users size={12} strokeWidth={2.25} />
+                {multisig.threshold}-of-{multisig.signers.length} multisig
+              </span>
+            )}
           </div>
           <p className="font-mono text-xs text-ink-300 break-all leading-snug max-w-[20rem]">
             {address}
@@ -336,6 +364,38 @@ function MultisigView({ address }: { address: string }) {
               <p className="text-xs text-ink-400">Change the local nickname</p>
             </div>
           </button>
+          {/* Protected-account toggle — the catch-all for multisigs that
+              arrived without the wizard's framing (scan, manual entry,
+              older imports). Marking is only offered on the 2-of-3
+              shape; the flag is the user's assertion, not a verified
+              fact, and it never changes anything on chain. */}
+          {(multisig.preset === 'two-device' ||
+            (multisig.threshold === 2 && multisig.signers.length === 3)) && (
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                setPreset(
+                  address,
+                  multisig.preset === 'two-device' ? undefined : 'two-device'
+                );
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+            >
+              <ShieldCheck size={18} className="text-ink-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink-100">
+                  {multisig.preset === 'two-device'
+                    ? 'Treat as regular multisig'
+                    : 'Mark as protected account'}
+                </p>
+                <p className="text-xs text-ink-400">
+                  {multisig.preset === 'two-device'
+                    ? 'Switch spend screens back to multisig language'
+                    : 'Use two-device approval language · local only'}
+                </p>
+              </div>
+            </button>
+          )}
           <button
             onClick={() => {
               setMenuOpen(false);
@@ -477,6 +537,10 @@ function ExportConfigSheet({
         threshold: multisig.threshold,
         signers: multisig.signers.map((s) => s.address),
         suggestedName: multisig.localName,
+        // Carry the protected-account hint so the receiving wallet can
+        // offer (not impose) the same framing. parseMultisigConfig on
+        // the other side surfaces it for explicit confirmation.
+        preset: multisig.preset,
         // Stamp the active account as the creator if they're a signer
         // of this multisig — informational only, the wallet does not
         // authenticate this. Skip if the user isn't a signer (they're

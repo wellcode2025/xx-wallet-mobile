@@ -58,6 +58,10 @@ export function MultisigScan() {
   interface Selection {
     nickname: string;
     labels: Record<string, string>;
+    /** User-asserted protected-account marker. Only offered for 2-of-3
+     *  discoveries with an own-account signer; the chain carries no
+     *  such flag, so this is the user's claim, never auto-detected. */
+    isProtected: boolean;
   }
   const [selections, setSelections] = useState<Record<string, Selection>>({});
 
@@ -111,8 +115,15 @@ export function MultisigScan() {
       // discovery). User can edit.
       return {
         ...cur,
-        [address]: { nickname: '', labels: {} },
+        [address]: { nickname: '', labels: {}, isProtected: false },
       };
+    });
+  };
+
+  const updateSelectionProtected = (address: string, isProtected: boolean) => {
+    setSelections((cur) => {
+      if (!cur[address]) return cur;
+      return { ...cur, [address]: { ...cur[address], isProtected } };
     });
   };
 
@@ -162,6 +173,7 @@ export function MultisigScan() {
           threshold: discovery.threshold,
           signers: signersWithLabels,
           localName: nickname,
+          preset: selection.isProtected ? 'two-device' : undefined,
         });
 
         // Auto-add labeled cosigners to the address book, same logic
@@ -298,6 +310,9 @@ export function MultisigScan() {
                 onLabelChange={(signerAddr, label) =>
                   updateSelectionLabel(d.address, signerAddr, label)
                 }
+                onProtectedChange={(v) =>
+                  updateSelectionProtected(d.address, v)
+                }
               />
             ))}
 
@@ -401,15 +416,27 @@ function DiscoveryCard({
   onToggle,
   onNicknameChange,
   onLabelChange,
+  onProtectedChange,
 }: {
   discovery: DiscoveredMultisig;
   accounts: Array<{ address: string; name: string }>;
   selected: boolean;
-  selection: { nickname: string; labels: Record<string, string> } | undefined;
+  selection:
+    | { nickname: string; labels: Record<string, string>; isProtected: boolean }
+    | undefined;
   onToggle: () => void;
   onNicknameChange: (n: string) => void;
   onLabelChange: (signerAddress: string, label: string) => void;
+  onProtectedChange: (isProtected: boolean) => void;
 }) {
+  // Shape gate for the protected-account question: exactly 2-of-3 with
+  // at least one signer owned by this wallet. The chain can't tell us
+  // whether a 2-of-3 was set up as two-device approval, so we ask —
+  // but only when the shape makes the question meaningful.
+  const couldBeProtected =
+    discovery.threshold === 2 &&
+    discovery.signers.length === 3 &&
+    discovery.signers.some((s) => accounts.some((a) => a.address === s));
   return (
     <div
       className={clsx(
@@ -512,6 +539,27 @@ function DiscoveryCard({
               );
             })}
           </div>
+
+          {/* Protected-account assertion — only for the shape where the
+              question makes sense (2-of-3 with an own-account signer).
+              Unchecked by default: a scan discovery carries no setup
+              hint, so claiming the framing is the USER's call, and most
+              2-of-3s found on chain are ordinary multisigs. */}
+          {couldBeProtected && (
+            <label className="flex items-start gap-2 text-xs text-ink-200 leading-snug cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={selection.isProtected}
+                onChange={(e) => onProtectedChange(e.target.checked)}
+                className="mt-0.5 w-3.5 h-3.5 accent-xx-500 flex-shrink-0"
+              />
+              <span>
+                This is a protected account I set up with two-device
+                approval. Spend screens will use that language — on chain
+                it stays a regular 2-of-3 multisig.
+              </span>
+            </label>
+          )}
         </>
       )}
     </div>
