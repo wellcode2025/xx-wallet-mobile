@@ -72,15 +72,37 @@ export function mapLedgerError(e: unknown): string {
   if (e instanceof Error) {
     const msg = e.message.toLowerCase();
     const name = (e as { name?: string }).name ?? '';
+    // Bluetooth-specific failures first — they often arrive with
+    // generic DOMException names, so match on message content.
+    if (msg.includes('bluetooth')) {
+      if (msg.includes('unavailable') || msg.includes('adapter')) {
+        return (
+          "Bluetooth isn't available — turn on Bluetooth on this device, " +
+          'and on the Nano X enable it under Settings → Bluetooth.'
+        );
+      }
+      return (
+        'Bluetooth connection failed. Make sure Bluetooth is on, the ' +
+        'Nano X is unlocked with the xx network app open, and Bluetooth ' +
+        'is enabled on the Nano (Settings → Bluetooth) — then try again.'
+      );
+    }
+    if (msg.includes('gatt')) {
+      return (
+        'The Bluetooth link to the Ledger dropped — bring the device ' +
+        'closer, make sure the xx network app is open, and try again.'
+      );
+    }
     if (name === 'TransportOpenUserCancelled' || name === 'NotFoundError') {
       // People miss the open-the-app step constantly — a Ledger sitting
       // on its dashboard is invisible to the wallet, so the full ritual
-      // goes in the message: plug in, unlock, open the app, pick it.
+      // goes in the message: connect, unlock, open the app, pick it.
       return (
-        'No Ledger found. Plug in the device, unlock it, and open the ' +
-        'xx network app on it (the wallet can only see the Ledger while ' +
-        'that app is open) — then try again and pick the device from ' +
-        "the browser's prompt."
+        'No Ledger found. Connect the device (plug it in, or for ' +
+        'Bluetooth make sure both sides have it on), unlock it, and ' +
+        'open the xx network app on it (the wallet can only see the ' +
+        'Ledger while that app is open) — then try again and pick the ' +
+        "device from the browser's prompt."
       );
     }
     if (name === 'SecurityError') {

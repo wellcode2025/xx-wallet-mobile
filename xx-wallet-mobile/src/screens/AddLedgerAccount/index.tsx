@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowRight,
+  Bluetooth,
   Check,
   Loader2,
   Usb,
@@ -35,10 +36,12 @@ import { AddressIcon } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 import { xxKeyring } from '@/keyring';
 import {
+  availableTransports,
   getLedgerAddress,
   getLedgerSession,
   isLedgerSupported,
   type LedgerSlots,
+  type LedgerTransportKind,
 } from '@/ledger';
 import { useBalance } from '@/hooks';
 import { formatBalance } from '@/utils/format';
@@ -70,6 +73,17 @@ export function AddLedgerAccount() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const supported = isLedgerSupported();
+  // Which transports this browser offers. Desktop Chromium: hid (+usb).
+  // Android Chrome: usb + ble — both buttons show and the user picks
+  // (Bluetooth is the no-cable path; USB needs a USB-C/OTG cable).
+  const transports = availableTransports();
+  const showBle = transports.includes('ble');
+  // Wired button: prefer hid where it exists (desktop), else usb.
+  const wiredKind: LedgerTransportKind | null = transports.includes('hid')
+    ? 'hid'
+    : transports.includes('usb')
+      ? 'usb'
+      : null;
 
   /** Read the next BATCH_SIZE addresses (silent, no device prompts). */
   const loadCandidates = async (from: number) => {
@@ -82,12 +96,12 @@ export function AddLedgerAccount() {
     setCandidates((cur) => [...cur, ...next]);
   };
 
-  const handleConnect = async () => {
+  const handleConnect = async (kind: LedgerTransportKind) => {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      const session = await getLedgerSession();
+      const session = await getLedgerSession(kind);
       setAppVersion(session.appVersion);
       await loadCandidates(0);
       setStep('pick');
@@ -171,9 +185,10 @@ export function AddLedgerAccount() {
               </p>
             </div>
             <p className="text-xs text-ink-200 leading-relaxed">
-              Connecting a Ledger needs WebHID, which exists in Chromium
-              browsers on desktop and Android — not on iOS or Firefox.
-              Your Ledger accounts still work from a supported browser on
+              Connecting a Ledger works in Chromium browsers — on desktop
+              (USB) and on Android (USB cable or Bluetooth with a Nano X).
+              iOS and Firefox don't expose the needed browser APIs. Your
+              Ledger accounts still work from a supported browser on
               another device.
             </p>
           </div>
@@ -198,12 +213,18 @@ export function AddLedgerAccount() {
             <div className="card text-xs text-ink-300 leading-relaxed space-y-1.5">
               <p className="text-ink-200 font-medium">Before connecting:</p>
               <ul className="list-disc pl-4 space-y-1 text-ink-300">
-                <li>Plug the Ledger in via USB and unlock it.</li>
+                <li>Unlock the Ledger.</li>
                 <li>
                   Open the <span className="text-ink-100">xx network</span>{' '}
                   app on the device (install it via Ledger Live if needed).
                 </li>
                 <li>Close Ledger Live — it blocks the browser's access.</li>
+                {showBle && (
+                  <li>
+                    For Bluetooth (Nano X): turn Bluetooth on here AND on
+                    the Nano (its Settings → Bluetooth). No cable needed.
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -219,18 +240,40 @@ export function AddLedgerAccount() {
               </div>
             )}
 
-            <button
-              onClick={handleConnect}
-              disabled={busy}
-              className="btn-primary w-full"
-            >
-              {busy ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Usb size={16} strokeWidth={2} />
-              )}
-              {busy ? 'Connecting…' : 'Connect Ledger'}
-            </button>
+            {/* One button per meaningful transport. Desktop: a single
+                wired connect (HID). Android: USB cable + Bluetooth. */}
+            {wiredKind && (
+              <button
+                onClick={() => handleConnect(wiredKind)}
+                disabled={busy}
+                className="btn-primary w-full"
+              >
+                {busy ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Usb size={16} strokeWidth={2} />
+                )}
+                {busy
+                  ? 'Connecting…'
+                  : showBle
+                    ? 'Connect with USB cable'
+                    : 'Connect Ledger'}
+              </button>
+            )}
+            {showBle && (
+              <button
+                onClick={() => handleConnect('ble')}
+                disabled={busy}
+                className={wiredKind ? 'btn-secondary w-full' : 'btn-primary w-full'}
+              >
+                {busy ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Bluetooth size={16} strokeWidth={2} />
+                )}
+                {busy ? 'Connecting…' : 'Connect with Bluetooth (Nano X)'}
+              </button>
+            )}
           </>
         )}
 

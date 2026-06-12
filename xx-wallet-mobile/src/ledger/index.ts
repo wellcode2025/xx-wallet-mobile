@@ -13,47 +13,91 @@
  * feature (mirroring the isBiometricAvailable() pattern).
  */
 
-import type { LedgerSession, LedgerSlots } from './transport';
+import type { LedgerSession, LedgerSlots, LedgerTransportKind } from './transport';
+import { availableTransports } from './transport';
 
-export type { LedgerSession, LedgerSlots } from './transport';
+export type { LedgerSession, LedgerSlots, LedgerTransportKind } from './transport';
+export { availableTransports } from './transport';
 export { mapLedgerError } from './errors';
 export { LedgerSigner } from './signer';
 
+/** Remember the transport that last worked so signing flows reconnect
+ *  the same way without re-asking the user. */
+const TRANSPORT_PREF_KEY = 'xx-wallet:ledger-transport';
+
 /**
- * True where a Ledger can actually be reached: secure context + WebHID.
- * False on iOS (no WebHID anywhere), Firefox, and the HTTP LAN dev URL —
- * though localhost counts as a secure context, so desktop dev works.
+ * True where a Ledger can actually be reached over ANY transport:
+ * WebHID (desktop Chromium), WebUSB (desktop + Android Chrome via
+ * USB-C/OTG), or Web Bluetooth (Nano X). False on iOS and Firefox —
+ * none exist there — and on the HTTP LAN dev URL (not a secure
+ * context; localhost still works for desktop dev).
  */
 export function isLedgerSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    window.isSecureContext &&
-    'hid' in navigator
-  );
+  return availableTransports().length > 0;
 }
 
 // One session at a time. The promise (not the resolved session) is the
 // singleton so concurrent callers share a single in-flight connect
-// instead of racing to claim the HID interface.
+// instead of racing to claim the device.
 let sessionPromise: Promise<LedgerSession> | null = null;
+
+function preferredTransport(): LedgerTransportKind {
+  const avail = availableTransports();
+  try {
+    const saved = localStorage.getItem(
+      TRANSPORT_PREF_KEY
+    ) as LedgerTransportKind | null;
+    if (saved && avail.includes(saved)) return saved;
+  } catch {
+    /* storage unavailable — fall through to default */
+  }
+  return avail[0];
+}
 
 /**
  * Get the shared Ledger session, connecting on first use. The first
  * call should happen inside a user gesture (button tap) — the browser
- * shows its device picker if the device hasn't been granted yet. Later
- * calls (including reconnects after unplug) reuse the grant silently.
+ * shows its device picker / pairing dialog if the device hasn't been
+ * granted yet. Later calls (including reconnects after unplug) reuse
+ * the grant silently.
+ *
+ * `kind` picks the transport explicitly (the add-account flow's
+ * USB-vs-Bluetooth buttons). Without it, the last transport that
+ * worked is reused — that's how the signing flow reconnects the same
+ * way the user originally chose.
  *
  * On any failure the singleton resets so the next attempt starts a
  * fresh connect rather than rejecting forever on a cached error.
  */
-export async function getLedgerSession(): Promise<LedgerSession> {
+export async function getLedgerSession(
+  kind?: LedgerTransportKind
+): Promise<LedgerSession> {
   if (!isLedgerSupported()) {
     throw new Error('Ledger is not supported in this browser.');
   }
+  // An explicit kind that differs from the live session's transport
+  // replaces it (e.g., user switches from USB to Bluetooth).
+  if (kind && sessionPromise) {
+    try {
+      const current = await sessionPromise;
+      if (current.kind !== kind) {
+        await disposeLedgerSession();
+      }
+    } catch {
+      sessionPromise = null;
+    }
+  }
   if (!sessionPromise) {
+    const chosen = kind ?? preferredTransport();
     sessionPromise = (async () => {
       const { createLedgerSession } = await import('./transport');
-      return createLedgerSession();
+      const session = await createLedgerSession(chosen);
+      try {
+        localStorage.setItem(TRANSPORT_PREF_KEY, chosen);
+      } catch {
+        /* best-effort preference */
+      }
+      return session;
     })();
     sessionPromise.catch(() => {
       // Reset on failure so retry reconnects. The caller still gets the

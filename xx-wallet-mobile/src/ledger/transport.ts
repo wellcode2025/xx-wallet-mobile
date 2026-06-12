@@ -1,24 +1,78 @@
 /**
  * Ledger transport + app session. The heavy half of the ledger module —
- * everything here (Buffer polyfill, @ledgerhq transport, @zondax app
+ * everything here (Buffer polyfill, @ledgerhq transports, @zondax app
  * driver) loads via dynamic import so users who never touch a Ledger
  * never download a byte of it. Import this module ONLY through the lazy
  * accessors in ./index.ts.
  *
- * Connection model: one session at a time. WebHID exposes the device as
- * an exclusive interface — a second open() while Ledger Live (or another
- * tab) holds it fails with "unable to claim interface", which errors.ts
- * maps to an actionable message.
+ * Transports — what works where:
+ *   - WebHID  ('hid'): desktop Chromium only. Not on Android, ever.
+ *   - WebUSB  ('usb'): desktop Chromium AND Android Chrome (USB-C/OTG
+ *     cable). The wired path for phones.
+ *   - Web BLE ('ble'): desktop + Android Chrome, Nano X only — the
+ *     cable-free path most phone users actually want. Requires
+ *     Bluetooth enabled on BOTH the phone and the Nano X (device
+ *     Settings → Bluetooth).
+ *   - iOS / Firefox: none of the three. Capability-gated out.
+ *
+ * Connection model: one session at a time. USB-family transports expose
+ * the device as an exclusive interface — a second open() while Ledger
+ * Live (or another tab) holds it fails with "unable to claim
+ * interface", which errors.ts maps to an actionable message.
  *
  * First connect requires a user gesture (the browser shows a device
- * picker). After the user grants the device once, subsequent connects
- * reuse the permission silently — which is what lets the signing flow
- * reconnect without a picker mid-transaction.
+ * picker / pairing dialog). After the user grants the device once,
+ * subsequent connects reuse the permission silently — which is what
+ * lets the signing flow reconnect without a picker mid-transaction.
  */
 
 import type Transport from '@ledgerhq/hw-transport';
 import type { SubstrateApp } from '@zondax/ledger-substrate';
 import { LEDGER_OK, isLedgerRpcResponse, mapLedgerError } from './errors';
+
+export type LedgerTransportKind = 'hid' | 'usb' | 'ble';
+
+/**
+ * Which transports this browser can actually use, in preference order:
+ * HID first (desktop's most reliable), then USB, then BLE. UI surfaces
+ * a choice when more than one is meaningful (Android: usb + ble).
+ */
+export function availableTransports(): LedgerTransportKind[] {
+  if (typeof window === 'undefined' || !window.isSecureContext) return [];
+  const nav = navigator as Navigator & {
+    hid?: unknown;
+    usb?: unknown;
+    bluetooth?: unknown;
+  };
+  const out: LedgerTransportKind[] = [];
+  if (nav.hid) out.push('hid');
+  if (nav.usb) out.push('usb');
+  if (nav.bluetooth) out.push('ble');
+  return out;
+}
+
+async function openTransport(kind: LedgerTransportKind): Promise<Transport> {
+  switch (kind) {
+    case 'hid': {
+      const { default: TransportWebHID } = await import(
+        '@ledgerhq/hw-transport-webhid'
+      );
+      return TransportWebHID.create();
+    }
+    case 'usb': {
+      const { default: TransportWebUSB } = await import(
+        '@ledgerhq/hw-transport-webusb'
+      );
+      return TransportWebUSB.create();
+    }
+    case 'ble': {
+      const { default: TransportWebBLE } = await import(
+        '@ledgerhq/hw-transport-web-ble'
+      );
+      return TransportWebBLE.create();
+    }
+  }
+}
 
 /** BIP44 slots for m/44'/1955'/account'/change'/index' (all hardened). */
 export interface LedgerSlots {
@@ -30,6 +84,8 @@ export interface LedgerSlots {
 export interface LedgerSession {
   app: SubstrateApp;
   transport: Transport;
+  /** Which transport carried this session — reconnects reuse it. */
+  kind: LedgerTransportKind;
   /** xx app version as reported by the device, e.g. "1.203.2". */
   appVersion: string;
   /** Close the transport. Safe to call twice. */
@@ -37,10 +93,12 @@ export interface LedgerSession {
 }
 
 /**
- * Open the WebHID transport and construct the XXNetwork app driver.
+ * Open a transport and construct the XXNetwork app driver.
  * Throws mapped, user-actionable errors on every failure path.
  */
-export async function createLedgerSession(): Promise<LedgerSession> {
+export async function createLedgerSession(
+  kind: LedgerTransportKind
+): Promise<LedgerSession> {
   // The Zondax driver builds APDUs with Node's Buffer. Vite doesn't
   // polyfill Node globals, so install the `buffer` package's
   // implementation before the driver loads. Done via dynamic import
@@ -51,16 +109,13 @@ export async function createLedgerSession(): Promise<LedgerSession> {
     g.Buffer = Buffer;
   }
 
-  const [{ default: TransportWebHID }, zondax] = await Promise.all([
-    import('@ledgerhq/hw-transport-webhid'),
-    import('@zondax/ledger-substrate'),
-  ]);
+  const zondax = await import('@zondax/ledger-substrate');
 
   let transport: Transport;
   try {
     // Tries already-granted devices first; falls back to the browser's
-    // device picker (which needs a user gesture).
-    transport = await TransportWebHID.create();
+    // device picker / pairing dialog (which needs a user gesture).
+    transport = await openTransport(kind);
   } catch (e) {
     throw new Error(mapLedgerError(e));
   }
@@ -81,6 +136,7 @@ export async function createLedgerSession(): Promise<LedgerSession> {
     return {
       app,
       transport,
+      kind,
       appVersion: `${version.major}.${version.minor}.${version.patch}`,
       async dispose() {
         try {
