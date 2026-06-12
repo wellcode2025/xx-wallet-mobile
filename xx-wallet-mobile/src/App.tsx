@@ -27,6 +27,7 @@ import { Send } from '@/screens/Send';
 import { Receive } from '@/screens/Receive';
 import { Settings } from '@/screens/Settings';
 import { AccountDetail } from '@/screens/AccountDetail';
+import { AddLedgerAccount } from '@/screens/AddLedgerAccount';
 import {
   StakingLayout,
   MyNominations,
@@ -252,6 +253,7 @@ export function App() {
             <Route index element={<Dashboard />} />
             <Route path="/send" element={<Send />} />
             <Route path="/receive" element={<Receive />} />
+            <Route path="/account/ledger/add" element={<AddLedgerAccount />} />
             <Route path="/account/:address" element={<AccountDetail />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/staking" element={<StakingLayout />}>

@@ -13,10 +13,12 @@ import {
   Plus,
   Search,
   ShieldCheck,
+  Usb,
   UserPlus,
   Users,
 } from 'lucide-react';
 import { useAccountsStore, useMultisigsStore, useSettingsStore } from '@/store';
+import { isLedgerSupported } from '@/ledger';
 import {
   formatAge,
   useAllPendingMultisigs,
@@ -356,6 +358,7 @@ export function Dashboard() {
                     address={acct.address}
                     name={acct.name}
                     isActive={acct.address === activeAccount.address}
+                    isLedger={acct.source === 'ledger'}
                     hideBalances={hideBalances}
                     onClick={() => {
                       setActive(acct.address);
@@ -647,6 +650,32 @@ export function Dashboard() {
               </p>
             </div>
           </button>
+
+          {/* Hardware option — only where WebHID can actually reach a
+              device (desktop Chromium, Android Chrome). iOS and Firefox
+              users never see the row rather than hitting a dead end. */}
+          {isLedgerSupported() && (
+            <button
+              onClick={() => {
+                setAddAccountChooserOpen(false);
+                navigate('/account/ledger/add');
+              }}
+              className="w-full flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-ink-900 border border-ink-700 flex items-center justify-center flex-shrink-0">
+                <Usb size={16} strokeWidth={2} className="text-xx-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink-100">
+                  Connect Ledger
+                </p>
+                <p className="text-sm text-ink-300 leading-snug mt-0.5">
+                  Add a hardware account. The key stays on the Ledger —
+                  every transaction is confirmed on the device.
+                </p>
+              </div>
+            </button>
+          )}
         </div>
       </Sheet>
     </>
@@ -704,6 +733,7 @@ function AccountSwitcherRow({
   address,
   name,
   isActive,
+  isLedger,
   hideBalances,
   onClick,
   onManage,
@@ -711,6 +741,8 @@ function AccountSwitcherRow({
   address: string;
   name: string;
   isActive: boolean;
+  /** Hardware-backed account — shows a small USB glyph beside the name. */
+  isLedger: boolean;
   hideBalances: boolean;
   onClick: () => void;
   onManage: () => void;
@@ -728,7 +760,17 @@ function AccountSwitcherRow({
     >
       <AddressIcon address={address} size={36} />
       <div className="flex-1 min-w-0 text-left">
-        <p className="font-medium text-sm truncate">{name}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="font-medium text-sm truncate">{name}</p>
+          {isLedger && (
+            <Usb
+              size={12}
+              strokeWidth={2.25}
+              className="text-xx-500 flex-shrink-0"
+              aria-label="Ledger account"
+            />
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="font-mono text-xs text-ink-400 truncate">
             {address.slice(0, 10)}…

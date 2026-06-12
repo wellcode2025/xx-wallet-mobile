@@ -17,6 +17,7 @@ import {
   ArrowRight,
   PlusCircle,
   FileJson,
+  Usb,
   X,
 } from 'lucide-react';
 import {
@@ -33,6 +34,7 @@ import { XX_ENDPOINTS } from '@/api';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, Sheet } from '@/components/ui';
 import { isLocalAccount, xxKeyring } from '@/keyring';
+import { isLedgerSupported } from '@/ledger';
 import { Users } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -192,6 +194,14 @@ export function Settings() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm truncate">{acct.name}</p>
+                  {acct.source === 'ledger' && (
+                    <Usb
+                      size={12}
+                      strokeWidth={2.25}
+                      className="text-xx-500 flex-shrink-0"
+                      aria-label="Ledger account"
+                    />
+                  )}
                   {acct.address === activeAddress && (
                     <span className="text-[10px] uppercase tracking-wider text-xx-500 font-semibold flex-shrink-0">
                       Active
@@ -281,6 +291,22 @@ export function Settings() {
               <p className="text-sm text-ink-300 mt-0.5">Use a recovery phrase or keystore file</p>
             </div>
           </button>
+          {/* Hardware option — gated to browsers where WebHID exists
+              (desktop Chromium, Android Chrome); hidden elsewhere. */}
+          {isLedgerSupported() && (
+            <button
+              onClick={() => { setAddOpen(false); navigate('/account/ledger/add'); }}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700 text-left"
+            >
+              <div className="w-10 h-10 rounded-full bg-ink-700/50 border border-ink-600/50 flex items-center justify-center flex-shrink-0">
+                <Usb size={20} className="text-ink-300" strokeWidth={1.75} />
+              </div>
+              <div>
+                <p className="font-medium text-sm text-ink-100">Connect Ledger</p>
+                <p className="text-sm text-ink-300 mt-0.5">Hardware account — the key stays on the device</p>
+              </div>
+            </button>
+          )}
         </div>
       </Sheet>
 
