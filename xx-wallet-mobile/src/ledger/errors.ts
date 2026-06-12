@@ -73,24 +73,32 @@ export function mapLedgerError(e: unknown): string {
     const msg = e.message.toLowerCase();
     const name = (e as { name?: string }).name ?? '';
     // Bluetooth-specific failures first — they often arrive with
-    // generic DOMException names, so match on message content.
+    // generic DOMException names, so match on message content. The raw
+    // message rides along in every branch (mobile has no console, and
+    // BLE failures have many distinct causes that all look the same
+    // without it — per the surface-error-message policy).
     if (msg.includes('bluetooth')) {
       if (msg.includes('unavailable') || msg.includes('adapter')) {
         return (
           "Bluetooth isn't available — turn on Bluetooth on this device, " +
-          'and on the Nano X enable it under Settings → Bluetooth.'
+          `and on the Nano X enable it under Settings → Bluetooth. (${e.message})`
         );
       }
       return (
         'Bluetooth connection failed. Make sure Bluetooth is on, the ' +
         'Nano X is unlocked with the xx network app open, and Bluetooth ' +
-        'is enabled on the Nano (Settings → Bluetooth) — then try again.'
+        'is enabled on the Nano (Settings → Bluetooth). If the Nano is ' +
+        "paired in this phone's Bluetooth settings or used by the Ledger " +
+        `Live app, unpair it / close Ledger Live first. (${e.message})`
       );
     }
     if (msg.includes('gatt')) {
       return (
-        'The Bluetooth link to the Ledger dropped — bring the device ' +
-        'closer, make sure the xx network app is open, and try again.'
+        'The Bluetooth link to the Ledger dropped. If the Nano X is ' +
+        "paired in this phone's Bluetooth settings, forget it there and " +
+        'close the Ledger Live app (it holds the connection) — then ' +
+        'toggle Bluetooth off and on in the Nano\'s own Settings and ' +
+        `try again. (${e.message})`
       );
     }
     if (name === 'TransportOpenUserCancelled' || name === 'NotFoundError') {
