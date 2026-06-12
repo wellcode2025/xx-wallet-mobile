@@ -87,13 +87,16 @@ describe('mapLedgerError — transport-layer throws', () => {
     return e;
   }
 
-  it('dismissed device picker → pick-the-device guidance', () => {
-    expect(
-      mapLedgerError(namedError('TransportOpenUserCancelled', 'cancelled'))
-    ).toMatch(/pick it from the browser prompt/i);
-    expect(mapLedgerError(namedError('NotFoundError', 'no device'))).toMatch(
-      /pick it from the browser prompt/i
+  it('no device / dismissed picker → full connect ritual incl. opening the app', () => {
+    // The open-the-app step is the one users miss (Aaron's field
+    // feedback 2026-06-12) — both no-device messages must carry it.
+    const cancelled = mapLedgerError(
+      namedError('TransportOpenUserCancelled', 'cancelled')
     );
+    expect(cancelled).toMatch(/plug in/i);
+    expect(cancelled).toMatch(/open the xx network app/i);
+    const notFound = mapLedgerError(namedError('NotFoundError', 'no device'));
+    expect(notFound).toMatch(/open the xx network app/i);
   });
 
   it('claimed interface → close Ledger Live guidance', () => {
@@ -105,10 +108,10 @@ describe('mapLedgerError — transport-layer throws', () => {
     ).toMatch(/close ledger live/i);
   });
 
-  it('disconnect mid-flow → plug back in guidance', () => {
-    expect(
-      mapLedgerError(new Error('The device was disconnected.'))
-    ).toMatch(/plug it back in/i);
+  it('disconnect mid-flow → plug back in + reopen the app', () => {
+    const msg = mapLedgerError(new Error('The device was disconnected.'));
+    expect(msg).toMatch(/plug it back in/i);
+    expect(msg).toMatch(/open the xx network app/i);
   });
 
   it('unknown Error and non-Error fall through with detail preserved', () => {

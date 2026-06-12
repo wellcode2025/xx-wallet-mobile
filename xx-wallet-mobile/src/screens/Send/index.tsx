@@ -9,11 +9,13 @@ import {
   ScanLine,
   BookUser,
   ShieldAlert,
+  Usb,
   UserPlus,
   BadgeCheck,
 } from 'lucide-react';
 import { useAccountsStore, useAddressBook } from '@/store';
 import { useBalance, useTx } from '@/hooks';
+import { isLedgerAccount } from '@/keyring';
 import { isValidXxAddress, formatBalance, parseAmount, shortenAddress } from '@/utils';
 import { XX_SYMBOL, XX_DECIMALS } from '@/api';
 import { TopBar } from '@/components/layout';
@@ -50,6 +52,10 @@ export function Send() {
   const { accounts, activeAddress } = useAccountsStore();
   const { contacts, removeContact } = useAddressBook();
   const active = accounts.find((a) => a.address === activeAddress) ?? accounts[0];
+  // Ledger accounts sign on the device: the confirm sheet swaps the
+  // password input for a confirm-on-device prompt, and the status label
+  // says what's actually happening during 'signing'.
+  const activeIsLedger = !!active && isLedgerAccount(active);
   const { balance } = useBalance(active?.address ?? null);
   const { submit, status, txHash, error: txError, reset } = useTx();
 
@@ -241,11 +247,12 @@ export function Send() {
     status === 'signing' || status === 'broadcasting' || status === 'in-block';
   const isDone = status === 'finalized';
 
-  // Human-readable status label
+  // Human-readable status label. For a Ledger account, 'signing' means
+  // the user is reading + approving on the device, not a local decrypt.
   const submitLabel = {
     idle: 'Confirm and send',
     error: 'Confirm and send',
-    signing: 'Signing…',
+    signing: activeIsLedger ? 'Confirm on your Ledger…' : 'Signing…',
     broadcasting: 'Sending to network…',
     'in-block': 'Waiting for finality…',
     finalized: 'Done',
@@ -582,29 +589,48 @@ export function Send() {
             </Row>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setPasswordError(null);
-              }}
-              className="input-base"
-              placeholder="Enter your wallet password to sign"
-              autoComplete="current-password"
-              disabled={isSubmitting}
-            />
-            {passwordError && (
-              <p className="text-xs text-danger mt-1.5 flex items-center gap-1">
-                <AlertTriangle size={12} />
-                {passwordError}
+          {activeIsLedger ? (
+            // No password for a Ledger account — the device IS the
+            // authorization. The user reads the decoded transfer on the
+            // Ledger screen and physically approves there.
+            <div className="flex items-start gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50">
+              <Usb size={18} className="text-xx-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-ink-200 leading-relaxed">
+                Your Ledger will show this transfer. Check that the
+                recipient and amount on the device screen match what's
+                above, then approve on the device.
+                {status === 'signing' && (
+                  <span className="block mt-1 text-xx-500 font-medium">
+                    Waiting for the device…
+                  </span>
+                )}
               </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setPasswordError(null);
+                }}
+                className="input-base"
+                placeholder="Enter your wallet password to sign"
+                autoComplete="current-password"
+                disabled={isSubmitting}
+              />
+              {passwordError && (
+                <p className="text-xs text-danger mt-1.5 flex items-center gap-1">
+                  <AlertTriangle size={12} />
+                  {passwordError}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Generic tx error (not password-related) */}
           {txError && !passwordError && (
@@ -619,7 +645,7 @@ export function Send() {
 
           <button
             onClick={handleConfirm}
-            disabled={isSubmitting || !password}
+            disabled={isSubmitting || (!activeIsLedger && !password)}
             className="btn-primary w-full"
           >
             {isSubmitting && <Loader2 size={18} className="animate-spin" />}

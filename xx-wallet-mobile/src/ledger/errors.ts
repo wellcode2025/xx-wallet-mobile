@@ -73,7 +73,15 @@ export function mapLedgerError(e: unknown): string {
     const msg = e.message.toLowerCase();
     const name = (e as { name?: string }).name ?? '';
     if (name === 'TransportOpenUserCancelled' || name === 'NotFoundError') {
-      return 'No Ledger selected — plug in the device and pick it from the browser prompt.';
+      // People miss the open-the-app step constantly — a Ledger sitting
+      // on its dashboard is invisible to the wallet, so the full ritual
+      // goes in the message: plug in, unlock, open the app, pick it.
+      return (
+        'No Ledger found. Plug in the device, unlock it, and open the ' +
+        'xx network app on it (the wallet can only see the Ledger while ' +
+        'that app is open) — then try again and pick the device from ' +
+        "the browser's prompt."
+      );
     }
     if (name === 'SecurityError') {
       return 'The browser blocked USB access — Ledger only works on a secure (HTTPS) page.';
@@ -86,7 +94,7 @@ export function mapLedgerError(e: unknown): string {
       return 'Another app is using the Ledger — close Ledger Live (and other wallet tabs), then try again.';
     }
     if (msg.includes('disconnected') || msg.includes('device was disconnected')) {
-      return 'The Ledger was disconnected — plug it back in and try again.';
+      return 'The Ledger was disconnected — plug it back in, open the xx network app on it, and try again.';
     }
     if (msg.includes('locked')) {
       return 'Unlock your Ledger device, then try again.';
