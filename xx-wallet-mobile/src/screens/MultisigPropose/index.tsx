@@ -181,6 +181,32 @@ function ProposeView({ address }: { address: string }) {
   const recipientIsMultisig =
     recipient.trim() === address && recipient.trim().length > 0;
 
+  // Exchange-routing caution. A transfer sent from a multisig is nested
+  // inside multisig.asMulti, and many exchange deposit systems only scan
+  // top-level extrinsics — the deposit is never credited and the funds
+  // sit in limbo until (at best) manual support intervention. The wallet
+  // can't detect exchange addresses, so: always show the caution, and
+  // require conscious acknowledgement when the recipient is unknown to
+  // this wallet (not an own account, contact, or known multisig) — the
+  // pasted-an-exchange-deposit-address case lives there. Warning +
+  // acknowledgement, never a hard block.
+  const allMultisigs = useMultisigsStore((s) => s.multisigs);
+  const recipientKnown = useMemo(() => {
+    const trimmed = recipient.trim();
+    if (!trimmed) return false;
+    return (
+      accounts.some((a) => a.address === trimmed) ||
+      contacts.some((c) => c.address === trimmed) ||
+      allMultisigs.some((m) => m.address === trimmed)
+    );
+  }, [recipient, accounts, contacts, allMultisigs]);
+  const exchangeAckNeeded =
+    recipientValid && !recipientIsMultisig && !recipientKnown;
+  const [exchangeAck, setExchangeAck] = useState(false);
+  useEffect(() => {
+    setExchangeAck(false);
+  }, [recipient]);
+
   const parsedAmount = useMemo(() => parseAmount(amount), [amount]);
 
   const transferable = useMemo(
@@ -302,7 +328,8 @@ function ProposeView({ address }: { address: string }) {
     hasEligibleSigner &&
     !!signerAddress &&
     !feeShortfall &&
-    (!senderBelowED || allowReaping);
+    (!senderBelowED || allowReaping) &&
+    (!exchangeAckNeeded || exchangeAck);
 
   const isSubmitting =
     txStatus === 'signing' ||
@@ -661,6 +688,52 @@ function ProposeView({ address }: { address: string }) {
               <Check size={12} />
               Valid xx address
             </p>
+          )}
+
+          {/* Exchange-routing caution. Compact one-liner always (the
+              gotcha is worth a standing reminder); expands to a full
+              explanation + required acknowledgement when the recipient
+              is a valid address this wallet doesn't recognize — that's
+              where a pasted exchange deposit address would land. */}
+          {!exchangeAckNeeded ? (
+            <p className="text-xs text-ink-400 mt-2 leading-relaxed">
+              Sending to an exchange? Don't send from{' '}
+              {isTwoDevice ? 'a protected account' : 'a multisig'} directly
+              — route through one of your regular accounts first.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2 mt-2 p-3 rounded-xl bg-warning/10 border border-warning/30">
+              <div className="flex items-start gap-2">
+                <ShieldAlert
+                  size={14}
+                  className="text-warning flex-shrink-0 mt-0.5"
+                />
+                <p className="text-xs text-ink-200 leading-relaxed">
+                  <span className="font-medium">
+                    Is this an exchange deposit address?
+                  </span>{' '}
+                  Transfers from{' '}
+                  {isTwoDevice ? 'a protected account' : 'a multisig'} are
+                  nested inside a multisig extrinsic, and many exchange
+                  deposit systems can't see them — the deposit may never be
+                  credited and the funds get stuck. Send to one of your
+                  regular accounts first, then on to the exchange from
+                  there.
+                </p>
+              </div>
+              <label className="flex items-start gap-2 mt-1 text-xs text-ink-200 leading-snug cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={exchangeAck}
+                  onChange={(e) => setExchangeAck(e.target.checked)}
+                  className="mt-0.5 w-3.5 h-3.5 accent-warning flex-shrink-0"
+                />
+                <span>
+                  This is not an exchange deposit address — or I understand
+                  the deposit may not be credited and want to proceed.
+                </span>
+              </label>
+            </div>
           )}
         </div>
 
