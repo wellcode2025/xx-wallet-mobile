@@ -5,11 +5,12 @@ import clsx from 'clsx';
 import { CheckCircle2 } from 'lucide-react';
 
 import { useAccountsStore } from '@/store';
-import { useStakingPosition, useTx } from '@/hooks';
+import { isLedgerAddress, useStakingPosition, useTx } from '@/hooks';
 import { xxApi } from '@/api';
 import { formatBalance } from '@/utils';
 import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
+import { SignerConfirmCard } from './SignerConfirmCard';
 
 /**
  * Withdraw unbonded.
@@ -89,10 +90,11 @@ export function WithdrawUnbonded() {
   const isSubmitting =
     status === 'signing' || status === 'broadcasting' || status === 'in-block';
   const isDone = status === 'finalized';
+  const isLedger = isLedgerAddress(activeAccount?.address ?? '');
   const canSubmit =
     matured.length > 0 &&
     spanCount !== null &&
-    password.length > 0 &&
+    (isLedger || password.length > 0) &&
     (status === 'idle' || status === 'error');
 
   useEffect(() => {
@@ -212,36 +214,19 @@ export function WithdrawUnbonded() {
               </div>
             )}
 
-            {/* Password */}
-            <div className="card space-y-2">
-              <label
-                htmlFor="withdraw-password"
-                className="text-xs uppercase tracking-wider text-ink-400 font-medium"
-              >
-                Confirm with password
-              </label>
-              <input
-                id="withdraw-password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setPasswordError(null);
-                }}
-                disabled={isSubmitting}
-                className={clsx(
-                  'w-full px-3 py-2.5 rounded-2xl bg-ink-950 border text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none',
-                  passwordError
-                    ? 'border-danger focus:border-danger'
-                    : 'border-ink-800 focus:border-ink-600'
-                )}
-                placeholder="Wallet password"
-                autoComplete="current-password"
-              />
-              {passwordError && (
-                <p className="text-xs text-danger">{passwordError}</p>
-              )}
-            </div>
+            {/* Signer confirmation — password or confirm-on-device */}
+            <SignerConfirmCard
+              isLedger={isLedger}
+              idPrefix="withdraw"
+              password={password}
+              onPasswordChange={(v) => {
+                setPassword(v);
+                setPasswordError(null);
+              }}
+              passwordError={passwordError}
+              disabled={isSubmitting}
+              waiting={status === 'signing'}
+            />
 
             {/* CTA */}
             <button
@@ -254,7 +239,7 @@ export function WithdrawUnbonded() {
                   : 'bg-ink-800 text-ink-500 cursor-not-allowed'
               )}
             >
-              {submitLabel(status, maturedTotal)}
+              {submitLabel(status, maturedTotal, isLedger)}
             </button>
           </>
         )}
@@ -279,8 +264,9 @@ export function WithdrawUnbonded() {
   );
 }
 
-function submitLabel(status: string, total: BN): string {
-  if (status === 'signing') return 'Signing…';
+function submitLabel(status: string, total: BN, isLedger: boolean): string {
+  if (status === 'signing')
+    return isLedger ? 'Confirm on your Ledger…' : 'Signing…';
   if (status === 'broadcasting') return 'Sending to network…';
   if (status === 'in-block') return 'Waiting for finality…';
   return `Withdraw ${formatBalance(total, { decimals: 4, withSymbol: true })}`;

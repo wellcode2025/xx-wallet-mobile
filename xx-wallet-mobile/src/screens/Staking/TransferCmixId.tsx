@@ -4,10 +4,11 @@ import clsx from 'clsx';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 import { useAccountsStore } from '@/store';
-import { useTx } from '@/hooks';
+import { isLedgerAddress, useTx } from '@/hooks';
 import { xxApi } from '@/api';
 import { isValidXxAddress } from '@/utils';
 import { TopBar } from '@/components/layout';
+import { SignerConfirmCard } from './SignerConfirmCard';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 
 /**
@@ -93,10 +94,11 @@ export function TransferCmixId() {
   const isSubmitting =
     status === 'signing' || status === 'broadcasting' || status === 'in-block';
   const isDone = status === 'finalized';
+  const isLedger = isLedgerAddress(activeAccount?.address ?? '');
   const canSubmit =
     destValid &&
     !destIsSelf &&
-    password.length > 0 &&
+    (isLedger || password.length > 0) &&
     (status === 'idle' || status === 'error');
 
   useEffect(() => {
@@ -207,35 +209,18 @@ export function TransferCmixId() {
               )}
             </div>
 
-            <div className="card space-y-2">
-              <label
-                htmlFor="transfer-cmix-password"
-                className="text-xs uppercase tracking-wider text-ink-400 font-medium"
-              >
-                Confirm with password
-              </label>
-              <input
-                id="transfer-cmix-password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setPasswordError(null);
-                }}
-                disabled={isSubmitting}
-                className={clsx(
-                  'w-full px-3 py-2.5 rounded-2xl bg-ink-950 border text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none',
-                  passwordError
-                    ? 'border-danger focus:border-danger'
-                    : 'border-ink-800 focus:border-ink-600'
-                )}
-                placeholder="Wallet password"
-                autoComplete="current-password"
-              />
-              {passwordError && (
-                <p className="text-xs text-danger">{passwordError}</p>
-              )}
-            </div>
+            <SignerConfirmCard
+              isLedger={isLedger}
+              idPrefix="transfer-cmix"
+              password={password}
+              onPasswordChange={(v) => {
+                setPassword(v);
+                setPasswordError(null);
+              }}
+              passwordError={passwordError}
+              disabled={isSubmitting}
+              waiting={status === 'signing'}
+            />
 
             <button
               onClick={handleSubmit}
@@ -248,7 +233,7 @@ export function TransferCmixId() {
               )}
             >
               <AlertTriangle size={14} strokeWidth={2} />
-              {submitLabel(status)}
+              {submitLabel(status, isLedger)}
             </button>
           </>
         )}
@@ -273,8 +258,9 @@ export function TransferCmixId() {
   );
 }
 
-function submitLabel(status: string): string {
-  if (status === 'signing') return 'Signing…';
+function submitLabel(status: string, isLedger: boolean): string {
+  if (status === 'signing')
+    return isLedger ? 'Confirm on your Ledger…' : 'Signing…';
   if (status === 'broadcasting') return 'Sending to network…';
   if (status === 'in-block') return 'Waiting for finality…';
   return 'Transfer cmixId';

@@ -9,13 +9,15 @@ import {
   useAutoNominate,
   useAutoSelection,
   useBalance,
-  useTx,
+  useSequentialTx,
+  isLedgerAddress,
   invalidateAutoNominateCache,
 } from '@/hooks';
 import { formatBalance, parseAmount } from '@/utils';
 import { TopBar } from '@/components/layout';
 import { AddressLabel } from '@/components/ui';
 import { ValidatorPickerSheet } from './ValidatorPickerSheet';
+import { SignerConfirmCard } from './SignerConfirmCard';
 import { AutoNominateBlock } from './AutoNominateBlock';
 
 /**
@@ -53,7 +55,18 @@ export function StartStaking() {
     error: autoError,
     refresh,
   } = useAutoNominate(activeAccount?.address ?? null);
-  const { submit, status, error: txError } = useTx();
+  // Sequential submit: bond+nominate is one atomic batchAll for local
+  // accounts, but two transactions (two device confirmations) for a
+  // Ledger signer — the Ledger app refuses nested calls.
+  const {
+    submitSequence,
+    status,
+    error: txError,
+    currentStep,
+    totalSteps,
+    sequenceDone,
+    failedStep,
+  } = useSequentialTx();
   // Auto-pick after the user's optional quality levers (no-op by default).
   const autoSelection = useAutoSelection(autoResult);
 
@@ -89,23 +102,29 @@ export function StartStaking() {
   const amountValid =
     parsedAmountBN !== null && parsedAmountBN.gtn(0) && !amountTooLarge;
   const targetsValid = targets.length > 0 && targets.length <= 16;
+  const isLedger = isLedgerAddress(activeAccount?.address ?? '');
   const canSubmit =
     amountValid &&
     targetsValid &&
-    password.length > 0 &&
+    (isLedger || password.length > 0) &&
     (status === 'idle' || status === 'error');
 
   const isSubmitting =
-    status === 'signing' || status === 'broadcasting' || status === 'in-block';
-  const isDone = status === 'finalized';
+    status === 'signing' ||
+    status === 'broadcasting' ||
+    status === 'in-block' ||
+    // Between sequence steps the per-tx status is briefly 'finalized'
+    // while the next step hasn't started — still submitting.
+    (status === 'finalized' && !sequenceDone);
+  const isDone = sequenceDone;
 
-  // On finalized: cache invalidate + bounce back to /staking
+  // On sequence completion: cache invalidate + bounce back to /staking
   useEffect(() => {
-    if (status !== 'finalized') return;
+    if (!sequenceDone) return;
     invalidateAutoNominateCache();
     const t = setTimeout(() => navigate('/staking'), 1200);
     return () => clearTimeout(t);
-  }, [status, navigate]);
+  }, [sequenceDone, navigate]);
 
   if (!activeAccount) return null;
 
@@ -125,25 +144,50 @@ export function StartStaking() {
   const handleSubmit = async () => {
     if (!canSubmit || !parsedAmountBN || !activeAccount) return;
     setPasswordError(null);
+    const amountStr = parsedAmountBN.toString();
+    const stash = activeAccount.address;
     try {
-      await submit(
-        (api) => {
-          const bondCall = api.tx.staking.bond(
-            activeAccount.address,
-            parsedAmountBN.toString(),
-            null
-          );
-          const nominateCall = api.tx.staking.nominate(targets);
-          return api.tx.utility.batchAll([bondCall, nominateCall]);
-        },
-        { address: activeAccount.address, password }
-      );
+      if (isLedger) {
+        // The Ledger app refuses nested calls, so bond and nominate go
+        // as two transactions — two device confirmations, bond first.
+        // Not atomic: if nominate fails after bond finalized, the
+        // account is bonded-but-not-nominating, which MyNominations
+        // surfaces with a "choose validators" path to complete.
+        await submitSequence(
+          [
+            {
+              label: 'bond',
+              build: (api) => api.tx.staking.bond(stash, amountStr, null),
+            },
+            {
+              label: 'nominate',
+              build: (api) => api.tx.staking.nominate(targets),
+            },
+          ],
+          { address: stash }
+        );
+      } else {
+        await submitSequence(
+          [
+            {
+              label: 'bond + nominate',
+              build: (api) =>
+                api.tx.utility.batchAll([
+                  api.tx.staking.bond(stash, amountStr, null),
+                  api.tx.staking.nominate(targets),
+                ]),
+            },
+          ],
+          { address: stash, password }
+        );
+      }
     } catch (err) {
       const msg = (err as Error).message.toLowerCase();
       if (
-        msg.includes('password') ||
-        msg.includes('unable to decode') ||
-        msg.includes('incorrect')
+        !isLedger &&
+        (msg.includes('password') ||
+          msg.includes('unable to decode') ||
+          msg.includes('incorrect'))
       ) {
         setPasswordError('Incorrect password. Please try again.');
       }
@@ -280,37 +324,25 @@ export function StartStaking() {
           </div>
         )}
 
-        {/* Password */}
+        {/* Signer confirmation — password or confirm-on-device */}
         {amountValid && targetsValid && !isDone && (
-          <div className="card space-y-2">
-            <label
-              htmlFor="bond-password"
-              className="text-xs uppercase tracking-wider text-ink-400 font-medium"
-            >
-              Confirm with password
-            </label>
-            <input
-              id="bond-password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setPasswordError(null);
-              }}
-              disabled={isSubmitting}
-              className={clsx(
-                'w-full px-3 py-2.5 rounded-2xl bg-ink-950 border text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none',
-                passwordError
-                  ? 'border-danger focus:border-danger'
-                  : 'border-ink-800 focus:border-ink-600'
-              )}
-              placeholder="Wallet password"
-              autoComplete="current-password"
-            />
-            {passwordError && (
-              <p className="text-xs text-danger">{passwordError}</p>
-            )}
-          </div>
+          <SignerConfirmCard
+            isLedger={isLedger}
+            idPrefix="bond"
+            password={password}
+            onPasswordChange={(v) => {
+              setPassword(v);
+              setPasswordError(null);
+            }}
+            passwordError={passwordError}
+            disabled={isSubmitting}
+            waiting={status === 'signing'}
+            steps={
+              isLedger
+                ? { current: Math.max(currentStep, 1), total: 2 }
+                : null
+            }
+          />
         )}
 
         {/* CTA */}
@@ -325,7 +357,10 @@ export function StartStaking() {
                 : 'bg-ink-800 text-ink-500 cursor-not-allowed'
             )}
           >
-            {submitLabel(status, parsedAmountBN)}
+            {submitLabel(status, parsedAmountBN, isLedger, {
+              current: currentStep,
+              total: totalSteps,
+            })}
           </button>
         )}
 
@@ -345,7 +380,22 @@ export function StartStaking() {
         {/* Tx error */}
         {txError && !passwordError && (
           <div className="card">
-            <p className="text-sm text-danger">{txError.message}</p>
+            <p className="text-sm text-danger">
+              {failedStep && totalSteps > 1 && (
+                <>
+                  Step {currentStep} of {totalSteps} ({failedStep.label})
+                  failed:{' '}
+                </>
+              )}
+              {txError.message}
+            </p>
+            {failedStep?.label === 'nominate' && (
+              <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+                Your XX is bonded — only the validator selection didn't go
+                through. Finish from the staking screen: Manage stake →
+                Change validators.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -363,10 +413,21 @@ export function StartStaking() {
   );
 }
 
-function submitLabel(status: string, amount: BN | null): string {
-  if (status === 'signing') return 'Signing…';
-  if (status === 'broadcasting') return 'Sending to network…';
-  if (status === 'in-block') return 'Waiting for finality…';
+function submitLabel(
+  status: string,
+  amount: BN | null,
+  isLedger: boolean,
+  steps: { current: number; total: number }
+): string {
+  const stepPrefix =
+    steps.total > 1 && steps.current > 0
+      ? `Step ${steps.current}/${steps.total}: `
+      : '';
+  if (status === 'signing')
+    return isLedger ? `${stepPrefix}Confirm on your Ledger…` : 'Signing…';
+  if (status === 'broadcasting') return `${stepPrefix}Sending to network…`;
+  if (status === 'in-block' || status === 'finalized')
+    return `${stepPrefix}Waiting for finality…`;
   if (!amount) return 'Stake';
   return `Stake ${formatBalance(amount, { decimals: 4, withSymbol: true })}`;
 }

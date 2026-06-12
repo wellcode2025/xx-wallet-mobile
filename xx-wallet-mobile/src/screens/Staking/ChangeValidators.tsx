@@ -10,10 +10,12 @@ import {
   useStakingPosition,
   useTx,
   invalidateAutoNominateCache,
+  isLedgerAddress,
 } from '@/hooks';
 import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
 import { ValidatorPickerSheet } from './ValidatorPickerSheet';
+import { SignerConfirmCard } from './SignerConfirmCard';
 import { AutoNominateBlock } from './AutoNominateBlock';
 
 /**
@@ -90,13 +92,14 @@ export function ChangeValidators() {
     return targets.some((t) => !currentTargets.has(t));
   }, [targets, currentTargets]);
 
+  const isLedger = isLedgerAddress(activeAccount?.address ?? '');
   const isSubmitting =
     status === 'signing' || status === 'broadcasting' || status === 'in-block';
   const isDone = status === 'finalized';
   const canSubmit =
     targetsValid &&
     targetsChanged &&
-    password.length > 0 &&
+    (isLedger || password.length > 0) &&
     (status === 'idle' || status === 'error');
 
   useEffect(() => {
@@ -226,37 +229,20 @@ export function ChangeValidators() {
               </div>
             )}
 
-            {/* Password */}
+            {/* Signer confirmation — password or confirm-on-device */}
             {targetsValid && targetsChanged && (
-              <div className="card space-y-2">
-                <label
-                  htmlFor="change-password"
-                  className="text-xs uppercase tracking-wider text-ink-400 font-medium"
-                >
-                  Confirm with password
-                </label>
-                <input
-                  id="change-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setPasswordError(null);
-                  }}
-                  disabled={isSubmitting}
-                  className={clsx(
-                    'w-full px-3 py-2.5 rounded-2xl bg-ink-950 border text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none',
-                    passwordError
-                      ? 'border-danger focus:border-danger'
-                      : 'border-ink-800 focus:border-ink-600'
-                  )}
-                  placeholder="Wallet password"
-                  autoComplete="current-password"
-                />
-                {passwordError && (
-                  <p className="text-xs text-danger">{passwordError}</p>
-                )}
-              </div>
+              <SignerConfirmCard
+                isLedger={isLedger}
+                idPrefix="change"
+                password={password}
+                onPasswordChange={(v) => {
+                  setPassword(v);
+                  setPasswordError(null);
+                }}
+                passwordError={passwordError}
+                disabled={isSubmitting}
+                waiting={status === 'signing'}
+              />
             )}
 
             {/* CTA */}
@@ -270,7 +256,7 @@ export function ChangeValidators() {
                   : 'bg-ink-800 text-ink-500 cursor-not-allowed'
               )}
             >
-              {submitLabel(status, targets.length)}
+              {submitLabel(status, targets.length, isLedger)}
             </button>
           </>
         )}
@@ -305,8 +291,13 @@ export function ChangeValidators() {
   );
 }
 
-function submitLabel(status: string, count: number): string {
-  if (status === 'signing') return 'Signing…';
+function submitLabel(
+  status: string,
+  count: number,
+  isLedger: boolean
+): string {
+  if (status === 'signing')
+    return isLedger ? 'Confirm on your Ledger…' : 'Signing…';
   if (status === 'broadcasting') return 'Sending to network…';
   if (status === 'in-block') return 'Waiting for finality…';
   return `Nominate ${count} validator${count === 1 ? '' : 's'}`;

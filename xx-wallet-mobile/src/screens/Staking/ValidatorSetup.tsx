@@ -7,13 +7,16 @@ import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useAccountsStore } from '@/store';
 import {
   useBalance,
-  useTx,
+  useSequentialTx,
+  isLedgerAddress,
   invalidateAutoNominateCache,
+  type SequenceStep,
 } from '@/hooks';
 import { xxApi } from '@/api';
 import { formatBalance, parseAmount } from '@/utils';
 import { TopBar } from '@/components/layout';
 import { AddressLabel, LoadingIndicator } from '@/components/ui';
+import { SignerConfirmCard } from './SignerConfirmCard';
 
 /**
  * Validator setup.
@@ -74,7 +77,18 @@ export function ValidatorSetup() {
   );
 
   const { balance } = useBalance(activeAccount?.address);
-  const { submit, status, error: txError } = useTx();
+  // Sequential submit: the new/convert modes batch two calls, which the
+  // Ledger app refuses — for a Ledger signer those run as two
+  // transactions with two device confirmations.
+  const {
+    submitSequence,
+    status,
+    error: txError,
+    currentStep,
+    totalSteps,
+    sequenceDone,
+    failedStep,
+  } = useSequentialTx();
 
   const [validatorState, setValidatorState] = useState<ValidatorState | null>(
     null
@@ -183,23 +197,29 @@ export function ValidatorSetup() {
         transferable !== null &&
         parsedAmountBN.lte(transferable.sub(MIN_FEE_BUFFER));
 
+  const isLedger = isLedgerAddress(activeAccount?.address ?? '');
   const isSubmitting =
-    status === 'signing' || status === 'broadcasting' || status === 'in-block';
-  const isDone = status === 'finalized';
+    status === 'signing' ||
+    status === 'broadcasting' ||
+    status === 'in-block' ||
+    // Between sequence steps the per-tx status is briefly 'finalized'
+    // while the next step hasn't started — still submitting.
+    (status === 'finalized' && !sequenceDone);
+  const isDone = sequenceDone;
   const canSubmit =
     Boolean(validatorState) &&
     cmixIdValid &&
     commissionValid &&
     amountValid &&
-    password.length > 0 &&
+    (isLedger || password.length > 0) &&
     (status === 'idle' || status === 'error');
 
   useEffect(() => {
-    if (status !== 'finalized') return;
+    if (!sequenceDone) return;
     invalidateAutoNominateCache();
     const t = setTimeout(() => navigate('/staking'), 1200);
     return () => clearTimeout(t);
-  }, [status, navigate]);
+  }, [sequenceDone, navigate]);
 
   if (!activeAccount) return null;
 
@@ -219,37 +239,56 @@ export function ValidatorSetup() {
     };
     const trimmedCmix = cmixId.trim();
     const cmixIdChanged = trimmedCmix !== validatorState.currentCmixIdHex;
+    const stash = activeAccount.address;
+    const amountStr = parsedAmountBN?.toString();
+
+    // The two calls this screen may combine, expressed as named steps.
+    // Local accounts batch them atomically (one signature); a Ledger
+    // signer runs them sequentially (the app refuses nested calls).
+    // Order matters: bond/setCmixId must land before validate.
+    const steps: SequenceStep[] = [];
+    if (validatorState.mode === 'new') {
+      steps.push({
+        label: 'bond',
+        build: (api) => api.tx.staking.bond(stash, amountStr!, trimmedCmix),
+      });
+    } else if (cmixIdChanged) {
+      steps.push({
+        label: 'set cMix ID',
+        build: (api) => api.tx.staking.setCmixId(trimmedCmix),
+      });
+    }
+    steps.push({
+      label: 'validate',
+      build: (api) => api.tx.staking.validate(prefs),
+    });
+
     try {
-      await submit(
-        (api) => {
-          if (validatorState.mode === 'new') {
-            // bond(stash, amount, cmixId) + validate(prefs)
-            const bondCall = api.tx.staking.bond(
-              activeAccount.address,
-              parsedAmountBN!.toString(),
-              trimmedCmix
-            );
-            const validateCall = api.tx.staking.validate(prefs);
-            return api.tx.utility.batchAll([bondCall, validateCall]);
-          }
-          if (cmixIdChanged) {
-            // setCmixId(...) + validate(prefs) — covers convert AND
-            // currently-validating-but-changing-cmixId.
-            const setCall = api.tx.staking.setCmixId(trimmedCmix);
-            const validateCall = api.tx.staking.validate(prefs);
-            return api.tx.utility.batchAll([setCall, validateCall]);
-          }
-          // Just update prefs.
-          return api.tx.staking.validate(prefs);
-        },
-        { address: activeAccount.address, password }
-      );
+      if (isLedger || steps.length === 1) {
+        await submitSequence(steps, {
+          address: stash,
+          password: isLedger ? undefined : password,
+        });
+      } else {
+        // Local account with 2 calls: keep the atomic batchAll.
+        await submitSequence(
+          [
+            {
+              label: steps.map((s) => s.label).join(' + '),
+              build: (api) =>
+                api.tx.utility.batchAll(steps.map((s) => s.build(api))),
+            },
+          ],
+          { address: stash, password }
+        );
+      }
     } catch (err) {
       const msg = (err as Error).message.toLowerCase();
       if (
-        msg.includes('password') ||
-        msg.includes('unable to decode') ||
-        msg.includes('incorrect')
+        !isLedger &&
+        (msg.includes('password') ||
+          msg.includes('unable to decode') ||
+          msg.includes('incorrect'))
       ) {
         setPasswordError('Incorrect password. Please try again.');
       }
@@ -481,37 +520,30 @@ export function ValidatorSetup() {
               </div>
             )}
 
-            {/* Password */}
+            {/* Signer confirmation — password or confirm-on-device */}
             {cmixIdValid && commissionValid && amountValid && (
-              <div className="card space-y-2">
-                <label
-                  htmlFor="validator-password"
-                  className="text-xs uppercase tracking-wider text-ink-400 font-medium"
-                >
-                  Confirm with password
-                </label>
-                <input
-                  id="validator-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setPasswordError(null);
-                  }}
-                  disabled={isSubmitting}
-                  className={clsx(
-                    'w-full px-3 py-2.5 rounded-2xl bg-ink-950 border text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none',
-                    passwordError
-                      ? 'border-danger focus:border-danger'
-                      : 'border-ink-800 focus:border-ink-600'
-                  )}
-                  placeholder="Wallet password"
-                  autoComplete="current-password"
-                />
-                {passwordError && (
-                  <p className="text-xs text-danger">{passwordError}</p>
-                )}
-              </div>
+              <SignerConfirmCard
+                isLedger={isLedger}
+                idPrefix="validator"
+                password={password}
+                onPasswordChange={(v) => {
+                  setPassword(v);
+                  setPasswordError(null);
+                }}
+                passwordError={passwordError}
+                disabled={isSubmitting}
+                waiting={status === 'signing'}
+                steps={
+                  // Two device approvals whenever a second call rides
+                  // along: new mode (bond) or a changed cMix ID
+                  // (setCmixId) ahead of validate.
+                  isLedger &&
+                  (validatorState.mode === 'new' ||
+                    cmixId.trim() !== validatorState.currentCmixIdHex)
+                    ? { current: Math.max(currentStep, 1), total: 2 }
+                    : null
+                }
+              />
             )}
 
             <button
@@ -524,7 +556,10 @@ export function ValidatorSetup() {
                   : 'bg-ink-800 text-ink-500 cursor-not-allowed'
               )}
             >
-              {submitLabel(status, validatorState.mode)}
+              {submitLabel(status, validatorState.mode, isLedger, {
+                current: currentStep,
+                total: totalSteps,
+              })}
             </button>
 
             {validatorState.mode === 'update' && (
@@ -569,7 +604,22 @@ export function ValidatorSetup() {
 
         {txError && !passwordError && (
           <div className="card">
-            <p className="text-sm text-danger">{txError.message}</p>
+            <p className="text-sm text-danger">
+              {failedStep && totalSteps > 1 && (
+                <>
+                  Step {currentStep} of {totalSteps} ({failedStep.label})
+                  failed:{' '}
+                </>
+              )}
+              {txError.message}
+            </p>
+            {failedStep?.label === 'validate' && (
+              <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+                The earlier step already went through — your bond/cMix ID
+                is set. Retry from this screen to finish registering as a
+                validator.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -577,10 +627,21 @@ export function ValidatorSetup() {
   );
 }
 
-function submitLabel(status: string, mode: Mode): string {
-  if (status === 'signing') return 'Signing…';
-  if (status === 'broadcasting') return 'Sending to network…';
-  if (status === 'in-block') return 'Waiting for finality…';
+function submitLabel(
+  status: string,
+  mode: Mode,
+  isLedger: boolean,
+  steps: { current: number; total: number }
+): string {
+  const stepPrefix =
+    steps.total > 1 && steps.current > 0
+      ? `Step ${steps.current}/${steps.total}: `
+      : '';
+  if (status === 'signing')
+    return isLedger ? `${stepPrefix}Confirm on your Ledger…` : 'Signing…';
+  if (status === 'broadcasting') return `${stepPrefix}Sending to network…`;
+  if (status === 'in-block' || status === 'finalized')
+    return `${stepPrefix}Waiting for finality…`;
   if (mode === 'update') return 'Update settings';
   if (mode === 'convert') return 'Run as validator';
   return 'Bond and validate';
