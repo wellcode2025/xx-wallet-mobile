@@ -64,7 +64,15 @@ const PKCS8_HEADER = new Uint8Array([
 ]);
 const PKCS8_DIVIDER = new Uint8Array([161, 35, 3, 33, 0]);
 
-export interface StoredAccount {
+/**
+ * A password-protected account whose encrypted keystore lives in this
+ * wallet. This is the original (and default) account shape — records
+ * persisted before the `source` discriminator existed have no `source`
+ * field and parse as local accounts without migration.
+ */
+export interface LocalAccount {
+  /** Discriminator. Absent on legacy records — absent means 'local'. */
+  source?: 'local';
   /** SS58-encoded address (format 55 — starts with "6"). */
   address: string;
   /** User-provided display name. */
@@ -73,6 +81,41 @@ export interface StoredAccount {
   json: KeyringPair$Json;
   /** When the account was created or imported. */
   createdAt: number;
+}
+
+/**
+ * An account whose private key lives on a Ledger device and NEVER enters
+ * the browser. The wallet stores only the address + derivation slots;
+ * there is no keystore, no password, nothing to export or back up from
+ * this wallet's side. Signing ships the payload to the device over
+ * WebHID and the user confirms on the device screen.
+ */
+export interface LedgerAccount {
+  source: 'ledger';
+  /** SS58-encoded address (format 55), as confirmed on the device. */
+  address: string;
+  /** User-provided display name. */
+  name: string;
+  /** BIP44 slots for m/44'/1955'/account'/change'/index' (all hardened). */
+  ledger: {
+    account: number;
+    change: number;
+    index: number;
+  };
+  /** When the account was added to this wallet. */
+  createdAt: number;
+}
+
+export type StoredAccount = LocalAccount | LedgerAccount;
+
+/** Type guard: account signs on a Ledger device (no local keystore). */
+export function isLedgerAccount(a: StoredAccount): a is LedgerAccount {
+  return a.source === 'ledger';
+}
+
+/** Type guard: account has a local password-encrypted keystore. */
+export function isLocalAccount(a: StoredAccount): a is LocalAccount {
+  return a.source !== 'ledger';
 }
 
 /** Options for creating a new account. */
@@ -446,6 +489,50 @@ class XxKeyring {
     return account;
   }
 
+  /**
+   * Add a Ledger-backed account record. Parallel branch to the local
+   * keystore path — no key material, no password, no crypto: just the
+   * address (as confirmed on the device) and the derivation slots needed
+   * to reach the same key again at signing time.
+   */
+  addLedgerAccount(input: {
+    address: string;
+    name: string;
+    ledger: { account: number; change: number; index: number };
+  }): LedgerAccount {
+    if (!input.address.startsWith('6')) {
+      throw new Error(
+        'Not an xx network address — Ledger addresses here start with "6".'
+      );
+    }
+    const { account, change, index } = input.ledger;
+    for (const [label, v] of [
+      ['account', account],
+      ['change', change],
+      ['index', index],
+    ] as const) {
+      if (!Number.isInteger(v) || v < 0) {
+        throw new Error(`Invalid derivation slot ${label}: ${v}`);
+      }
+    }
+
+    const record: LedgerAccount = {
+      source: 'ledger',
+      address: input.address,
+      name: input.name.trim() || 'Ledger account',
+      ledger: { account, change, index },
+      createdAt: Date.now(),
+    };
+
+    const accounts = this.listAccounts();
+    if (accounts.some((a) => a.address === record.address)) {
+      throw new Error('An account with this address already exists.');
+    }
+    accounts.push(record);
+    this.saveAccounts(accounts);
+    return record;
+  }
+
   /** Delete an account by address. */
   removeAccount(address: string): void {
     const accounts = this.listAccounts().filter((a) => a.address !== address);
@@ -462,10 +549,14 @@ class XxKeyring {
     const acct = accounts.find((a) => a.address === address);
     if (!acct) throw new Error('Account not found.');
     acct.name = newName;
-    acct.json = {
-      ...acct.json,
-      meta: { ...(acct.json.meta || {}), name: newName },
-    };
+    // Ledger records have no keystore JSON to keep in sync — the name is
+    // purely local. Only local accounts mirror the name into json.meta.
+    if (isLocalAccount(acct)) {
+      acct.json = {
+        ...acct.json,
+        meta: { ...(acct.json.meta || {}), name: newName },
+      };
+    }
     this.saveAccounts(accounts);
   }
 
@@ -491,6 +582,14 @@ class XxKeyring {
     const keyring = this.ensureReady();
     const account = this.listAccounts().find((a) => a.address === address);
     if (!account) throw new Error('Account not found.');
+    if (isLedgerAccount(account)) {
+      // Defensive — signing flows route Ledger accounts to the device
+      // signer before reaching here. If this throws, a caller missed
+      // the source branch.
+      throw new Error(
+        'This is a Ledger account — its key lives on the device and cannot be unlocked here.'
+      );
+    }
 
     // Step 1: Manually decrypt to validate the password.
     const decrypted = await manualScryptDecrypt(account.json, password);
@@ -574,6 +673,11 @@ class XxKeyring {
   async verifyPassword(address: string, password: string): Promise<boolean> {
     const account = this.listAccounts().find((a) => a.address === address);
     if (!account) return false;
+    // Ledger accounts have no password — "no password matches" is the
+    // truthful answer. This also keeps the app-lock forgot-PIN recovery
+    // loop (which tries the entered password against every account)
+    // safely skipping Ledger records.
+    if (isLedgerAccount(account)) return false;
     let decrypted: Uint8Array | null = null;
     try {
       decrypted = await manualScryptDecrypt(account.json, password);
@@ -607,6 +711,12 @@ class XxKeyring {
   exportJson(address: string): KeyringPair$Json {
     const account = this.listAccounts().find((a) => a.address === address);
     if (!account) throw new Error('Account not found.');
+    if (isLedgerAccount(account)) {
+      throw new Error(
+        'Ledger accounts have no keystore to export — the key never leaves the device. ' +
+          'To use this account elsewhere, connect the Ledger there.'
+      );
+    }
     return {
       ...account.json,
       meta: {

@@ -23,10 +23,13 @@ import { stringToU8a } from '@polkadot/util';
 import { base64Decode, base64Encode, mnemonicGenerate } from '@polkadot/util-crypto';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import {
+  isLedgerAccount,
+  isLocalAccount,
   manualScryptDecrypt,
   manualScryptEncrypt,
   validatePkcs8,
   xxKeyring,
+  type StoredAccount,
 } from './store';
 
 // In-memory localStorage shim. The xxKeyring singleton persists accounts
@@ -373,6 +376,132 @@ describe('validatePkcs8', () => {
  * wipe-before-sign mistake has come back. Read the fix commit before
  * re-adding any defensive zeroing inside `unlock()`.
  */
+/**
+ * Ledger account records — the parallel, keystore-free branch of the
+ * account model. These tests pin the contract that keeps the local
+ * scrypt path and the Ledger path from bleeding into each other:
+ * no keystore JSON on Ledger records, no unlock, no export, password
+ * verification truthfully false.
+ */
+describe('Ledger account records', () => {
+  // Valid xx SS58 (foundation signer, used as an opaque test address).
+  const LEDGER_ADDR = '6WwjYDmMb3MuoXvWHN357UzHY9VsJpFbJYbgQ1Vz1aY2PojL';
+  const SLOTS = { account: 0, change: 0, index: 0 };
+
+  function cleanup() {
+    xxKeyring.removeAccount(LEDGER_ADDR);
+  }
+
+  it('adds and lists a ledger record with the right shape', () => {
+    try {
+      const rec = xxKeyring.addLedgerAccount({
+        address: LEDGER_ADDR,
+        name: 'My Ledger',
+        ledger: SLOTS,
+      });
+      expect(rec.source).toBe('ledger');
+      expect(isLedgerAccount(rec)).toBe(true);
+      expect(isLocalAccount(rec)).toBe(false);
+      expect('json' in rec).toBe(false);
+
+      const listed = xxKeyring
+        .listAccounts()
+        .find((a) => a.address === LEDGER_ADDR);
+      expect(listed).toBeDefined();
+      expect(listed && isLedgerAccount(listed)).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('refuses a duplicate address', () => {
+    try {
+      xxKeyring.addLedgerAccount({
+        address: LEDGER_ADDR,
+        name: 'first',
+        ledger: SLOTS,
+      });
+      expect(() =>
+        xxKeyring.addLedgerAccount({
+          address: LEDGER_ADDR,
+          name: 'second',
+          ledger: SLOTS,
+        })
+      ).toThrow(/already exists/i);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('refuses a non-xx address and bad derivation slots', () => {
+    expect(() =>
+      xxKeyring.addLedgerAccount({
+        address: '15nPkPKt4VCmtjEsLebqEbHi7nQ4eQpmgXRTsxaeoojbE2nQ',
+        name: 'polkadot-prefixed',
+        ledger: SLOTS,
+      })
+    ).toThrow(/start with "6"/i);
+    expect(() =>
+      xxKeyring.addLedgerAccount({
+        address: LEDGER_ADDR,
+        name: 'bad slot',
+        ledger: { account: -1, change: 0, index: 0 },
+      })
+    ).toThrow(/derivation slot/i);
+    expect(() =>
+      xxKeyring.addLedgerAccount({
+        address: LEDGER_ADDR,
+        name: 'bad slot',
+        ledger: { account: 0, change: 0.5, index: 0 },
+      })
+    ).toThrow(/derivation slot/i);
+  });
+
+  it('verifyPassword is false, export and unlock refuse, rename works', async () => {
+    await xxKeyring.init();
+    try {
+      xxKeyring.addLedgerAccount({
+        address: LEDGER_ADDR,
+        name: 'Ledger',
+        ledger: SLOTS,
+      });
+
+      await expect(
+        xxKeyring.verifyPassword(LEDGER_ADDR, 'any-password')
+      ).resolves.toBe(false);
+
+      expect(() => xxKeyring.exportJson(LEDGER_ADDR)).toThrow(
+        /no keystore to export/i
+      );
+
+      await expect(
+        xxKeyring.unlock(LEDGER_ADDR, 'any-password')
+      ).rejects.toThrow(/Ledger account/i);
+
+      // Rename must not synthesize a keystore JSON on the record.
+      xxKeyring.renameAccount(LEDGER_ADDR, 'Renamed Ledger');
+      const renamed = xxKeyring
+        .listAccounts()
+        .find((a) => a.address === LEDGER_ADDR);
+      expect(renamed?.name).toBe('Renamed Ledger');
+      expect(renamed && 'json' in renamed).toBe(false);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('legacy records without a source field are local accounts', () => {
+    const legacy = {
+      address: '6YDEf5Q78EFHbmiJRFqfpNpiGQjMZf1Cqpy2Dmi8FRYJVTCQ',
+      name: 'old record',
+      json: { address: 'x', encoded: 'x', encoding: {}, meta: {} },
+      createdAt: 1,
+    } as unknown as StoredAccount;
+    expect(isLocalAccount(legacy)).toBe(true);
+    expect(isLedgerAccount(legacy)).toBe(false);
+  });
+});
+
 describe('xxKeyring.unlock — pair must be usable for signing', () => {
   it('returns a pair that can sign without throwing locked-key-pair', async () => {
     await xxKeyring.init();

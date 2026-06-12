@@ -32,7 +32,7 @@ import {
 import { XX_ENDPOINTS } from '@/api';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, Sheet } from '@/components/ui';
-import { xxKeyring } from '@/keyring';
+import { isLocalAccount, xxKeyring } from '@/keyring';
 import { Users } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -641,7 +641,15 @@ function BatchExportSheet({
   open: boolean;
   onClose: () => void;
 }) {
-  const accounts = useAccountsStore((s) => s.accounts);
+  const allAccounts = useAccountsStore((s) => s.accounts);
+  // Only local (keystore-backed) accounts can be exported. Ledger
+  // accounts have no keystore — their key never enters the browser —
+  // so they're excluded from the batch list entirely rather than shown
+  // as unexportable rows.
+  const accounts = useMemo(
+    () => allAccounts.filter(isLocalAccount),
+    [allAccounts]
+  );
 
   // Which accounts the user wants included in the batch.
   const [selected, setSelected] = useState<Set<string>>(new Set());

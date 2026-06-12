@@ -3,10 +3,12 @@ import clsx from 'clsx';
 import { Check, Clock, Fingerprint, KeyRound, Lock } from 'lucide-react';
 import { Sheet } from '@/components/ui';
 import {
+  useAccountsStore,
   useSettingsStore,
   useLockStore,
   AUTO_LOCK_OPTIONS,
 } from '@/store';
+import { isLocalAccount } from '@/keyring';
 import {
   PIN_MIN_LENGTH,
   hashPin,
@@ -45,6 +47,15 @@ export function AppLockSettings() {
   const autoLockLabel =
     AUTO_LOCK_OPTIONS.find((o) => o.ms === appLock.autoLockMs)?.label ?? 'Custom';
 
+  // Forgot-PIN recovery clears the lock by verifying the password of ANY
+  // local (keystore-backed) account. Ledger accounts have no password, so
+  // a wallet holding only Ledger accounts would have no recovery path —
+  // enabling the lock there would risk a permanent lockout. Gate enable
+  // (but never disable) on having at least one local account.
+  const accounts = useAccountsStore((s) => s.accounts);
+  const hasLocalAccount = accounts.some(isLocalAccount);
+  const enableBlocked = !isOn && !hasLocalAccount;
+
   return (
     <section className="space-y-2">
       <div className="px-1">
@@ -58,8 +69,18 @@ export function AppLockSettings() {
           icon={<Lock size={18} className="text-ink-400" />}
           label="App lock"
           value={isOn ? (isBiometric ? 'On · Biometric' : 'On · PIN') : 'Off'}
-          onClick={() => setPinSheet(isOn ? 'disable' : 'set')}
+          onClick={() => {
+            if (enableBlocked) return;
+            setPinSheet(isOn ? 'disable' : 'set');
+          }}
         />
+        {enableBlocked && (
+          <p className="px-1 text-xs text-warning leading-relaxed">
+            App lock needs at least one password-protected account on this
+            device — a forgotten PIN is cleared with a wallet password, and
+            Ledger accounts don't have one.
+          </p>
+        )}
 
         {isOn && (
           <>

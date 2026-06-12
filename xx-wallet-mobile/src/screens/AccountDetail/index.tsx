@@ -28,7 +28,7 @@ import {
 import { useAccountsStore } from '@/store';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, Sheet } from '@/components/ui';
-import { xxKeyring } from '@/keyring';
+import { isLedgerAccount, xxKeyring } from '@/keyring';
 import { copyToClipboard } from '@/utils/clipboard';
 
 export function AccountDetail() {
@@ -48,6 +48,9 @@ function AccountDetailView({ address }: { address: string }) {
     useAccountsStore();
   const account = accounts.find((a) => a.address === address)!;
   const isActive = activeAddress === address;
+  // Ledger accounts have no keystore: no export affordance, and the
+  // remove/rename copy must not promise keystore-based restoration.
+  const isLedger = isLedgerAccount(account);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
@@ -127,7 +130,11 @@ function AccountDetailView({ address }: { address: string }) {
                 </span>
               )}
             </div>
-            <p className="text-xs text-ink-400">xx network account</p>
+            <p className="text-xs text-ink-400">
+              {isLedger
+                ? 'Ledger account · key stays on the device'
+                : 'xx network account'}
+            </p>
           </div>
         </div>
 
@@ -193,13 +200,18 @@ function AccountDetailView({ address }: { address: string }) {
             <Pencil size={18} className="text-ink-400" />
             <span className="text-sm text-ink-100">Rename</span>
           </button>
-          <button
-            onClick={handleExport}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
-          >
-            <Download size={18} className="text-ink-400" />
-            <span className="text-sm text-ink-100">Export keystore (.json)</span>
-          </button>
+          {/* No keystore to export for Ledger accounts — the key never
+              enters the browser, so there is genuinely nothing to back
+              up from this wallet's side. */}
+          {!isLedger && (
+            <button
+              onClick={handleExport}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
+            >
+              <Download size={18} className="text-ink-400" />
+              <span className="text-sm text-ink-100">Export keystore (.json)</span>
+            </button>
+          )}
           <button
             onClick={() => setRemoveOpen(true)}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-danger/30 active:bg-danger/10 text-left"
@@ -210,8 +222,11 @@ function AccountDetailView({ address }: { address: string }) {
         </div>
 
         <p className="text-xs text-ink-400 leading-relaxed px-1">
-          Removing an account only deletes it from this device. You can restore
-          it later from its recovery phrase or an exported keystore file.
+          {isLedger
+            ? 'Removing this account only deletes its record from this device. ' +
+              'The key stays on your Ledger — reconnect the device any time to add it back.'
+            : 'Removing an account only deletes it from this device. You can restore ' +
+              'it later from its recovery phrase or an exported keystore file.'}
         </p>
       </div>
 
@@ -242,8 +257,10 @@ function AccountDetailView({ address }: { address: string }) {
               placeholder="e.g. Savings"
             />
             <p className="text-xs text-ink-400 mt-2">
-              Updates the display name and the keystore JSON's metadata, so an
-              export of this account carries the new name to other devices.
+              {isLedger
+                ? 'Local label, only visible on this device.'
+                : "Updates the display name and the keystore JSON's metadata, so an " +
+                  'export of this account carries the new name to other devices.'}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -277,11 +294,23 @@ function AccountDetailView({ address }: { address: string }) {
               className="text-danger flex-shrink-0 mt-0.5"
             />
             <div className="text-sm text-ink-200">
-              <p className="font-medium mb-1">This cannot be undone.</p>
-              <p className="text-ink-300 text-xs leading-relaxed">
-                Make sure you have your recovery phrase or keystore backup.
-                Without it, removed accounts cannot be restored.
-              </p>
+              {isLedger ? (
+                <>
+                  <p className="font-medium mb-1">Your key is safe on the Ledger.</p>
+                  <p className="text-ink-300 text-xs leading-relaxed">
+                    This only removes the account's record from this device.
+                    Reconnect your Ledger any time to add it back.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium mb-1">This cannot be undone.</p>
+                  <p className="text-ink-300 text-xs leading-relaxed">
+                    Make sure you have your recovery phrase or keystore backup.
+                    Without it, removed accounts cannot be restored.
+                  </p>
+                </>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
