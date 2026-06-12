@@ -278,10 +278,26 @@ function ApproveView({
   // be able to sign). Per the multisig signer-picker rule, the user
   // explicitly chooses which of these accounts is acting on this screen
   // — never use activeAddress as the implicit signer.
+  // Ledger accounts are excluded even when they're in the signer set —
+  // the Ledger xx network app can't parse multisig calls (verified on a
+  // real device), so an approval from one would fail at the device.
+  // `ledgerSigners` carries the excluded ones so the UI explains the
+  // absence instead of silently hiding the account.
   const eligibleSigners = useMemo(
     () =>
-      accounts.filter((a) =>
-        multisig.signers.some((s) => s.address === a.address)
+      accounts.filter(
+        (a) =>
+          a.source !== 'ledger' &&
+          multisig.signers.some((s) => s.address === a.address)
+      ),
+    [accounts, multisig.signers]
+  );
+  const ledgerSigners = useMemo(
+    () =>
+      accounts.filter(
+        (a) =>
+          a.source === 'ledger' &&
+          multisig.signers.some((s) => s.address === a.address)
       ),
     [accounts, multisig.signers]
   );
@@ -780,6 +796,20 @@ function ApproveView({
             proposal. Different of your accounts may have different roles
             here (one might be the depositor, another might still be able
             to sign), so this is consequential. */}
+        {/* Only-Ledger-signers case: the proposal stays viewable but
+            nothing here can sign it — say why instead of just hiding
+            the acting-as card. */}
+        {!hasEligibleSigner && ledgerSigners.length > 0 && (
+          <div className="card border border-warning/30 bg-warning/5">
+            <p className="text-xs text-ink-200 leading-relaxed">
+              {ledgerSigners.map((a) => a.name).join(', ')} (Ledger) is a
+              signer of this multisig, but the Ledger xx network app
+              can't sign multisig transactions yet — approving from this
+              wallet needs one of the other, password-protected signer
+              accounts.
+            </p>
+          </div>
+        )}
         {hasEligibleSigner && (
           <div className="card space-y-2">
             <div className="flex items-center gap-2">
@@ -788,6 +818,13 @@ function ApproveView({
                 Acting as
               </p>
             </div>
+            {ledgerSigners.length > 0 && (
+              <p className="text-xs text-ink-400 leading-relaxed">
+                {ledgerSigners.map((a) => a.name).join(', ')} (Ledger) is
+                also a signer here, but the Ledger xx network app can't
+                sign multisig transactions yet.
+              </p>
+            )}
             {eligibleSigners.length === 1 ? (
               <div className="flex items-center gap-2">
                 <AddressIcon

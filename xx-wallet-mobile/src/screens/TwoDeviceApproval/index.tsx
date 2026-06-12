@@ -64,7 +64,12 @@ interface BackupKey {
 
 export function TwoDeviceApproval() {
   const navigate = useNavigate();
-  const { accounts, activeAddress } = useAccountsStore();
+  const { accounts: allAccounts, activeAddress } = useAccountsStore();
+  // Ledger accounts can't sign multisig calls (the Ledger xx network
+  // app can't parse them), so a protected account whose this-device key
+  // is a Ledger account could never approve a spend from this device.
+  // Exclude them from the signer-1 picker.
+  const accounts = allAccounts.filter((a) => a.source !== 'ledger');
   const addMultisig = useMultisigsStore((s) => s.addMultisig);
   const getMultisig = useMultisigsStore((s) => s.getMultisig);
 
@@ -155,7 +160,9 @@ export function TwoDeviceApproval() {
       );
       return;
     }
-    if (accounts.some((a) => a.address === trimmed)) {
+    // Checked against ALL accounts (incl. Ledger) — the picker above
+    // filters Ledger out, but the on-this-device footgun guard must not.
+    if (allAccounts.some((a) => a.address === trimmed)) {
       setSecondError(
         'That account is also on this device. For real two-device protection the second key must live on a different device.'
       );
@@ -181,7 +188,9 @@ export function TwoDeviceApproval() {
       );
       return;
     }
-    if (accounts.some((a) => a.address === trimmed)) {
+    // ALL accounts, incl. Ledger — same reasoning as the second-device
+    // guard above.
+    if (allAccounts.some((a) => a.address === trimmed)) {
       setBackupError(
         'That key is on this device. The backup must be one you keep offline — otherwise this device would hold two of the three keys.'
       );

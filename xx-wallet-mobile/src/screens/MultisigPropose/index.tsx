@@ -102,10 +102,28 @@ function ProposeView({ address }: { address: string }) {
   // multisig. ANY of these can be the on-chain signatory for a propose.
   // Show an explicit signer picker; never sign silently as the active
   // account — surface the choice rather than use `activeAddress` implicitly.
+  //
+  // Ledger accounts are excluded even when they're in the signer set:
+  // the Ledger xx network app can't parse multisig calls (verified on a
+  // real device — the WeightV2 encoding defeats its parser), so offering
+  // one here would fail at the device. `ledgerSigners` carries the
+  // excluded ones so the UI can say WHY they're missing rather than
+  // silently hiding them.
   const eligibleSigners = useMemo(
     () =>
-      accounts.filter((a) =>
-        multisig.signers.some((s) => s.address === a.address)
+      accounts.filter(
+        (a) =>
+          a.source !== 'ledger' &&
+          multisig.signers.some((s) => s.address === a.address)
+      ),
+    [accounts, multisig.signers]
+  );
+  const ledgerSigners = useMemo(
+    () =>
+      accounts.filter(
+        (a) =>
+          a.source === 'ledger' &&
+          multisig.signers.some((s) => s.address === a.address)
       ),
     [accounts, multisig.signers]
   );
@@ -520,14 +538,32 @@ function ProposeView({ address }: { address: string }) {
               className="text-amber-400 mx-auto"
               strokeWidth={1.5}
             />
-            <p className="text-sm text-ink-200">
-              None of the accounts in your wallet are signers of this
-              multisig.
-            </p>
-            <p className="text-xs text-ink-400 leading-relaxed">
-              To propose at it, import or create one of its signer
-              accounts in this wallet first.
-            </p>
+            {ledgerSigners.length > 0 ? (
+              <>
+                <p className="text-sm text-ink-200">
+                  Your Ledger account
+                  {ledgerSigners.length === 1 ? ' is a signer' : 's are signers'}{' '}
+                  of this multisig, but the Ledger xx network app can't
+                  sign multisig transactions yet.
+                </p>
+                <p className="text-xs text-ink-400 leading-relaxed">
+                  To propose here, add one of the OTHER signer accounts
+                  (a password-protected one) to this wallet. Ledger
+                  support depends on an updated xx network Ledger app.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-ink-200">
+                  None of the accounts in your wallet are signers of this
+                  multisig.
+                </p>
+                <p className="text-xs text-ink-400 leading-relaxed">
+                  To propose at it, import or create one of its signer
+                  accounts in this wallet first.
+                </p>
+              </>
+            )}
           </div>
         </div>
       </>
@@ -600,6 +636,16 @@ function ProposeView({ address }: { address: string }) {
                 </option>
               ))}
             </select>
+          )}
+          {/* Explain a Ledger signer's absence from the picker rather
+              than silently hiding it — visible reasoning over quiet
+              gatekeeping. */}
+          {ledgerSigners.length > 0 && (
+            <p className="text-xs text-ink-400 leading-relaxed">
+              {ledgerSigners.map((a) => a.name).join(', ')} (Ledger) is
+              also a signer of this multisig, but the Ledger xx network
+              app can't sign multisig transactions yet.
+            </p>
           )}
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-ink-400 leading-relaxed">

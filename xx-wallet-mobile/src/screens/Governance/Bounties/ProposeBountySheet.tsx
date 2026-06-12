@@ -199,6 +199,8 @@ export function ProposeBountySheet({ open, onClose }: ProposeBountySheetProps) {
           successTitle="Bounty proposed"
           successBody="Council will fund or reject it at a future motion."
           onDismiss={onClose}
+          // Verified on-device: the Ledger xx app parses bounties calls.
+          ledgerCapability="supported"
         />
       </div>
     </Sheet>

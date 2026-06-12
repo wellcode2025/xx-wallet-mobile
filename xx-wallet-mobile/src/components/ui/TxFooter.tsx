@@ -1,8 +1,8 @@
 import clsx from 'clsx';
-import { Check } from 'lucide-react';
+import { AlertTriangle, Check, Usb } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { displayName, useIdentity } from '@/governance';
-import { useTx } from '@/hooks';
+import { isLedgerAddress, useTx } from '@/hooks';
 
 /**
  * TxFooter — reusable footer for governance action sheets.
@@ -48,6 +48,14 @@ export interface TxFooterProps {
   successBody: string;
   /** Called when the user dismisses the success state. */
   onDismiss: () => void;
+  /**
+   * Whether the Ledger xx network app can sign this sheet's extrinsic.
+   * Verified per-pallet against a real device: treasury + bounties
+   * calls parse; democracy calls are absent from the app entirely.
+   * Defaults to 'unsupported' (fail closed) — sheets whose calls are
+   * known-good opt in with 'supported'. Irrelevant for local accounts.
+   */
+  ledgerCapability?: 'supported' | 'unsupported';
 }
 
 export function TxFooter({
@@ -60,10 +68,19 @@ export function TxFooter({
   successTitle,
   successBody,
   onDismiss,
+  ledgerCapability = 'unsupported',
 }: TxFooterProps) {
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const { submit, status, error, reset: resetTx } = useTx();
+
+  // Ledger signer handling: when the selected signer is a Ledger
+  // account, there is no password — either the sheet's call is
+  // app-supported and signing happens on the device, or it isn't and
+  // we block with an honest explanation instead of letting the device
+  // refuse mid-flow.
+  const signerIsLedger = isLedgerAddress(signerAddress);
+  const ledgerBlocked = signerIsLedger && ledgerCapability === 'unsupported';
 
   const isSubmitting =
     status === 'signing' ||
@@ -88,20 +105,24 @@ export function TxFooter({
   };
 
   const onSubmit = async () => {
-    if (!formValid) return;
-    if (!password.trim()) {
+    if (!formValid || ledgerBlocked) return;
+    if (!signerIsLedger && !password.trim()) {
       setPasswordError('Enter your password to sign');
       return;
     }
     setPasswordError(null);
     try {
-      await submit(txBuilder, { address: signerAddress, password });
+      await submit(txBuilder, {
+        address: signerAddress,
+        password: signerIsLedger ? undefined : password,
+      });
     } catch (err) {
       const msg = (err as Error).message ?? '';
       if (
-        msg.toLowerCase().includes('password') ||
-        msg.toLowerCase().includes('unable to decode') ||
-        msg.toLowerCase().includes('incorrect')
+        !signerIsLedger &&
+        (msg.toLowerCase().includes('password') ||
+          msg.toLowerCase().includes('unable to decode') ||
+          msg.toLowerCase().includes('incorrect'))
       ) {
         setPasswordError('Incorrect password. Please try again.');
       }
@@ -135,15 +156,39 @@ export function TxFooter({
         disabled={isSubmitting}
       />
 
-      <PasswordField
-        value={password}
-        onChange={(v) => {
-          setPassword(v);
-          setPasswordError(null);
-        }}
-        error={passwordError}
-        disabled={isSubmitting}
-      />
+      {ledgerBlocked ? (
+        <div className="rounded-xl border border-warning/40 bg-warning/5 p-3 flex items-start gap-2">
+          <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-ink-200 leading-relaxed">
+            The Ledger xx network app can't sign this type of transaction
+            yet. Pick one of your password-protected accounts as the
+            signer instead.
+          </p>
+        </div>
+      ) : signerIsLedger ? (
+        <div className="rounded-xl border border-ink-700/50 bg-ink-800 p-3 flex items-start gap-2">
+          <Usb size={14} className="text-xx-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-ink-200 leading-relaxed">
+            Your Ledger will show this transaction — check the details on
+            the device screen and approve there.
+            {status === 'signing' && (
+              <span className="block mt-1 text-xx-500 font-medium">
+                Waiting for the device…
+              </span>
+            )}
+          </p>
+        </div>
+      ) : (
+        <PasswordField
+          value={password}
+          onChange={(v) => {
+            setPassword(v);
+            setPasswordError(null);
+          }}
+          error={passwordError}
+          disabled={isSubmitting}
+        />
+      )}
 
       {error && status === 'error' && (
         <div className="rounded-xl border border-danger/40 bg-danger/5 p-3 space-y-1">
@@ -156,10 +201,10 @@ export function TxFooter({
 
       <button
         onClick={onSubmit}
-        disabled={!formValid || isSubmitting}
+        disabled={!formValid || isSubmitting || ledgerBlocked}
         className="w-full py-3 rounded-2xl bg-xx-500 text-ink-950 font-display font-medium text-base active:bg-xx-600 disabled:opacity-40 disabled:active:bg-xx-500 transition-colors"
       >
-        {isSubmitting ? statusLabel(status) : submitLabel}
+        {isSubmitting ? statusLabel(status, signerIsLedger) : submitLabel}
       </button>
     </div>
   );
@@ -232,10 +277,15 @@ function PasswordField({
   );
 }
 
-function statusLabel(s: ReturnType<typeof useTx>['status']): string {
+function statusLabel(
+  s: ReturnType<typeof useTx>['status'],
+  isLedger: boolean
+): string {
   switch (s) {
     case 'signing':
-      return 'Signing…';
+      // For a Ledger signer, 'signing' means the user is reading and
+      // approving on the device — say so.
+      return isLedger ? 'Confirm on your Ledger…' : 'Signing…';
     case 'broadcasting':
       return 'Broadcasting…';
     case 'in-block':

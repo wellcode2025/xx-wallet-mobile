@@ -131,6 +131,8 @@ export function ProposeSpendSheet({ open, onClose }: ProposeSpendSheetProps) {
           successTitle="Proposal submitted"
           successBody="Council will vote on your proposal at the next spend period."
           onDismiss={onClose}
+          // Verified on-device: the Ledger xx app parses treasury calls.
+          ledgerCapability="supported"
         />
       </div>
     </Sheet>
