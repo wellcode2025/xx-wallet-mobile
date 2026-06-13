@@ -25,7 +25,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowRight,
-  Bluetooth,
   Check,
   Loader2,
   Usb,
@@ -73,12 +72,10 @@ export function AddLedgerAccount() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const supported = isLedgerSupported();
-  // Which transports this browser offers. Desktop Chromium: hid (+usb).
-  // Android Chrome: usb + ble — both buttons show and the user picks
-  // (Bluetooth is the no-cable path; USB needs a USB-C/OTG cable).
+  // Wired transport: HID where it exists (desktop Chromium), else USB
+  // (Android Chrome over a USB-C/OTG cable). Bluetooth is deliberately
+  // not offered — Android's web BLE + Nano X is broken upstream.
   const transports = availableTransports();
-  const showBle = transports.includes('ble');
-  // Wired button: prefer hid where it exists (desktop), else usb.
   const wiredKind: LedgerTransportKind | null = transports.includes('hid')
     ? 'hid'
     : transports.includes('usb')
@@ -186,10 +183,9 @@ export function AddLedgerAccount() {
             </div>
             <p className="text-xs text-ink-200 leading-relaxed">
               Connecting a Ledger works in Chromium browsers — on desktop
-              (USB) and on Android (USB cable or Bluetooth with a Nano X).
-              iOS and Firefox don't expose the needed browser APIs. Your
-              Ledger accounts still work from a supported browser on
-              another device.
+              and on Android, over a USB cable. iOS and Firefox don't
+              expose the needed browser APIs. Your Ledger accounts still
+              work from a supported browser on another device.
             </p>
           </div>
         )}
@@ -213,18 +209,15 @@ export function AddLedgerAccount() {
             <div className="card text-xs text-ink-300 leading-relaxed space-y-1.5">
               <p className="text-ink-200 font-medium">Before connecting:</p>
               <ul className="list-disc pl-4 space-y-1 text-ink-300">
-                <li>Unlock the Ledger.</li>
+                <li>
+                  Plug the Ledger in with a USB cable (on a phone: a
+                  USB-C cable straight into the phone) and unlock it.
+                </li>
                 <li>
                   Open the <span className="text-ink-100">xx network</span>{' '}
                   app on the device (install it via Ledger Live if needed).
                 </li>
                 <li>Close Ledger Live — it blocks the browser's access.</li>
-                {showBle && (
-                  <li>
-                    For Bluetooth (Nano X): turn Bluetooth on here AND on
-                    the Nano (its Settings → Bluetooth). No cable needed.
-                  </li>
-                )}
               </ul>
             </div>
 
@@ -240,8 +233,6 @@ export function AddLedgerAccount() {
               </div>
             )}
 
-            {/* One button per meaningful transport. Desktop: a single
-                wired connect (HID). Android: USB cable + Bluetooth. */}
             {wiredKind && (
               <button
                 onClick={() => handleConnect(wiredKind)}
@@ -253,25 +244,7 @@ export function AddLedgerAccount() {
                 ) : (
                   <Usb size={16} strokeWidth={2} />
                 )}
-                {busy
-                  ? 'Connecting…'
-                  : showBle
-                    ? 'Connect with USB cable'
-                    : 'Connect Ledger'}
-              </button>
-            )}
-            {showBle && (
-              <button
-                onClick={() => handleConnect('ble')}
-                disabled={busy}
-                className={wiredKind ? 'btn-secondary w-full' : 'btn-primary w-full'}
-              >
-                {busy ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Bluetooth size={16} strokeWidth={2} />
-                )}
-                {busy ? 'Connecting…' : 'Connect with Bluetooth (Nano X)'}
+                {busy ? 'Connecting…' : 'Connect Ledger'}
               </button>
             )}
           </>

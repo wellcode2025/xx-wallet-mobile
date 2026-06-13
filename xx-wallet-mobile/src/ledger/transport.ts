@@ -6,14 +6,16 @@
  * accessors in ./index.ts.
  *
  * Transports — what works where:
- *   - WebHID  ('hid'): desktop Chromium only. Not on Android, ever.
- *   - WebUSB  ('usb'): desktop Chromium AND Android Chrome (USB-C/OTG
- *     cable). The wired path for phones.
- *   - Web BLE ('ble'): desktop + Android Chrome, Nano X only — the
- *     cable-free path most phone users actually want. Requires
- *     Bluetooth enabled on BOTH the phone and the Nano X (device
- *     Settings → Bluetooth).
- *   - iOS / Firefox: none of the three. Capability-gated out.
+ *   - WebHID ('hid'): desktop Chromium only. Not on Android, ever.
+ *   - WebUSB ('usb'): desktop Chromium AND Android Chrome (USB-C/OTG
+ *     cable). The mobile path.
+ *   - Web Bluetooth: deliberately NOT offered. Tested on real hardware
+ *     (S26 Ultra + Nano X fw 2.7.1, 2026-06-12) and it fails with the
+ *     long-standing pairing/GATT bug Ledger never fixed for web BLE on
+ *     Android (LedgerHQ/ledgerjs#352 — open since 2019; Ledger Live
+ *     itself uses a native BLE stack instead). A connect option that
+ *     fails for most phones costs more trust than it buys.
+ *   - iOS / Firefox: no transport exists. Capability-gated out.
  *
  * Connection model: one session at a time. USB-family transports expose
  * the device as an exclusive interface — a second open() while Ledger
@@ -30,24 +32,21 @@ import type Transport from '@ledgerhq/hw-transport';
 import type { SubstrateApp } from '@zondax/ledger-substrate';
 import { LEDGER_OK, isLedgerRpcResponse, mapLedgerError } from './errors';
 
-export type LedgerTransportKind = 'hid' | 'usb' | 'ble';
+export type LedgerTransportKind = 'hid' | 'usb';
 
 /**
  * Which transports this browser can actually use, in preference order:
- * HID first (desktop's most reliable), then USB, then BLE. UI surfaces
- * a choice when more than one is meaningful (Android: usb + ble).
+ * HID first (desktop's most reliable), then USB (the Android path).
  */
 export function availableTransports(): LedgerTransportKind[] {
   if (typeof window === 'undefined' || !window.isSecureContext) return [];
   const nav = navigator as Navigator & {
     hid?: unknown;
     usb?: unknown;
-    bluetooth?: unknown;
   };
   const out: LedgerTransportKind[] = [];
   if (nav.hid) out.push('hid');
   if (nav.usb) out.push('usb');
-  if (nav.bluetooth) out.push('ble');
   return out;
 }
 
@@ -64,12 +63,6 @@ async function openTransport(kind: LedgerTransportKind): Promise<Transport> {
         '@ledgerhq/hw-transport-webusb'
       );
       return TransportWebUSB.create();
-    }
-    case 'ble': {
-      const { default: TransportWebBLE } = await import(
-        '@ledgerhq/hw-transport-web-ble'
-      );
-      return TransportWebBLE.create();
     }
   }
 }

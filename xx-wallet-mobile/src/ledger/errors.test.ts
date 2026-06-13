@@ -93,22 +93,10 @@ describe('mapLedgerError — transport-layer throws', () => {
     const cancelled = mapLedgerError(
       namedError('TransportOpenUserCancelled', 'cancelled')
     );
-    expect(cancelled).toMatch(/plug it in/i);
+    expect(cancelled).toMatch(/plug in/i);
     expect(cancelled).toMatch(/open the xx network app/i);
     const notFound = mapLedgerError(namedError('NotFoundError', 'no device'));
     expect(notFound).toMatch(/open the xx network app/i);
-  });
-
-  it('Bluetooth failures → enable-Bluetooth guidance incl. the Nano X setting', () => {
-    expect(
-      mapLedgerError(new Error('Bluetooth adapter unavailable'))
-    ).toMatch(/settings → bluetooth/i);
-    expect(
-      mapLedgerError(new Error('Web Bluetooth pairing failed'))
-    ).toMatch(/bluetooth/i);
-    expect(mapLedgerError(new Error('GATT operation failed'))).toMatch(
-      /bluetooth link.*dropped/i
-    );
   });
 
   it('claimed interface → close Ledger Live guidance', () => {

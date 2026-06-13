@@ -652,9 +652,10 @@ export function Dashboard() {
           </button>
 
           {/* Hardware option — only where a transport can actually reach
-              a device: WebHID/WebUSB on desktop Chromium, WebUSB or
-              Bluetooth on Android Chrome. iOS and Firefox users never
-              see the row rather than hitting a dead end. */}
+              a device: WebHID on desktop Chromium, WebUSB (USB-C cable)
+              on Android Chrome. Bluetooth deliberately not offered
+              (broken upstream for web on Android). iOS and Firefox
+              users never see the row rather than hitting a dead end. */}
           {isLedgerSupported() && (
             <button
               onClick={() => {

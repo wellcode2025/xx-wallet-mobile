@@ -18,7 +18,6 @@
   },
   "dependencies": {
     "@ledgerhq/hw-transport": "^6.35.4",
-    "@ledgerhq/hw-transport-web-ble": "^6.34.4",
     "@ledgerhq/hw-transport-webhid": "^6.35.4",
     "@ledgerhq/hw-transport-webusb": "^6.34.4",
     "@polkadot/api": "^11.0.2",
