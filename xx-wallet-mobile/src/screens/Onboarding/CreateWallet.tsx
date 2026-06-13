@@ -281,6 +281,24 @@ export function CreateWallet() {
     if (ok) {
       setCopiedKey(kind);
       setTimeout(() => setCopiedKey((c) => (c === kind ? null : c)), 1500);
+      // Clipboard hygiene (AUDIT-2026-06-12-009): a recovery phrase left on the
+      // system clipboard can be read by clipboard-history managers and
+      // cross-device clipboard sync. Best-effort: after a delay, clear it — but
+      // only if OUR phrase is still the clipboard contents, so we never clobber
+      // anything the user copied since. Silently no-ops on the legacy/HTTP path
+      // or where clipboard read is denied; the on-screen caution is the
+      // user-facing guarantee, this is defense-in-depth.
+      if (navigator.clipboard && window.isSecureContext) {
+        window.setTimeout(async () => {
+          try {
+            if ((await navigator.clipboard.readText()) === text) {
+              await navigator.clipboard.writeText('');
+            }
+          } catch {
+            // clipboard read/write unavailable or denied — leave it untouched
+          }
+        }, 45_000);
+      }
     }
   };
 
@@ -828,6 +846,13 @@ function PhraseCard({
             </>
           )}
         </button>
+      )}
+      {revealed && (
+        <p className="text-xs text-warning leading-relaxed">
+          Copying puts your recovery phrase on the system clipboard, where
+          clipboard-history and cross-device-sync apps can read it. If you copy,
+          paste it where you need it and clear your clipboard afterwards.
+        </p>
       )}
     </div>
   );
