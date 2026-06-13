@@ -191,6 +191,18 @@ describe('manualScryptDecrypt', () => {
       expect(decrypted.slice(16, 80)).toEqual(SECRET_KEY);
       expect(decrypted.slice(85, 117)).toEqual(PUBLIC_KEY);
     });
+
+    it('round-trips at the tightened N=262144 ceiling (inclusive boundary)', async () => {
+      // AUDIT-2026-06-12-004: the import bound was lowered to N<=262144.
+      // Prove the ceiling is inclusive and the ~256 MiB worst-case working
+      // set still decrypts, so the tightening can't reject a legitimate file.
+      const json = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 262144);
+      const decrypted = await manualScryptDecrypt(json, PASSWORD);
+
+      validatePkcs8(decrypted);
+      expect(decrypted.slice(16, 80)).toEqual(SECRET_KEY);
+      expect(decrypted.slice(85, 117)).toEqual(PUBLIC_KEY);
+    });
   });
 
   describe('failure modes', () => {
@@ -207,9 +219,12 @@ describe('manualScryptDecrypt', () => {
       await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(/out-of-range/i);
     });
 
-    it('rejects N above the 1048576 sanity ceiling', async () => {
+    it('rejects N above the 262144 sanity ceiling', async () => {
+      // 524288 (2^19) was accepted under the old 1048576 ceiling; the
+      // tightened bound (AUDIT-2026-06-12-004) rejects it before scrypt runs,
+      // capping the working set so a crafted keystore can't OOM the tab.
       const valid = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 32768);
-      const tampered = tamperParams(valid, { N: 2097152 });
+      const tampered = tamperParams(valid, { N: 524288 });
       await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(/out-of-range/i);
     });
 
@@ -225,15 +240,15 @@ describe('manualScryptDecrypt', () => {
       await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(/out-of-range/i);
     });
 
-    it('rejects p above 8', async () => {
+    it('rejects p above 4', async () => {
       const valid = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 32768);
-      const tampered = tamperParams(valid, { p: 9 });
+      const tampered = tamperParams(valid, { p: 5 });
       await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(/out-of-range/i);
     });
 
-    it('rejects r above 16', async () => {
+    it('rejects r above 8', async () => {
       const valid = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 32768);
-      const tampered = tamperParams(valid, { r: 17 });
+      const tampered = tamperParams(valid, { r: 9 });
       await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(/out-of-range/i);
     });
   });

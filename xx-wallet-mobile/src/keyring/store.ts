@@ -187,9 +187,14 @@ export async function manualScryptDecrypt(
   const p = view.getUint32(SCRYPT_SALT_LEN + 4, true);
   const r = view.getUint32(SCRYPT_SALT_LEN + 8, true);
 
-  // Basic sanity bounds — stops a malicious file from pegging the CPU.
-  // Ceiling is generous: N=1048576 covers any reasonable wallet export.
-  if (N < 1024 || N > 1048576 || p < 1 || p > 8 || r < 1 || r > 16) {
+  // Sanity bounds on attacker-supplied scrypt params. The dominant risk is
+  // MEMORY, not CPU: scrypt's working set is ~128 * N * r bytes, so an
+  // unbounded N (or r) lets a crafted keystore allocate gigabytes and
+  // OOM-crash the tab. These ceilings cap the worst case at ~256 MiB
+  // (128 * 262144 * 8) while still accepting every real export — the
+  // official wallet.xx.network uses N=131072, r=8, p=1, and Polkadot
+  // defaults to N=32768, r=8, p=1. p is capped too, since it multiplies CPU.
+  if (N < 1024 || N > 262144 || p < 1 || p > 4 || r < 1 || r > 8) {
     throw new Error('Keystore has out-of-range scrypt params.');
   }
   if ((N & (N - 1)) !== 0) {
