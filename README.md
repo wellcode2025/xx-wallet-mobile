@@ -24,7 +24,7 @@ talks to no backend of its own, and can be installed to your home screen and use
 
 It covers the full surface a day-to-day xx network user needs from a phone: accounts, transfers,
 the complete staking lifecycle (nominator **and** validator), the full Gov1 governance surface,
-and native multisig — with quantum-resistant key generation on by default.
+native multisig, and Ledger hardware accounts — with quantum-resistant key generation on by default.
 
 > [!IMPORTANT]
 > **Not yet official.** This is an independent, community-built wallet — not yet a formally endorsed
@@ -104,6 +104,11 @@ experience without asking you to trust anything new.
   reject and this wallet handles directly.
 - **Multiple accounts** with a per-account screen for the full address and QR, rename, encrypted
   export, and removal — plus a batch export that imports cleanly into the official desktop wallet.
+- **Ledger hardware accounts.** Connect a Ledger (desktop Chromium, or Android over a USB cable),
+  confirm the address on the device screen, and sign transfers and staking actions on the device —
+  the private key never enters the browser and there's no keystore to steal. Where the Ledger xx
+  network app can't decode a call (multisig, governance votes), the wallet says so instead of
+  blind-signing; actions the app can't batch are split into clearly-labeled sequential approvals.
 
 ### Send & receive
 - Sends use `transferKeepAlive` so you can't accidentally reap your own account, with a live

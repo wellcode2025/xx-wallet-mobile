@@ -35,6 +35,7 @@ A short tour lives in [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md). In brief:
 src/
 ├── api/             @polkadot/api singleton, xx network constants, on-chain identity lookup
 ├── keyring/         Encrypted account storage and the Sleeve WASM wrapper
+├── ledger/          Ledger hardware-wallet transport + device signer (lazy-loaded)
 ├── staking/         Sequential-Phragmén pass + validator selection
 ├── governance/      Cross-cutting Gov1 utilities
 ├── hooks/           Data + compute hooks for balances, staking, multisig, governance
