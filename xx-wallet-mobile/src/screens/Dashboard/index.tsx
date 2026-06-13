@@ -520,7 +520,7 @@ export function Dashboard() {
                 <p className="text-sm font-medium text-ink-100">
                   Protect with a second device
                 </p>
-                <span className="text-[10px] uppercase tracking-wider text-xx-500 font-semibold">
+                <span className="text-xs uppercase tracking-wider text-xx-500 font-semibold">
                   2FA
                 </span>
               </div>

@@ -104,7 +104,7 @@ export function IOSInstallBanner() {
             </p>
             <ol className="space-y-1.5 mt-1">
               <li className="flex items-center gap-2 text-xs text-ink-200">
-                <span className="w-5 h-5 rounded-full bg-xx-500/15 text-xx-500 text-[10px] font-mono flex items-center justify-center flex-shrink-0">
+                <span className="w-5 h-5 rounded-full bg-xx-500/15 text-xx-500 text-xs font-mono flex items-center justify-center flex-shrink-0">
                   1
                 </span>
                 <span className="flex items-center gap-1.5">
@@ -118,7 +118,7 @@ export function IOSInstallBanner() {
                 </span>
               </li>
               <li className="flex items-center gap-2 text-xs text-ink-200">
-                <span className="w-5 h-5 rounded-full bg-xx-500/15 text-xx-500 text-[10px] font-mono flex items-center justify-center flex-shrink-0">
+                <span className="w-5 h-5 rounded-full bg-xx-500/15 text-xx-500 text-xs font-mono flex items-center justify-center flex-shrink-0">
                   2
                 </span>
                 <span>Tap "Add to Home Screen"</span>

@@ -263,7 +263,7 @@ export function ContactsSheet({
                         {shortenAddress(a.address, { start: 8, end: 6 })}
                       </p>
                     </div>
-                    <span className="text-[10px] uppercase tracking-wider text-ink-400 font-medium flex-shrink-0">
+                    <span className="text-xs uppercase tracking-wider text-ink-400 font-medium flex-shrink-0">
                       yours
                     </span>
                   </button>

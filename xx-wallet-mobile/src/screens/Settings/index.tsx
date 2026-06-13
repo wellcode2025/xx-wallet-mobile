@@ -225,7 +225,7 @@ export function Settings() {
                     />
                   )}
                   {acct.address === activeAddress && (
-                    <span className="text-[10px] uppercase tracking-wider text-xx-500 font-semibold flex-shrink-0">
+                    <span className="text-xs uppercase tracking-wider text-xx-500 font-semibold flex-shrink-0">
                       Active
                     </span>
                   )}
