@@ -1,0 +1,28 @@
+# gitleaks configuration for xx-wallet-mobile
+#
+# Extends gitleaks' default ruleset and adds a single allowlist entry for a
+# confirmed false positive (audit AUDIT-2026-06-12-010):
+#
+#   src/keyring/store.ts contains `const secretStart = PKCS8_HEADER.length;`
+#
+# The generic-api-key rule fires on the identifier `secretStart =`, but the
+# value is a PKCS8 byte offset (PKCS8_HEADER.length === 16), not a credential.
+# Without this allowlist every gitleaks run reports "leaks found: 2" (working
+# tree + history), which trains reviewers to ignore the scanner — the real
+# risk being a future *true* positive dismissed as "probably the usual two".
+#
+# The regex is matched against the whole line and is scoped to this exact
+# identifier, so it suppresses only this false positive and not a real secret
+# that happened to land in the same file.
+
+title = "xx-wallet-mobile gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "secretStart is a PKCS8 offset (PKCS8_HEADER.length), not a credential — AUDIT-2026-06-12-010"
+regexTarget = "line"
+regexes = [
+  '''secretStart\s*=''',
+]
