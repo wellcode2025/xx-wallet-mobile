@@ -12,9 +12,11 @@
 #                                             and Google Fonts CSS
 #   - font-src                                Google Fonts files (Roboto + JetBrains Mono)
 #   - img-src                                 own + data: (SVG inlining, blob: for QR canvases)
-#   - connect-src                             same-origin + chain RPCs + xxfoundation indexer
-#                                             (wss://* permissive because the user can configure custom RPC URLs;
-#                                             tightening this would require gating the Custom RPC feature)
+#   - connect-src                             same-origin + xxfoundation indexer + localhost dev RPC + wss://*
+#                                             audit-accepted (AUDIT-2026-06-12-005): the wss://* wildcard is
+#                                             retained deliberately — users can set custom RPC URLs, so hosts
+#                                             can't be enumerated in a static header. It subsumes the chain
+#                                             RPC hosts (xx.network/dwellir), which were dropped as redundant.
 #   - worker-src                              service worker is same-origin only
 #   - manifest-src                            PWA manifest same-origin
 #   - frame-ancestors 'none'                  prevent click-jacking via iframe embedding on attacker pages
@@ -23,9 +25,11 @@
 #   - object-src 'none'                       no Flash/legacy embeds at all
 #
 # Strict-Transport-Security:
-#   2-year HSTS with subdomain coverage. Preload eligibility means once shipped
-#   widely it could be submitted to the HSTS preload list — be careful about
-#   adding this on subdomains that may not always be HTTPS.
+#   2-year HSTS with subdomain coverage. The `preload` token was intentionally
+#   removed (AUDIT-2026-06-12-006): submitting xx.network to the browser preload
+#   list would force HTTPS on every *.xx.network subdomain, browser-side and hard
+#   to undo. Do NOT re-add `preload` until every *.xx.network subdomain is
+#   confirmed HTTPS-ready. includeSubDomains is kept (header-scoped, reversible).
 #
 # Permissions-Policy:
 #   Camera allowed for the QR scanner. USB and HID allowed (same-origin
@@ -37,8 +41,8 @@
 #   start the mic or read geolocation.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' wss://*.xx.network wss://*.dwellir.com https://indexer.xx.network ws://localhost:* wss://*; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
-  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://indexer.xx.network ws://localhost:* wss://*; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=(self), hid=(self), accelerometer=(), gyroscope=()
