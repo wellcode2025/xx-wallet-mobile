@@ -217,9 +217,9 @@ function BondedCard({ validator }: { validator: ValidatorDetailType }) {
 function CurrentBackersCard({ validator }: { validator: ValidatorDetailType }) {
   return (
     <div className="card">
-      <h3 className="font-display font-medium text-sm text-ink-200 mb-1">
+      <h2 className="font-display font-medium text-sm text-ink-200 mb-1">
         Current backers ({validator.currentBackers.length})
-      </h3>
+      </h2>
       {validator.currentEra !== null && (
         <p className="text-xs text-ink-300 mb-3">
           In the rewarded set this era (era {validator.currentEra}).

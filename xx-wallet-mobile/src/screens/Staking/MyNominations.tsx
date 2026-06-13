@@ -261,10 +261,10 @@ function NominatingView({ position }: { position: StakingPosition }) {
 
       {/* Nomination targets */}
       <div className="card">
-        <h3 className="font-display font-medium text-sm text-ink-200 mb-1">
+        <h2 className="font-display font-medium text-sm text-ink-200 mb-1">
           Nominating {targets.length} validator
           {targets.length === 1 ? '' : 's'}
-        </h3>
+        </h2>
         {activeEra !== null ? (
           <p className="text-xs text-ink-300 mb-3">
             Status shown for era {activeEra}.

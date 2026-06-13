@@ -168,9 +168,9 @@ function Populated({
 
       {/* Row list */}
       <div className="card">
-        <h3 className="font-display font-medium text-sm text-ink-200 mb-3">
+        <h2 className="font-display font-medium text-sm text-ink-200 mb-3">
           {rows.length} payout{rows.length === 1 ? '' : 's'}
-        </h3>
+        </h2>
         <ul>
           {rows.map((r) => (
             <RewardItem key={`${r.era}-${r.blockNumber}-${r.validator}`} row={r} />
