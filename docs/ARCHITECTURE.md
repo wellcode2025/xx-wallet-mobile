@@ -29,8 +29,11 @@ xx-wallet-mobile/
 ├── scripts/
 │   └── spikes/           Live-chain feasibility scripts kept as executable documentation
 ├── src/
-│   ├── api/              @polkadot/api connection singleton, xx network constants, identity lookup
-│   ├── keyring/          Encrypted on-device key storage and the Sleeve TS wrapper
+│   ├── api/              @polkadot/api connection singleton, xx network constants, identity
+│   │                     lookup, and the gated indexer client (see "Privacy toggle" below)
+│   ├── keyring/          Encrypted on-device key storage and the Sleeve TS wrapper; accounts are
+│   │                     a discriminated union of local (keystore) and Ledger (device) records
+│   ├── ledger/           Ledger hardware-wallet transport + device signer, fully lazy-loaded
 │   ├── staking/          Sequential-Phragmén pass and validator-selection scoring
 │   ├── governance/       Cross-cutting Gov1 utilities (identity resolver, forum-link parsing,
 │   │                     block→time countdowns, period-progress, pallet-account derivation)
@@ -48,8 +51,8 @@ xx-wallet-mobile/
 ```
 
 The feature areas under `screens/` are: onboarding, dashboard, send, receive, transaction detail,
-per-account detail, settings, multisig (including the guided two-device-approval setup), staking,
-and governance.
+per-account detail, connect-Ledger, settings, multisig (including the guided two-device-approval
+setup), staking, and governance.
 
 ## Tech choices and why
 
@@ -87,6 +90,29 @@ indexer. But not every indexer table tracks current chain state, so anything tha
 the indexer is used for enrichment (names, historical charts) behind an "As of <date>" frame. Each
 data source is validated with a spike script before a screen depends on it.
 
+### Privacy toggle: the indexer is optional
+The indexer sees the requesting IP and the addresses being queried, so a Settings toggle lets users
+opt out entirely. Every indexer query flows through one gate (`src/api/indexer.ts`) that refuses
+locally — before any network IO — when the toggle is off; a privacy setting that still leaks on some
+code path would be worse than none. The affected views then explain what's missing and why instead
+of failing generically, multisig chain-scan is blocked up front (the scan itself would transmit the
+user's addresses), and identity names fall back to direct chain lookups. Nothing that signs or
+moves funds ever depended on the indexer.
+
+### Hardware accounts: the key never enters the browser
+A Ledger-backed account stores only an address and a BIP44 derivation path; signing serializes the
+extrinsic payload to the device, where the user reads the decoded call on the Ledger's own screen
+and physically confirms. Three disciplines follow from taking the device display seriously:
+addresses must be confirmed on the device before the wallet stores them; calls the Ledger xx
+network app cannot decode and display (multisig, governance democracy) are refused in the wallet
+rather than blind-signed; and flows the app can't sign as one batch (bond+nominate and similar) run
+as clearly-labeled sequential device approvals instead. Transports are WebHID on desktop Chromium
+and WebUSB on Android Chrome over a USB cable — capability-gated, so platforms without the APIs
+(iOS, Firefox) never see the feature. Bluetooth is deliberately not offered: Web Bluetooth to a
+Nano X on Android fails at the bonding step with a long-standing upstream issue, and a connect
+option that fails for most phones costs more trust than it buys. The transport stack is
+lazy-loaded, so users who never touch a Ledger never download it.
+
 ### Verify extrinsic signatures against the live chain
 xx network forks several Substrate pallets and changes call signatures. The discipline is to
 construct any new extrinsic against the real chain in a spike before designing the screen around it —
@@ -103,8 +129,9 @@ The optional app lock — a PIN, with fingerprint/face unlock layered on where t
 — is an access gate only, off by default. It gates *opening* the app for privacy on a shared or lost
 phone and never participates in signing: the keys stay encrypted with the per-account password
 regardless, so the lock is a convenience, not a fund control. Real second-factor protection over
-funds comes from multisig — including the guided two-device-approval flow, which produces a 2-of-3
-"protected account" the chain itself enforces.
+funds comes from controls outside the app's reach: multisig — including the guided
+two-device-approval flow, which produces a 2-of-3 "protected account" the chain itself enforces —
+or a Ledger hardware account, where the key lives in the device's secure element.
 
 ## Trust model for what gets signed
 
@@ -114,7 +141,9 @@ recomputed hash is checked against what the chain stores. If decode fails or the
 the wallet fails closed with a clear error rather than showing a degraded or assumed summary.
 Wherever an address appears it's rendered as a resolved name paired with a truncated address fragment,
 so a friendly label can't disguise the underlying account. Transactions that could be signed by more
-than one of the user's keys always present an explicit signer picker.
+than one of the user's keys always present an explicit signer picker. Ledger accounts extend the
+same rule to hardware: the device screen is the final authority on what gets signed, so anything the
+device can't display, the wallet won't ask it to sign.
 
 ## Notifications
 

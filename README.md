@@ -153,16 +153,28 @@ wallet's governance surface, consolidated for mobile:
   proposals. No central server is required for any of it.
 - **Two-device approval** — a guided setup that turns multisig into a second factor on your funds:
   a protected account that needs approval from a second device before anything can be sent, with a
-  cold backup key so losing one device doesn't lock you out. See
+  cold backup key so losing one device doesn't lock you out. The protected-account framing follows
+  the account to your other devices (via config import, a chain-scan prompt, or a manual toggle),
+  and the wizard has a dedicated join path for setting up the second device. See
   [docs/two-device-approval.md](docs/two-device-approval.md).
+- **Exchange-deposit caution** — sending from a multisig straight to an exchange can strand the
+  deposit (the transfer is nested inside a multisig call that many exchange systems don't scan
+  for), so the propose flow warns up front and asks for explicit acknowledgement when the
+  recipient isn't an address the wallet recognizes.
 
 ### Security & privacy
 - Non-custodial. No backend, no telemetry, no analytics, no third-party scripts.
-- Keys are stored encrypted on-device and decrypted only momentarily to sign.
+- Keys are stored encrypted on-device and decrypted only momentarily to sign — or, for Ledger
+  accounts, never exist in the browser at all.
 - The Sleeve key-generation module is integrity-checked at runtime against a build-time hash.
 - **Optional app lock** — an opt-in screen lock (a PIN, with fingerprint / face unlock layered on
   where the device supports it), off by default. It gates opening the app for privacy on a shared or
   lost phone; it never gates signing, which always stays behind your wallet password.
+- **Indexer privacy toggle** — history, rewards, multisig activity/scan, and identity names come
+  from the public xx network indexer, which (like any web service) sees your IP and the addresses
+  you query. A Settings toggle turns all indexer queries off; the affected views explain what's
+  missing, identity falls back to direct chain lookups, and everything that signs or moves funds
+  keeps working — it never depended on the indexer.
 - Ships with a Content Security Policy, HSTS, and related hardening headers.
 
 ### Installable PWA

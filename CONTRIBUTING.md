@@ -38,7 +38,8 @@ npm run preview -- --host    # serve the production build
 Because this is a mobile-first app, **test on an actual phone.** Vite prints a LAN URL on start;
 open it on a device on the same network. Note that some browser APIs (camera for the QR scanner,
 clipboard, Web Share) require HTTPS, so on a plain-HTTP dev URL the wallet falls back to manual
-alternatives — that's expected, not a bug.
+alternatives — that's expected, not a bug. Ledger work is the exception that's easiest on desktop:
+`localhost` counts as a secure context, so WebHID works against `npm run dev` without a deploy.
 
 ## Conventions
 
@@ -83,12 +84,26 @@ alternatives — that's expected, not a bug.
 - **Surface the real error.** Mobile browsers have no easy console; render the underlying error
   message on the error UI so problems are diagnosable in the field.
 
+### Accounts aren't always keystores
+Accounts are a discriminated union: local accounts carry an encrypted keystore, Ledger accounts
+carry only an address and derivation path. Any code that assumes "account ⇒ keystore ⇒ password"
+must branch on the account's `source` (the keyring's type guards exist for this). When adding
+anything signing-adjacent, decide explicitly what a Ledger signer does there: device signing where
+the Ledger xx network app supports the call, an honest visible explanation where it doesn't —
+never silent absence, and never blind signing.
+
 ### Do not change without discussion
 - `xx-wallet-mobile/src/api/constants.ts` — chain-baked values (SS58 prefix, decimals, existential
   deposit, genesis hash, RPC URLs). Wrong values silently break things.
 - `xx-wallet-mobile/src/keyring/store.ts` — the manual scrypt decrypt/encrypt path and the async
   `unlock()` flow. This is load-bearing for compatibility with `wallet.xx.network` keystores; changing
   it carelessly breaks the ability to import and sign with existing wallets.
+- `xx-wallet-mobile/public/_headers` — the security headers, and in particular the
+  Permissions-Policy allowlist: `usb=(self), hid=(self)` is what lets Ledger connections work at
+  all, and everything else is deliberately denied. A new device-API feature needs an allowlist
+  entry here, and a denied entry must stay denied unless there's a reason as strong as Ledger's.
+- Indexer access goes through `src/api/indexer.ts`, never a direct `fetch` — the single gate is
+  what makes the Settings privacy toggle airtight.
 
 ## Tests
 

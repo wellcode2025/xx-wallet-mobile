@@ -82,6 +82,9 @@ make that true.
 
 1. **Create or import a key on each device** you want to be a signer. Each is a
    normal xx network account with its own recovery phrase. Back up every phrase.
+   (A Ledger hardware account can't serve as a signer here — the Ledger app
+   can't sign multisig transactions — so the wallet only offers your
+   password-protected accounts in this flow.)
 2. **For 2-of-3, generate a third "cold" key** and store its recovery phrase
    offline. You do not need to keep this one installed anywhere.
 3. **Create the shared account** in the wallet from the list of signer addresses
