@@ -1,7 +1,7 @@
 {
   "name": "xx-wallet-mobile",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "Mobile-first PWA for the xx network blockchain wallet",
   "scripts": {
