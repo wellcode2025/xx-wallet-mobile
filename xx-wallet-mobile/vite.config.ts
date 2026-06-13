@@ -1,4 +1,4 @@
-/// <reference types="vitest" />
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -108,9 +108,21 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'polkadot-api': ['@polkadot/api'],
-          'polkadot-crypto': ['@polkadot/util-crypto', '@polkadot/keyring'],
+        // Rolldown (Vite 8's bundler) accepts only the function form of
+        // manualChunks. Same split as the previous object form: the
+        // polkadot API and crypto stacks get their own cacheable chunks.
+        manualChunks(id: string) {
+          if (id.includes('node_modules/@polkadot/api')) {
+            return 'polkadot-api';
+          }
+          if (
+            id.includes('node_modules/@polkadot/util-crypto') ||
+            id.includes('node_modules/@polkadot/keyring') ||
+            id.includes('node_modules/@polkadot/wasm-')
+          ) {
+            return 'polkadot-crypto';
+          }
+          return undefined;
         },
       },
     },
