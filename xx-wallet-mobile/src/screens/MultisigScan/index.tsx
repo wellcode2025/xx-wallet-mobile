@@ -32,7 +32,12 @@ import {
 import clsx from 'clsx';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
-import { useAccountsStore, useAddressBook, useMultisigsStore } from '@/store';
+import {
+  useAccountsStore,
+  useAddressBook,
+  useMultisigsStore,
+  useSettingsStore,
+} from '@/store';
 import {
   scanForUserMultisigs,
   shortenAddress,
@@ -47,6 +52,7 @@ export function MultisigScan() {
   const { contacts, addContact } = useAddressBook();
   const addMultisig = useMultisigsStore((s) => s.addMultisig);
   const existingMultisigs = useMultisigsStore((s) => s.multisigs);
+  const indexerEnabled = useSettingsStore((s) => s.indexerEnabled);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [scanError, setScanError] = useState<string | null>(null);
@@ -233,7 +239,26 @@ export function MultisigScan() {
                 alone is not proof of legitimacy.
               </p>
             </div>
-            <button onClick={handleScan} className="btn-primary w-full">
+            {/* The scan IS an indexer query of the user's addresses — the
+                exact thing the privacy toggle exists to prevent. Gate it
+                proactively with an explanation rather than failing after
+                the tap. */}
+            {!indexerEnabled && (
+              <div className="card border border-warning/30 bg-warning/5">
+                <p className="text-xs text-ink-200 leading-relaxed">
+                  Scanning needs the xx network indexer, which you turned
+                  off in Settings → Privacy — the scan sends your account
+                  addresses to it. Re-enable the indexer to scan, or add
+                  the multisig by config import instead (nothing leaves
+                  your device that way).
+                </p>
+              </div>
+            )}
+            <button
+              onClick={handleScan}
+              disabled={!indexerEnabled}
+              className="btn-primary w-full disabled:opacity-40"
+            >
               <Search size={16} strokeWidth={2} />
               Scan for multisigs
             </button>

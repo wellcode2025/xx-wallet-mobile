@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAccountsStore, useMultisigsStore, useSettingsStore } from '@/store';
 import { isLedgerSupported } from '@/ledger';
+import { isIndexerDisabledError } from '@/api/indexer';
 import {
   formatAge,
   useAllPendingMultisigs,
@@ -223,13 +224,20 @@ export function Dashboard() {
             )}
           </div>
 
-          {txError && (
-            <p className="text-xs text-danger py-2">
-              Could not load history — check your connection.
-            </p>
-          )}
+          {txError &&
+            (isIndexerDisabledError(txError) ? (
+              <p className="text-xs text-ink-400 py-2">
+                Transaction history is off — you disabled the indexer in
+                Settings → Privacy. Your balance and sending are
+                unaffected.
+              </p>
+            ) : (
+              <p className="text-xs text-danger py-2">
+                Could not load history — check your connection.
+              </p>
+            ))}
 
-          {transfers.length === 0 && !txLoading && (
+          {transfers.length === 0 && !txLoading && !txError && (
             <p className="text-sm text-ink-400 py-2">
               No recent transactions found.
             </p>

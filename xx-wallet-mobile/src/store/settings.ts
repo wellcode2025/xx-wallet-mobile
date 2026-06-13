@@ -83,8 +83,20 @@ interface SettingsState {
   autoNominateLevers: QualityLevers;
   /** Opt-in app-lock (access gate). See AppLockConfig. */
   appLock: AppLockConfig;
+  /**
+   * Whether the wallet may query the xx foundation indexer. ON by
+   * default — the indexer powers transaction history, rewards history,
+   * multisig activity/scan, and identity enrichment. Turning it OFF is
+   * a privacy choice: the indexer (like any web service) sees the
+   * requesting IP and the addresses being queried. With it off, those
+   * surfaces degrade honestly (explanations, not blank failures) and
+   * identity lookups fall back to direct chain RPC. Chain RPC traffic
+   * itself is unaffected — that's how the wallet works at all.
+   */
+  indexerEnabled: boolean;
 
   setEndpoint(endpoint: string): void;
+  setIndexerEnabled(enabled: boolean): void;
   setCustomEndpoint(endpoint: string): void;
   toggleHideBalances(): void;
   setStaleThresholdDays(days: number): void;
@@ -111,9 +123,14 @@ export const useSettingsStore = create<SettingsState>()(
       staleThresholdDays: STALE_THRESHOLD_DAYS_DEFAULT,
       autoNominateLevers: { ...DEFAULT_LEVERS },
       appLock: { ...DEFAULT_APP_LOCK },
+      indexerEnabled: true,
 
       setEndpoint(endpoint: string) {
         set({ endpoint });
+      },
+
+      setIndexerEnabled(enabled: boolean) {
+        set({ indexerEnabled: enabled });
       },
 
       setCustomEndpoint(customEndpoint: string) {

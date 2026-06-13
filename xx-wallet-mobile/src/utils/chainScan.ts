@@ -37,8 +37,7 @@
 
 import { deriveMultisigAddress } from './multisig';
 import { isValidXxAddress } from './address';
-
-const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
+import { indexerQuery } from '../api/indexer';
 
 /**
  * One multisig discovered on chain. Caller deduplicates and presents
@@ -64,21 +63,12 @@ export interface DiscoveredMultisig {
   userSigners: string[];
 }
 
+/** Delegates to the shared indexer gate (privacy toggle enforced there). */
 async function gql<T>(
   query: string,
   variables: Record<string, unknown>
 ): Promise<T> {
-  const r = await fetch(INDEXER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables }),
-  });
-  if (!r.ok) throw new Error(`Indexer HTTP ${r.status}: ${await r.text()}`);
-  const j = await r.json();
-  if (j.errors) {
-    throw new Error(`Indexer GraphQL errors: ${JSON.stringify(j.errors)}`);
-  }
-  return j.data as T;
+  return indexerQuery<T>(query, variables);
 }
 
 /**

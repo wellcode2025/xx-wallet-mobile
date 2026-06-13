@@ -21,8 +21,8 @@
 
 import { useEffect, useState } from 'react';
 import { BN } from '@polkadot/util';
+import { indexerQuery } from '@/api/indexer';
 
-const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
 const ERA_WINDOW = 90;
 
 export interface RewardRow {
@@ -83,29 +83,17 @@ export function useRewardsHistory(address: string | null | undefined): {
       setIsLoading(true);
       setError(null);
       try {
-        const r = await fetch(INDEXER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: QUERY,
-            variables: { a: address, limit: ERA_WINDOW },
-          }),
-        });
-        if (!r.ok) throw new Error(`Indexer ${r.status}`);
-        const json = await r.json();
+        const data = await indexerQuery<{
+          staking_reward?: Array<{
+            era: number;
+            amount: string;
+            validator_id: string;
+            block_number: string | number;
+            timestamp: string | number;
+          }>;
+        }>(QUERY, { a: address, limit: ERA_WINDOW });
         if (cancelled) return;
-        if (json.errors?.length) {
-          throw new Error(
-            json.errors[0]?.message ?? 'Indexer query failed'
-          );
-        }
-        const raw: Array<{
-          era: number;
-          amount: string;
-          validator_id: string;
-          block_number: string | number;
-          timestamp: string | number;
-        }> = json?.data?.staking_reward ?? [];
+        const raw = data.staking_reward ?? [];
 
         const rows: RewardRow[] = raw.map((row) => ({
           era: row.era,

@@ -24,8 +24,8 @@
  */
 
 import { useEffect, useState } from 'react';
+import { indexerQuery } from '@/api/indexer';
 
-const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
 const PAGE_SIZE = 25;
 
 export interface MultisigActivityItem {
@@ -108,20 +108,9 @@ const EXTRINSIC_QUERY = `
   }
 `;
 
+/** Delegates to the shared indexer gate (privacy toggle enforced there). */
 async function gql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  const response = await fetch(INDEXER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables }),
-  });
-  if (!response.ok) {
-    throw new Error(`Indexer HTTP ${response.status}`);
-  }
-  const json = await response.json();
-  if (json.errors) {
-    throw new Error(`Indexer GraphQL errors: ${JSON.stringify(json.errors)}`);
-  }
-  return json.data as T;
+  return indexerQuery<T>(query, variables);
 }
 
 /**

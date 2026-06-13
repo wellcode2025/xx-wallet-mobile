@@ -8,8 +8,7 @@
 
 import type { OnChainIdentity } from '@/store';
 import { xxApi } from '@/api';
-
-const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
+import { indexerQuery } from './indexer';
 
 /**
  * On-chain account roles as indexed by indexer.xx.network.
@@ -82,23 +81,20 @@ const ACCOUNT_ROLES_QUERY = `
  */
 export async function fetchAccountRoles(address: string): Promise<AccountRoles | null> {
   try {
-    const response = await fetch(INDEXER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        operationName: 'GetAccountRoles',
-        query: ACCOUNT_ROLES_QUERY,
-        variables: { address },
-      }),
-    });
-    if (!response.ok) return null;
-    const json = await response.json();
-    if (json.errors) {
-      console.warn('Account roles query errors:', json.errors);
-      return null;
-    }
+    // Shared gate — refuses locally when the indexer is disabled in
+    // Settings; the catch below treats that as "no role data" (badges
+    // are enrichment, never load-bearing).
+    const data = await indexerQuery<{
+      account?: Array<{
+        validator?: boolean;
+        nominator?: boolean;
+        council?: boolean;
+        techcommit?: boolean;
+        special?: string | null;
+      }>;
+    }>(ACCOUNT_ROLES_QUERY, { address }, 'GetAccountRoles');
 
-    const acct = json?.data?.account?.[0];
+    const acct = data.account?.[0];
     if (!acct) return null;
 
     return {
@@ -137,22 +133,16 @@ export async function fetchIdentityFromIndexer(
   address: string
 ): Promise<OnChainIdentity | null> {
   try {
-    const response = await fetch(INDEXER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        operationName: 'GetAccountIdentity',
-        query: ACCOUNT_IDENTITY_QUERY,
-        variables: { address },
-      }),
-    });
-    if (!response.ok) return null;
-    const json = await response.json();
-    if (json.errors) {
-      console.warn('Indexer identity query errors:', json.errors);
-      return null;
-    }
-    const identity = json?.data?.account?.[0]?.identity;
+    // Shared gate — when the indexer is disabled in Settings this
+    // throws locally and the caller's chain-RPC fallback takes over
+    // (identity stays available, just without indexer enrichment).
+    const data = await indexerQuery<{
+      account?: Array<{ identity?: Record<string, unknown> | null }>;
+    }>(ACCOUNT_IDENTITY_QUERY, { address }, 'GetAccountIdentity');
+    const identity = data.account?.[0]?.identity as
+      | Record<string, any>
+      | null
+      | undefined;
     if (!identity) return null;
 
     const cleaned: OnChainIdentity = { fetchedAt: Date.now() };

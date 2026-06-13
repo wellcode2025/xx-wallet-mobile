@@ -34,9 +34,9 @@ import type { BN } from '@polkadot/util';
 import { u8aConcat } from '@polkadot/util';
 import { base64Encode } from '@polkadot/util-crypto';
 import { xxApi, fetchIdentity } from '@/api';
+import { indexerQuery } from '@/api/indexer';
 import type { OnChainIdentity } from '@/store';
 
-const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
 const HISTORY_ERAS = 90;
 
 export interface ValidatorLocation {
@@ -138,31 +138,32 @@ async function fetchHistoricalData(address: string): Promise<{
   pointsHistory: ValidatorEraPoints[];
 }> {
   try {
-    const r = await fetch(INDEXER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `query ($addr: String!, $limit: Int!) {
-          latest: validator_stats(
-            where: { stash_address: { _eq: $addr } }
-            order_by: { era: desc }
-            limit: 1
-          ) { era timestamp location relative_performance }
-          history: validator_stats(
-            where: { stash_address: { _eq: $addr } }
-            order_by: { era: desc }
-            limit: $limit
-          ) { era points }
-        }`,
-        variables: { addr: address, limit: HISTORY_ERAS },
-      }),
-    });
-    if (!r.ok) return { snapshot: null, pointsHistory: [] };
-    const json = await r.json();
-    if (json.errors) return { snapshot: null, pointsHistory: [] };
-    const latest = json?.data?.latest?.[0];
+    const data = await indexerQuery<{
+      latest?: Array<{
+        era: number;
+        timestamp: string | number;
+        location: string | null;
+        relative_performance: number | null;
+      }>;
+      history?: Array<{ era: number; points: number | null }>;
+    }>(
+      `query ($addr: String!, $limit: Int!) {
+        latest: validator_stats(
+          where: { stash_address: { _eq: $addr } }
+          order_by: { era: desc }
+          limit: 1
+        ) { era timestamp location relative_performance }
+        history: validator_stats(
+          where: { stash_address: { _eq: $addr } }
+          order_by: { era: desc }
+          limit: $limit
+        ) { era points }
+      }`,
+      { addr: address, limit: HISTORY_ERAS }
+    );
+    const latest = data.latest?.[0];
     const historyRaw: { era: number; points: number | null }[] =
-      json?.data?.history ?? [];
+      data.history ?? [];
     return {
       snapshot: latest
         ? {

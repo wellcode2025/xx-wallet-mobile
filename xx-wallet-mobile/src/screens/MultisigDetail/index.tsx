@@ -50,6 +50,7 @@ import {
   copyToClipboard,
   serializeMultisigConfig,
 } from '@/utils';
+import { isIndexerDisabledError } from '@/api/indexer';
 import { XX_SYMBOL } from '@/api';
 
 const EXPLORER_BASE = 'https://explorer.xx.network/blocks/';
@@ -298,12 +299,19 @@ function MultisigView({ address }: { address: string }) {
           {activityLoading && (
             <p className="text-xs text-ink-400">Loading activity…</p>
           )}
-          {activityError && (
-            <p className="text-xs text-ink-400">
-              Couldn't load activity. The multisig itself is fine — only the
-              historical view is affected.
-            </p>
-          )}
+          {activityError &&
+            (isIndexerDisabledError(activityError) ? (
+              <p className="text-xs text-ink-400">
+                Activity history is off — you disabled the indexer in
+                Settings → Privacy. The multisig itself (balance, pending
+                proposals, signing) works without it.
+              </p>
+            ) : (
+              <p className="text-xs text-ink-400">
+                Couldn't load activity. The multisig itself is fine — only the
+                historical view is affected.
+              </p>
+            ))}
           {!activityLoading && !activityError && activity.length === 0 && (
             <p className="text-xs text-ink-400">
               No executed actions yet at this multisig.

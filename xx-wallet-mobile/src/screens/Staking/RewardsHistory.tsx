@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ExternalLink, Coins } from 'lucide-react';
 import { BN } from '@polkadot/util';
 import { useAccountsStore } from '@/store';
+import { isIndexerDisabledError } from '@/api/indexer';
 import { useRewardsHistory, type RewardsHistory as RewardsHistoryShape, type RewardRow } from '@/hooks';
 import { formatBalance } from '@/utils';
 import {
@@ -47,14 +48,27 @@ export function RewardsHistory() {
         </>
       )}
 
-      {error && (
-        <div className="card">
-          <p className="text-sm text-danger">
-            Couldn't load rewards history — check your connection and try
-            again.
-          </p>
-        </div>
-      )}
+      {error &&
+        (isIndexerDisabledError(error) ? (
+          <div className="card">
+            <p className="text-sm text-ink-200">
+              Rewards history needs the xx network indexer, which you
+              turned off in Settings → Privacy.
+            </p>
+            <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+              Your rewards still arrive on chain as always — only this
+              historical view is unavailable. Re-enable the indexer to
+              see it.
+            </p>
+          </div>
+        ) : (
+          <div className="card">
+            <p className="text-sm text-danger">
+              Couldn't load rewards history — check your connection and try
+              again.
+            </p>
+          </div>
+        ))}
 
       {history && !error && (
         history.rows.length > 0 ? (

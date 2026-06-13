@@ -35,8 +35,7 @@
 import { useEffect, useState } from 'react';
 import { hexToString, type BN } from '@polkadot/util';
 import { xxApi } from '@/api';
-
-const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
+import { indexerQuery } from '@/api/indexer';
 
 export interface ValidatorListEntry {
   /** Validator stash address. */
@@ -69,27 +68,25 @@ interface UseValidatorListResult {
 async function fetchValidatorDisplayNames(): Promise<Map<string, string>> {
   const names = new Map<string, string>();
   try {
-    const response = await fetch(INDEXER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `query {
-          account(where: { validator: { _eq: true } }) {
-            account_id
-            identity { display }
-          }
-        }`,
-      }),
-    });
-    if (!response.ok) return names;
-    const json = await response.json();
-    if (json.errors) return names;
-    for (const a of json?.data?.account ?? []) {
+    const data = await indexerQuery<{
+      account?: Array<{
+        account_id?: string;
+        identity?: { display?: string } | null;
+      }>;
+    }>(`query {
+      account(where: { validator: { _eq: true } }) {
+        account_id
+        identity { display }
+      }
+    }`);
+    for (const a of data.account ?? []) {
       const display = a?.identity?.display;
       if (a?.account_id && display) names.set(a.account_id, display);
     }
   } catch {
-    // Identity is enrichment only — never fatal to the list.
+    // Identity is enrichment only — never fatal to the list. This also
+    // quietly covers the indexer-disabled privacy setting: names from
+    // the chain (fetchChainDisplayNames) still apply.
   }
   return names;
 }

@@ -6,7 +6,8 @@
  * transfer data instantly — no block scanning required.
  *
  * Query confirmed from explorer.xx.network network inspection:
- *   endpoint: https://indexer.xx.network/v1/graphql
+ *   endpoint: https://indexer.xx.network/v1/graphql (via the shared
+ *   indexerQuery gate, which enforces the Settings privacy toggle)
  *   operation: ListTransfersOrdered
  *   table: transfer
  *   fields: block_number, event_index, extrinsic_index, source, destination,
@@ -17,6 +18,7 @@
 import { useEffect, useState } from 'react';
 import BigNumber from 'bignumber.js';
 import { XX_DECIMALS } from '@/api';
+import { indexerQuery } from '@/api/indexer';
 
 export type TxDirection = 'in' | 'out' | 'self';
 
@@ -42,7 +44,6 @@ export interface Transfer {
   toIdentity?: string | null;
 }
 
-const INDEXER_URL = 'https://indexer.xx.network/v1/graphql';
 const PAGE_SIZE = 20;
 
 // Confirmed query from explorer.xx.network payload inspection.
@@ -152,33 +153,31 @@ export function useTransfers(address: string | null | undefined): {
       setIsLoading(true);
       setError(null);
       try {
-        // Also fetch total count in the same request
-        const response = await fetch(INDEXER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            operationName: 'ListTransfersOrdered',
-            query: LIST_TRANSFERS_QUERY,
-            variables: {
-              limit: PAGE_SIZE,
-              offset: 0,
-              orderBy: [{ timestamp: 'desc' }],
-              where: {
-                _or: [
-                  { source: { _eq: address } },
-                  { destination: { _eq: address } },
-                ],
-              },
+        // Also fetch total count in the same request. indexerQuery is
+        // the shared gate — it refuses locally when the user disabled
+        // the indexer in Settings (privacy), before any network IO.
+        const data = await indexerQuery<{
+          transfers?: unknown[];
+          agg?: { aggregate?: { count?: number } };
+        }>(
+          LIST_TRANSFERS_QUERY,
+          {
+            limit: PAGE_SIZE,
+            offset: 0,
+            orderBy: [{ timestamp: 'desc' }],
+            where: {
+              _or: [
+                { source: { _eq: address } },
+                { destination: { _eq: address } },
+              ],
             },
-          }),
-        });
-
-        if (!response.ok) throw new Error(`Indexer error: ${response.status}`);
-        const json = await response.json();
+          },
+          'ListTransfersOrdered'
+        );
         if (cancelled) return;
 
-        const raw = json?.data?.transfers ?? [];
-        const count = json?.data?.agg?.aggregate?.count ?? 0;
+        const raw = (data.transfers ?? []) as any[];
+        const count = data.agg?.aggregate?.count ?? 0;
 
         const mapped = raw.map((t: any): Transfer => {
           const direction: TxDirection =

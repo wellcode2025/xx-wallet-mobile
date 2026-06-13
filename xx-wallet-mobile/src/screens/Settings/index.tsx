@@ -45,6 +45,8 @@ export function Settings() {
   const customEndpoint = useSettingsStore((s) => s.customEndpoint);
   const setEndpoint = useSettingsStore((s) => s.setEndpoint);
   const setCustomEndpoint = useSettingsStore((s) => s.setCustomEndpoint);
+  const indexerEnabled = useSettingsStore((s) => s.indexerEnabled);
+  const setIndexerEnabled = useSettingsStore((s) => s.setIndexerEnabled);
   const setConnectionEndpoint = useConnectionStore((s) => s.setEndpoint);
   const chainName = useConnectionStore((s) => s.chainName);
   const blockNumber = useConnectionStore((s) => s.blockNumber);
@@ -153,6 +155,26 @@ export function Settings() {
         </Section>
 
         <AppLockSettings />
+
+        {/* Privacy section — the indexer toggle. The wording carries the
+            honest trade: what the indexer learns, and what turns off. */}
+        <Section title="Privacy">
+          <Row
+            icon={<Globe size={18} className="text-ink-400" />}
+            label="Use xx network indexer"
+            value={indexerEnabled ? 'On' : 'Off'}
+            onClick={() => setIndexerEnabled(!indexerEnabled)}
+          />
+          <p className="px-1 text-xs text-ink-400 leading-relaxed">
+            The indexer (run by the xx Foundation) powers transaction
+            history, rewards history, multisig activity and chain scan,
+            and identity names. Like any web service, it sees your IP
+            address and the addresses you query. Turn it off and those
+            views explain what's missing instead — balances, sending,
+            staking and governance all keep working directly against the
+            chain, and identity names fall back to chain lookups.
+          </p>
+        </Section>
 
         {/* Accounts section */}
         <Section
