@@ -139,7 +139,7 @@ export function IOSInstallBanner() {
           </div>
           <button
             onClick={dismiss}
-            className="text-ink-500 active:text-ink-300 flex-shrink-0 -mt-1 -mr-1 p-1"
+            className="text-ink-400 active:text-ink-300 flex-shrink-0 -mt-1 -mr-1 p-1"
             aria-label="Dismiss install banner"
           >
             <X size={18} strokeWidth={1.75} />

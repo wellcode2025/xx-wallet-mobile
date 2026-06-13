@@ -108,7 +108,7 @@ export function SparkBarChart({
           {sel && (
             <button
               onClick={() => setSelected(null)}
-              className="text-ink-500 active:text-ink-300"
+              className="text-ink-300 active:text-ink-200"
             >
               Clear
             </button>

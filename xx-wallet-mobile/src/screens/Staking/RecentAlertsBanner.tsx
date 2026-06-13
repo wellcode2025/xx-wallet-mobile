@@ -118,7 +118,7 @@ function AlertCard({
           </div>
           <button
             onClick={onDismiss}
-            className="text-ink-500 active:text-ink-300 flex-shrink-0"
+            className="text-ink-400 active:text-ink-300 flex-shrink-0"
             aria-label="Dismiss alert"
           >
             <X size={16} strokeWidth={1.75} />
@@ -150,7 +150,7 @@ function AlertCard({
         </div>
         <button
           onClick={onDismiss}
-          className="text-ink-500 active:text-ink-300 flex-shrink-0"
+          className="text-ink-400 active:text-ink-300 flex-shrink-0"
           aria-label="Dismiss alert"
         >
           <X size={16} strokeWidth={1.75} />

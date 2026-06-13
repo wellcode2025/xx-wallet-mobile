@@ -255,7 +255,7 @@ function NominatingView({ position }: { position: StakingPosition }) {
         <ChevronRight
           size={16}
           strokeWidth={1.75}
-          className="text-ink-500 flex-shrink-0"
+          className="text-ink-400 flex-shrink-0"
         />
       </button>
 

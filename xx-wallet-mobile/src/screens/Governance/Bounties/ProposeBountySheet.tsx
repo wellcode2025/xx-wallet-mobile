@@ -228,7 +228,7 @@ function ValueInput({
           value={value}
           onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ''))}
           placeholder="0.0000"
-          className="w-full pl-3 pr-12 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-base font-mono text-ink-100 numeric placeholder:text-ink-500 focus:outline-none focus:border-ink-600"
+          className="w-full pl-3 pr-12 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-base font-mono text-ink-100 numeric placeholder:text-ink-300 focus:outline-none focus:border-ink-600"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-400 pointer-events-none">
           XX
@@ -286,7 +286,7 @@ function DescriptionInput({
         onChange={(e) => onChange(e.target.value)}
         rows={4}
         placeholder='Short title or forum link, e.g. <a href="https://forum.xx.network/t/your-bounty/123">xxB-2026-X title</a>'
-        className={`w-full px-3 py-2.5 rounded-2xl bg-ink-900 border text-sm text-ink-100 placeholder:text-ink-500 focus:outline-none focus:border-ink-600 resize-y ${
+        className={`w-full px-3 py-2.5 rounded-2xl bg-ink-900 border text-sm text-ink-100 placeholder:text-ink-300 focus:outline-none focus:border-ink-600 resize-y ${
           tooLong ? 'border-danger/50' : 'border-ink-800'
         }`}
       />

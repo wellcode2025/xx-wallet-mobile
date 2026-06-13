@@ -239,7 +239,7 @@ function SignerPicker({
         ))}
       </select>
       {name.secondary && (
-        <p className="text-xs text-ink-500 font-mono truncate">
+        <p className="text-xs text-ink-300 font-mono truncate">
           {name.secondary}
         </p>
       )}

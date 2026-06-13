@@ -163,7 +163,7 @@ export function AutoNominateBlock({
                 onClick={() => setStatsAddress(v.validatorId)}
                 className="w-full flex items-center gap-2 py-2.5 px-3 text-left active:bg-ink-800/40 transition-colors"
               >
-                <span className="text-ink-500 text-xs w-5 flex-shrink-0">
+                <span className="text-ink-300 text-xs w-5 flex-shrink-0">
                   {idx + 1}
                 </span>
                 <AddressLabel
@@ -174,7 +174,7 @@ export function AutoNominateBlock({
                 <span className="font-mono text-xs text-ink-400 numeric flex-shrink-0">
                   {v.commission.toFixed(0)}%
                 </span>
-                <ChevronRight size={14} className="text-ink-500 flex-shrink-0" />
+                <ChevronRight size={14} className="text-ink-400 flex-shrink-0" />
               </button>
             </li>
           ))}

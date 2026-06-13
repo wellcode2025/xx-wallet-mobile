@@ -255,7 +255,7 @@ export function LockScreen() {
                 onKeyDown={(e) => e.key === 'Enter' && submitRecovery()}
                 disabled={busy}
                 placeholder="Wallet password"
-                className="w-full px-3 py-3 rounded-2xl bg-ink-900 border border-ink-800 text-sm text-ink-100 placeholder:text-ink-500 focus:outline-none focus:border-ink-600 disabled:opacity-50"
+                className="w-full px-3 py-3 rounded-2xl bg-ink-900 border border-ink-800 text-sm text-ink-100 placeholder:text-ink-300 focus:outline-none focus:border-ink-600 disabled:opacity-50"
               />
               {recoverError && (
                 <p className="text-xs text-danger text-center">{recoverError}</p>

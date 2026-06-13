@@ -466,7 +466,7 @@ function PickBlock({
                 key={address}
                 className="flex items-center gap-2 py-1 text-xs"
               >
-                <span className="text-ink-500 w-5 flex-shrink-0">{idx + 1}</span>
+                <span className="text-ink-300 w-5 flex-shrink-0">{idx + 1}</span>
                 <AddressLabel address={address} className="text-xs min-w-0" />
               </li>
             ))}
