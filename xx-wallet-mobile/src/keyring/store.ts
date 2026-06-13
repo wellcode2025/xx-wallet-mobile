@@ -581,7 +581,12 @@ class XxKeyring {
   async unlock(address: string, password: string): Promise<KeyringPair> {
     const keyring = this.ensureReady();
     const account = this.listAccounts().find((a) => a.address === address);
-    if (!account) throw new Error('Account not found.');
+    // Same message as a failed decrypt (L-4): the unlock path must not
+    // reveal whether an address exists in this wallet — an attacker
+    // probing with a stolen address list learns nothing either way.
+    // Account-not-found here is a caller bug regardless (addresses come
+    // from our own store), so no diagnostics are lost in practice.
+    if (!account) throw new Error('Incorrect password for this keystore.');
     if (isLedgerAccount(account)) {
       // Defensive — signing flows route Ledger accounts to the device
       // signer before reaching here. If this throws, a caller missed
