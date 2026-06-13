@@ -28,13 +28,18 @@
 #   adding this on subdomains that may not always be HTTPS.
 #
 # Permissions-Policy:
-#   Camera allowed for the QR scanner; everything else explicitly denied so a
-#   compromised dependency can't quietly start the mic or read geolocation.
+#   Camera allowed for the QR scanner. USB and HID allowed (same-origin
+#   only) for Ledger hardware-wallet connections — WebHID carries desktop,
+#   WebUSB carries Android over a USB-C cable; both still require an
+#   explicit per-device user grant via the browser's chooser, so allowing
+#   the feature does not expose devices without user action. Everything
+#   else explicitly denied so a compromised dependency can't quietly
+#   start the mic or read geolocation.
 
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' wss://*.xx.network wss://*.dwellir.com https://indexer.xx.network ws://localhost:* wss://*; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
-  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=()
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=(self), hid=(self), accelerometer=(), gyroscope=()
   X-Frame-Options: DENY
