@@ -118,7 +118,7 @@ export function LockScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-ink-950 flex flex-col items-center justify-center px-6">
+    <div role="main" className="min-h-screen bg-ink-950 flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-xs flex flex-col items-center gap-6">
         <div className="w-16 h-16 rounded-full bg-ink-900 border border-ink-800 flex items-center justify-center">
           {view === 'biometric' ? (
@@ -134,7 +134,7 @@ export function LockScreen() {
               <p className="font-display font-medium text-lg text-ink-100">
                 Wallet locked
               </p>
-              <p className="text-sm text-ink-400">
+              <p className="text-sm text-ink-300">
                 Unlock with your fingerprint or face.
               </p>
             </div>
@@ -158,7 +158,7 @@ export function LockScreen() {
                 setView('pin');
                 setBioError(null);
               }}
-              className="text-xs text-ink-400 active:text-ink-200"
+              className="text-xs text-ink-300 active:text-ink-200"
             >
               Use PIN instead
             </button>
@@ -171,7 +171,7 @@ export function LockScreen() {
               <p className="font-display font-medium text-lg text-ink-100">
                 Wallet locked
               </p>
-              <p className="text-sm text-ink-400">Enter your PIN to continue.</p>
+              <p className="text-sm text-ink-300">Enter your PIN to continue.</p>
             </div>
 
             <div className="w-full space-y-2">
@@ -212,7 +212,7 @@ export function LockScreen() {
                     setView('biometric');
                     setError(null);
                   }}
-                  className="text-xs text-ink-400 active:text-ink-200"
+                  className="text-xs text-ink-300 active:text-ink-200"
                 >
                   Use biometrics instead
                 </button>
@@ -222,7 +222,7 @@ export function LockScreen() {
                   setView('recovery');
                   setError(null);
                 }}
-                className="text-xs text-ink-400 active:text-ink-200"
+                className="text-xs text-ink-300 active:text-ink-200"
               >
                 Forgot PIN?
               </button>
@@ -236,7 +236,7 @@ export function LockScreen() {
               <p className="font-display font-medium text-lg text-ink-100">
                 Forgot PIN
               </p>
-              <p className="text-sm text-ink-400 leading-relaxed">
+              <p className="text-sm text-ink-300 leading-relaxed">
                 Enter the password for any of your wallets to unlock. This turns
                 the app lock off — set a new PIN afterward in Settings.
               </p>
@@ -269,7 +269,7 @@ export function LockScreen() {
               </button>
             </div>
 
-            <p className="text-xs text-ink-400 text-center leading-relaxed">
+            <p className="text-xs text-ink-300 text-center leading-relaxed">
               Don't remember any password either? You can reinstall the app and
               restore from your recovery phrase — your keys aren't lost.
             </p>
@@ -280,7 +280,7 @@ export function LockScreen() {
                 setPassword('');
                 setRecoverError(null);
               }}
-              className="text-xs text-ink-400 active:text-ink-200"
+              className="text-xs text-ink-300 active:text-ink-200"
             >
               ← Back
             </button>

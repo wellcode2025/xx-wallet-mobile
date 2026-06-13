@@ -131,7 +131,7 @@ export function WithdrawUnbonded() {
       <div className="px-5 py-4 space-y-4">
         {/* Account context */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Withdrawing to
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
@@ -154,11 +154,11 @@ export function WithdrawUnbonded() {
           <>
             {/* What's being withdrawn */}
             <div className="card space-y-3">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Ready to withdraw
               </p>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-xs text-ink-400">Total</span>
+                <span className="text-xs text-ink-300">Total</span>
                 <span className="font-mono text-base text-ink-100 numeric">
                   {formatBalance(maturedTotal, {
                     decimals: 4,
@@ -168,7 +168,7 @@ export function WithdrawUnbonded() {
               </div>
               {matured.length > 1 && (
                 <>
-                  <p className="text-xs text-ink-400 pt-2 border-t border-ink-800/60">
+                  <p className="text-xs text-ink-300 pt-2 border-t border-ink-800/60">
                     Across {matured.length} matured chunks
                   </p>
                   <ul className="space-y-1.5">
@@ -177,7 +177,7 @@ export function WithdrawUnbonded() {
                         key={`${c.era}-${idx}`}
                         className="flex items-baseline justify-between gap-3 text-xs"
                       >
-                        <span className="text-ink-400">Era {c.era}</span>
+                        <span className="text-ink-300">Era {c.era}</span>
                         <span className="font-mono text-ink-200 numeric">
                           {formatBalance(c.value, {
                             decimals: 4,
@@ -189,7 +189,7 @@ export function WithdrawUnbonded() {
                   </ul>
                 </>
               )}
-              <p className="text-xs text-ink-400 pt-2 border-t border-ink-800/60">
+              <p className="text-xs text-ink-300 pt-2 border-t border-ink-800/60">
                 Once withdrawn, this XX becomes transferable again. Your
                 remaining bonded stake is unaffected.
               </p>
@@ -198,7 +198,7 @@ export function WithdrawUnbonded() {
             {/* Slashing spans (transparency) */}
             {spanCount !== null && spanCount > 0 && (
               <div className="card">
-                <p className="text-xs text-ink-400">
+                <p className="text-xs text-ink-300">
                   This account has {spanCount} slashing span
                   {spanCount === 1 ? '' : 's'} recorded on chain. The
                   withdraw extrinsic cleans those up as part of the call.
@@ -250,7 +250,7 @@ export function WithdrawUnbonded() {
             <p className="font-display font-medium text-sm text-ink-100">
               Withdrew {formatBalance(maturedTotal, { decimals: 4, withSymbol: true })}
             </p>
-            <p className="text-xs text-ink-400">Returning to staking…</p>
+            <p className="text-xs text-ink-300">Returning to staking…</p>
           </div>
         )}
 

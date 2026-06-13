@@ -28,7 +28,7 @@ export function TipsTab({ tips }: { tips: TipsResult }) {
           Active tips · {tips.tips.length}
         </h2>
         {tips.tips.length === 0 ? (
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             No active tips. Anyone can call treasury.reportAwesome to
             propose a tip for a contributor; council members then endorse
             with a tip amount, and after enough endorsements the median
@@ -94,26 +94,26 @@ function TipRow({ tip }: { tip: TipEntry }) {
       <div className="flex items-center gap-2">
         <AddressIcon address={tip.who} size={28} copyOnTap={false} />
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="text-xs text-ink-400">Tipped</p>
+          <p className="text-xs text-ink-300">Tipped</p>
           <p className="text-sm text-ink-100 truncate">{whoName.primary}</p>
           {whoName.secondary && (
-            <p className="text-xs text-ink-400 font-mono truncate">
+            <p className="text-xs text-ink-300 font-mono truncate">
               {whoName.secondary}
             </p>
           )}
         </div>
       </div>
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-ink-300">
         Finder:{' '}
         <span className="text-ink-300">{finderName.primary}</span>
         {finderName.secondary && (
-          <span className="text-ink-400 font-mono ml-1">
+          <span className="text-ink-300 font-mono ml-1">
             {finderName.secondary}
           </span>
         )}
       </p>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs text-ink-400">
+        <p className="text-xs text-ink-300">
           {tip.endorserCount} endorser{tip.endorserCount === 1 ? '' : 's'}
         </p>
         {tip.endorsementSum && (
@@ -129,7 +129,7 @@ function TipRow({ tip }: { tip: TipEntry }) {
         )}
       </div>
       {closesIn && (
-        <p className="text-xs text-ink-400">
+        <p className="text-xs text-ink-300">
           {closesIn.isOverdue
             ? 'Ready to close'
             : `Closes in ${closesIn.label}`}

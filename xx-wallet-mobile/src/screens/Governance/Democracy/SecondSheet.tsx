@@ -47,7 +47,7 @@ export function SecondSheet({ open, onClose, proposalIndex }: SecondSheetProps) 
             Backing public proposal{' '}
             <span className="font-mono text-ink-100">#{proposalIndex}</span>
           </p>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             Seconding a proposal is a free signal that elevates it in the
             public-proposals queue at the next launch period. No tokens
             are locked.

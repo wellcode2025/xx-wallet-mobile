@@ -53,7 +53,7 @@ export function StakingLayout() {
                   'flex-1 text-center text-sm font-medium py-2 rounded-xl transition-colors',
                   isActive
                     ? 'bg-ink-800 text-xx-500'
-                    : 'text-ink-400 active:bg-ink-800/50'
+                    : 'text-ink-300 active:bg-ink-800/50'
                 )
               }
             >

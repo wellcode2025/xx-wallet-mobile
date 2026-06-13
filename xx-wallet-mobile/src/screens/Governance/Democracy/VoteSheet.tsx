@@ -110,16 +110,16 @@ export function VoteSheet({
 
         {previewVotePower && (
           <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-3">
-            <p className="text-xs text-ink-400">Vote power</p>
+            <p className="text-xs text-ink-300">Vote power</p>
             <p className="font-mono text-sm text-ink-100 numeric">
               {formatBalance(previewVotePower, {
                 decimals: 4,
                 trim: true,
                 grouping: true,
               })}{' '}
-              <span className="text-ink-400">XX</span>
+              <span className="text-ink-300">XX</span>
             </p>
-            <p className="text-xs text-ink-400 mt-1">
+            <p className="text-xs text-ink-300 mt-1">
               = {formatBalance(amountBn ?? new BN(0), {
                 decimals: 4,
                 trim: true,
@@ -179,7 +179,7 @@ function AyeNayToggle({
           'flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-medium text-sm transition-colors',
           aye
             ? 'bg-xx-500/15 text-xx-500 border border-xx-500/40'
-            : 'bg-ink-900 text-ink-400 border border-ink-800 active:bg-ink-800'
+            : 'bg-ink-900 text-ink-300 border border-ink-800 active:bg-ink-800'
         )}
       >
         <Check size={16} strokeWidth={2} />
@@ -192,7 +192,7 @@ function AyeNayToggle({
           'flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-medium text-sm transition-colors',
           !aye
             ? 'bg-warning/15 text-warning border border-warning/40'
-            : 'bg-ink-900 text-ink-400 border border-ink-800 active:bg-ink-800'
+            : 'bg-ink-900 text-ink-300 border border-ink-800 active:bg-ink-800'
         )}
       >
         <X size={16} strokeWidth={2} />
@@ -224,7 +224,7 @@ function BalanceInput({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between">
-        <label className="text-xs text-ink-400">Balance to lock</label>
+        <label className="text-xs text-ink-300">Balance to lock</label>
         <button
           type="button"
           onClick={onMax}
@@ -243,11 +243,11 @@ function BalanceInput({
           placeholder="0.0000"
           className="w-full pl-3 pr-12 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-base font-mono text-ink-100 numeric placeholder:text-ink-300 focus:outline-none focus:border-ink-600"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-400 pointer-events-none">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-300 pointer-events-none">
           XX
         </span>
       </div>
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-ink-300">
         Available:{' '}
         <span className="font-mono text-ink-300">
           {formatBalance(available, {
@@ -271,7 +271,7 @@ function ConvictionPicker({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-ink-400">Conviction</label>
+      <label className="text-xs text-ink-300">Conviction</label>
       <div className="grid grid-cols-1 gap-1.5">
         {CONVICTIONS.map((c) => (
           <button

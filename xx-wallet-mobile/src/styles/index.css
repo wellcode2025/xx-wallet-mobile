@@ -78,7 +78,7 @@
   .input-base {
     @apply w-full min-h-[52px] px-4 rounded-2xl
            bg-ink-800 border border-ink-700
-           text-ink-100 placeholder:text-ink-400
+           text-ink-100 placeholder:text-ink-300
            focus:border-xx-500 focus:outline-none focus:ring-0
            transition-colors duration-150;
   }

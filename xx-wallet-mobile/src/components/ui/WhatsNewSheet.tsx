@@ -94,7 +94,7 @@ export function WhatsNewSheet() {
         </div>
 
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Just updated · v{APP_VERSION}
           </p>
           <h2 className="font-display font-semibold text-xl text-ink-100">

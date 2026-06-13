@@ -23,12 +23,12 @@ export function MembersTab({ council }: { council: UseCouncilResult }) {
           <h2 className="font-display text-base text-ink-100">
             Members · {council.members.length}
           </h2>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             {council.desiredMembers} seats
           </p>
         </div>
         {council.members.length === 0 ? (
-          <p className="text-sm text-ink-400">No members on chain.</p>
+          <p className="text-sm text-ink-300">No members on chain.</p>
         ) : (
           <ul className="divide-y divide-ink-800/60">
             {council.members.map((m) => (
@@ -48,12 +48,12 @@ export function MembersTab({ council }: { council: UseCouncilResult }) {
           <h2 className="font-display text-base text-ink-100">
             Runners-up · {council.runnersUp.length}
           </h2>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             {council.desiredRunnersUp} slots
           </p>
         </div>
         {council.runnersUp.length === 0 ? (
-          <p className="text-sm text-ink-400">No runners-up on chain.</p>
+          <p className="text-sm text-ink-300">No runners-up on chain.</p>
         ) : (
           <ul className="divide-y divide-ink-800/60">
             {council.runnersUp.map((r) => (
@@ -68,7 +68,7 @@ export function MembersTab({ council }: { council: UseCouncilResult }) {
           Candidates · {council.candidates.length}
         </h2>
         {council.candidates.length === 0 ? (
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             No candidates have submitted for the next election. Anyone
             with the candidacy bond can put themselves forward.
           </p>

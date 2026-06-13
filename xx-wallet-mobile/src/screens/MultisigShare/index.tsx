@@ -242,7 +242,7 @@ function ShareView({
             <p className="text-sm text-ink-200">
               No cached call data for this proposal.
             </p>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               The bytes may have been cleared. You can still see the
               proposal under {multisig.localName}, but you'll need a
               cosigner to share their copy of the call data.
@@ -272,7 +272,7 @@ function ShareView({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Users size={14} className="text-xx-500" strokeWidth={2.25} />
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               {multisig.localName}
             </p>
           </div>
@@ -281,7 +281,7 @@ function ShareView({
               ? 'Open this on your second device'
               : 'Send this to your cosigners'}
           </h1>
-          <p className="text-xs text-ink-400 leading-relaxed">
+          <p className="text-xs text-ink-300 leading-relaxed">
             {isTwoDevice
               ? 'Your second device will show the same decoded action below, where one approval releases the funds. The quickest way is to scan the QR code with it.'
               : "They'll import it into their wallet, see the same decoded action you see below, and can approve once" +
@@ -316,7 +316,7 @@ function ShareView({
               if (transfer) {
                 return (
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                    <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                       Sending
                     </p>
                     <div className="flex items-baseline gap-2 flex-wrap">
@@ -328,7 +328,7 @@ function ShareView({
                       </span>
                     </div>
                     <div className="pt-1 space-y-1">
-                      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                      <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                         To
                       </p>
                       <AddressLabel
@@ -343,7 +343,7 @@ function ShareView({
                           a name is present (i.e. AddressLabel rendered the
                           name + small fragment, and we want the full address
                           available for verification). */}
-                      <p className="font-mono text-xs text-ink-400 break-all leading-snug">
+                      <p className="font-mono text-xs text-ink-300 break-all leading-snug">
                         {transfer.recipient}
                       </p>
                     </div>
@@ -357,12 +357,12 @@ function ShareView({
               );
             })()
           ) : (
-            <p className="text-sm text-ink-400">Decoding…</p>
+            <p className="text-sm text-ink-300">Decoding…</p>
           )}
         </div>
 
         {stillBuilding && (
-          <div className="card text-xs text-ink-400 flex items-center gap-2">
+          <div className="card text-xs text-ink-300 flex items-center gap-2">
             <Loader2 size={14} className="animate-spin" />
             Building share package…
           </div>
@@ -376,7 +376,7 @@ function ShareView({
               <Download size={16} strokeWidth={2} />
               Download as file
             </button>
-            <p className="text-xs text-ink-400 leading-relaxed -mt-1 px-1">
+            <p className="text-xs text-ink-300 leading-relaxed -mt-1 px-1">
               {isTwoDevice ? (
                 <>
                   Saves a <code>{fileName}</code> file you can get to your
@@ -408,7 +408,7 @@ function ShareView({
                     className="w-full max-w-[280px] h-auto"
                   />
                 ) : (
-                  <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-400 text-xs">
+                  <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-300 text-xs">
                     Generating…
                   </div>
                 )}
@@ -452,7 +452,7 @@ function ShareView({
           Done
         </button>
 
-        <p className="text-xs text-ink-400 text-center leading-relaxed">
+        <p className="text-xs text-ink-300 text-center leading-relaxed">
           The proposal is on chain regardless of how (or if) you share —
           you can always come back to share later by reopening the
           proposal from {multisig.localName}.

@@ -137,12 +137,12 @@ export function ChangeValidators() {
       <div className="px-5 py-4 space-y-4">
         {/* Account context */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             {nominating ? 'Re-nominating from' : 'Nominating from'}
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
           {nominating && position?.targets && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Currently nominating{' '}
               <span className="text-ink-200">
                 {position.targets.length}
@@ -169,7 +169,7 @@ export function ChangeValidators() {
           <>
             {/* Selection */}
             <div className="card space-y-3">
-              <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 New validator set
               </label>
 
@@ -182,7 +182,7 @@ export function ChangeValidators() {
                       'flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors',
                       mode === m
                         ? 'bg-ink-800 text-xx-500'
-                        : 'text-ink-400 active:bg-ink-800/50'
+                        : 'text-ink-300 active:bg-ink-800/50'
                     )}
                   >
                     {m === 'auto' ? 'Auto-recommend' : 'Hand-pick'}
@@ -208,7 +208,7 @@ export function ChangeValidators() {
             {/* Review */}
             {targetsValid && (
               <div className="card space-y-2">
-                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                   Review
                 </p>
                 <ReviewRow
@@ -221,7 +221,7 @@ export function ChangeValidators() {
                 />
                 <ReviewRow label="Network fee" value="~0.016 XX" />
                 {!targetsChanged && (
-                  <p className="text-xs text-ink-400 pt-1">
+                  <p className="text-xs text-ink-300 pt-1">
                     Selection matches your current nominations — change it
                     before signing.
                   </p>
@@ -267,7 +267,7 @@ export function ChangeValidators() {
             <p className="font-display font-medium text-sm text-ink-100">
               Nominations updated
             </p>
-            <p className="text-xs text-ink-400">Returning to staking…</p>
+            <p className="text-xs text-ink-300">Returning to staking…</p>
           </div>
         )}
 
@@ -306,7 +306,7 @@ function submitLabel(
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-xs text-ink-400">{label}</span>
+      <span className="text-xs text-ink-300">{label}</span>
       <span className="font-mono text-sm text-ink-100 numeric">{value}</span>
     </div>
   );
@@ -322,7 +322,7 @@ function PickBlock({
   return (
     <div className="space-y-2">
       {handPicked.length === 0 ? (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           No validators selected yet. Tap below to choose.
         </p>
       ) : (
@@ -342,7 +342,7 @@ function PickBlock({
               </li>
             ))}
             {handPicked.length > 5 && (
-              <li className="text-xs text-ink-400 pl-7">
+              <li className="text-xs text-ink-300 pl-7">
                 + {handPicked.length - 5} more
               </li>
             )}

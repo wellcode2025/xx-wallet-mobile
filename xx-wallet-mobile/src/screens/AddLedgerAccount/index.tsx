@@ -260,7 +260,7 @@ export function AddLedgerAccount() {
                 These are your Ledger's xx network accounts, in the same
                 order Ledger Live shows them.
                 {appVersion && (
-                  <span className="text-ink-400"> xx app v{appVersion}.</span>
+                  <span className="text-ink-300"> xx app v{appVersion}.</span>
                 )}
               </p>
             </div>
@@ -318,7 +318,7 @@ export function AddLedgerAccount() {
                   {chosen.address}
                 </p>
               </div>
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Derivation: account #{chosen.slots.account + 1} (m/44'/1955'/
                 {chosen.slots.account}'/0'/0')
               </p>
@@ -375,7 +375,7 @@ export function AddLedgerAccount() {
             </div>
 
             <div className="card space-y-2">
-              <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="block text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Name
               </label>
               <input
@@ -432,7 +432,7 @@ function CandidateRow({
         <p className="font-mono text-xs text-ink-100 truncate">
           {shortenAddress(candidate.address, { start: 10, end: 8 })}
         </p>
-        <p className="text-xs text-ink-400 mt-0.5">
+        <p className="text-xs text-ink-300 mt-0.5">
           Account #{candidate.slots.account + 1}
           <span className="text-ink-600"> · </span>
           <span className="numeric">
@@ -442,7 +442,7 @@ function CandidateRow({
         </p>
       </div>
       {alreadyAdded && (
-        <span className="text-xs uppercase tracking-wider text-ink-400 flex-shrink-0">
+        <span className="text-xs uppercase tracking-wider text-ink-300 flex-shrink-0">
           added
         </span>
       )}

@@ -306,14 +306,14 @@ export function ValidatorSetup() {
       <div className="px-5 py-4 space-y-4">
         {/* Account context */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             {validatorState?.mode === 'update'
               ? 'Updating'
               : 'Setting up validator for'}
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
           {transferable && validatorState?.mode === 'new' && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Available:{' '}
               <span className="font-mono text-ink-200">
                 {formatBalance(transferable, { decimals: 4, withSymbol: true })}
@@ -342,7 +342,7 @@ export function ValidatorSetup() {
             {/* Amount — only for new validators */}
             {validatorState.mode === 'new' && (
               <div className="card space-y-2">
-                <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                   Bond amount (minimum 7,500 XX)
                 </label>
                 <div className="flex items-stretch gap-2">
@@ -353,9 +353,9 @@ export function ValidatorSetup() {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="7500.0"
-                      className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-400 focus:outline-none numeric"
+                      className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-300 focus:outline-none numeric"
                     />
-                    <span className="text-sm text-ink-400 pl-2">XX</span>
+                    <span className="text-sm text-ink-300 pl-2">XX</span>
                   </div>
                   <button
                     onClick={handleMax}
@@ -384,7 +384,7 @@ export function ValidatorSetup() {
 
             {/* cMix node id */}
             <div className="card space-y-2">
-              <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 cMix node id (H256 hex)
               </label>
               <textarea
@@ -394,7 +394,7 @@ export function ValidatorSetup() {
                 rows={2}
                 disabled={isSubmitting}
                 className={clsx(
-                  'w-full px-3 py-2 rounded-2xl bg-ink-950 border text-xs font-mono text-ink-100 placeholder:text-ink-400 focus:outline-none break-all',
+                  'w-full px-3 py-2 rounded-2xl bg-ink-950 border text-xs font-mono text-ink-100 placeholder:text-ink-300 focus:outline-none break-all',
                   cmixId && !cmixIdValid
                     ? 'border-danger focus:border-danger'
                     : 'border-ink-800 focus:border-ink-600'
@@ -407,7 +407,7 @@ export function ValidatorSetup() {
               )}
               {validatorState.currentCmixIdHex &&
                 cmixId.trim() === validatorState.currentCmixIdHex && (
-                  <p className="text-xs text-ink-400">
+                  <p className="text-xs text-ink-300">
                     Unchanged from current — no setCmixId call needed.
                   </p>
                 )}
@@ -425,7 +425,7 @@ export function ValidatorSetup() {
 
             {/* Commission */}
             <div className="card space-y-2">
-              <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Commission (% — min 2, max 100)
               </label>
               <div className="flex items-center bg-ink-950 border border-ink-800 rounded-2xl px-3 focus-within:border-ink-600">
@@ -435,9 +435,9 @@ export function ValidatorSetup() {
                   value={commissionPct}
                   onChange={(e) => setCommissionPct(e.target.value)}
                   placeholder="5"
-                  className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-400 focus:outline-none numeric"
+                  className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-300 focus:outline-none numeric"
                 />
-                <span className="text-sm text-ink-400 pl-2">%</span>
+                <span className="text-sm text-ink-300 pl-2">%</span>
               </div>
               {commissionPct && !commissionValid && (
                 <p className="text-xs text-danger">
@@ -445,7 +445,7 @@ export function ValidatorSetup() {
                   {MAX_COMMISSION_PCT}%.
                 </p>
               )}
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 The cut your validator takes before rewards are distributed
                 to nominators. xx network enforces a 2% floor.
               </p>
@@ -472,7 +472,7 @@ export function ValidatorSetup() {
               </button>
               <div className="flex-1">
                 <p className="text-sm text-ink-100">Block new nominators</p>
-                <p className="text-xs text-ink-400 mt-0.5">
+                <p className="text-xs text-ink-300 mt-0.5">
                   When on, this validator won't accept new nominations.
                   Existing nominators keep backing you. Useful when at
                   capacity or winding down.
@@ -483,7 +483,7 @@ export function ValidatorSetup() {
             {/* Review */}
             {amountValid && cmixIdValid && commissionValid && (
               <div className="card space-y-2">
-                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                   Review
                 </p>
                 {validatorState.mode === 'new' && parsedAmountBN && (
@@ -564,10 +564,10 @@ export function ValidatorSetup() {
 
             {validatorState.mode === 'update' && (
               <div className="card space-y-2">
-                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                   Node maintenance
                 </p>
-                <p className="text-xs text-ink-400">
+                <p className="text-xs text-ink-300">
                   Rotate or transfer the cMix node id without changing
                   validator prefs — useful when migrating to new hardware.
                 </p>
@@ -598,7 +598,7 @@ export function ValidatorSetup() {
                 ? 'Validator settings updated'
                 : 'Validator registered'}
             </p>
-            <p className="text-xs text-ink-400">Returning to staking…</p>
+            <p className="text-xs text-ink-300">Returning to staking…</p>
           </div>
         )}
 
@@ -614,7 +614,7 @@ export function ValidatorSetup() {
               {txError.message}
             </p>
             {failedStep?.label === 'validate' && (
-              <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+              <p className="text-xs text-ink-300 mt-1 leading-relaxed">
                 The earlier step already went through — your bond/cMix ID
                 is set. Retry from this screen to finish registering as a
                 validator.
@@ -650,7 +650,7 @@ function submitLabel(
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-xs text-ink-400">{label}</span>
+      <span className="text-xs text-ink-300">{label}</span>
       <span className="font-mono text-sm text-ink-100 numeric">{value}</span>
     </div>
   );

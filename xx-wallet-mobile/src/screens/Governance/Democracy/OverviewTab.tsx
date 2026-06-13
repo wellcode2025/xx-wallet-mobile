@@ -76,10 +76,10 @@ function ReferendaSection({
         <h2 className="font-display text-base text-ink-100">
           Referenda · {ongoing.length}
         </h2>
-        <p className="text-xs text-ink-400">{total} all-time</p>
+        <p className="text-xs text-ink-300">{total} all-time</p>
       </div>
       {ongoing.length === 0 ? (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           No active referenda. Active ones appear here with their tally
           and end block.
         </p>
@@ -89,7 +89,7 @@ function ReferendaSection({
             <ReferendumRow key={r.id} ref_={r} />
           ))}
           {ongoing.length > 5 && (
-            <li className="text-xs text-ink-400">
+            <li className="text-xs text-ink-300">
               + {ongoing.length - 5} more active
             </li>
           )}
@@ -123,10 +123,10 @@ function ReferendumRow({ ref_ }: { ref_: OngoingReferendum }) {
               className="text-ink-400"
             />
           </div>
-          <p className="text-xs text-ink-400">{ref_.threshold}</p>
+          <p className="text-xs text-ink-300">{ref_.threshold}</p>
         </div>
         {ref_.proposalHash && (
-          <p className="mt-1 font-mono text-xs text-ink-400 truncate">
+          <p className="mt-1 font-mono text-xs text-ink-300 truncate">
             {shortenHex(ref_.proposalHash)}
           </p>
         )}
@@ -135,9 +135,9 @@ function ReferendumRow({ ref_ }: { ref_: OngoingReferendum }) {
           <TallyCell label="Nays" amount={ref_.tally.nays} />
           <TallyCell label="Turnout" amount={ref_.tally.turnout} />
         </div>
-        <p className="mt-2 text-xs text-ink-400">
+        <p className="mt-2 text-xs text-ink-300">
           Ends in <span className="text-ink-200">{end.label}</span>
-          <span className="text-ink-400"> (block #{ref_.end.toLocaleString()})</span>
+          <span className="text-ink-300"> (block #{ref_.end.toLocaleString()})</span>
         </p>
       </Link>
     </li>
@@ -153,14 +153,14 @@ function TallyCell({
 }) {
   return (
     <div>
-      <p className="text-ink-400">{label}</p>
+      <p className="text-ink-300">{label}</p>
       <p className="font-mono text-ink-200 numeric truncate">
         {formatBalance(amount, {
           decimals: 0,
           trim: true,
           grouping: true,
         })}
-        <span className="text-ink-400"> XX</span>
+        <span className="text-ink-300"> XX</span>
       </p>
     </div>
   );
@@ -179,10 +179,10 @@ function ProposalsSection({
         <h2 className="font-display text-base text-ink-100">
           Proposals · {proposals.length}
         </h2>
-        <p className="text-xs text-ink-400">{total} all-time</p>
+        <p className="text-xs text-ink-300">{total} all-time</p>
       </div>
       {proposals.length === 0 ? (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           No open public proposals. Anyone can propose by submitting a
           preimage and depositing the minimum bond.
         </p>
@@ -192,7 +192,7 @@ function ProposalsSection({
             <ProposalRow key={p.id} proposal={p} />
           ))}
           {proposals.length > 5 && (
-            <li className="text-xs text-ink-400">
+            <li className="text-xs text-ink-300">
               + {proposals.length - 5} more open
             </li>
           )}
@@ -219,11 +219,11 @@ function ProposalRow({ proposal }: { proposal: PublicProposal }) {
           Second
         </button>
       </div>
-      <p className="text-xs text-ink-400 truncate mt-0.5">
+      <p className="text-xs text-ink-300 truncate mt-0.5">
         Depositor: <span className="text-ink-300">{name.primary}</span>
       </p>
       {proposal.proposalHash && (
-        <p className="mt-1 font-mono text-xs text-ink-400 truncate">
+        <p className="mt-1 font-mono text-xs text-ink-300 truncate">
           {shortenHex(proposal.proposalHash)}
         </p>
       )}
@@ -241,13 +241,13 @@ function ExternalSection({ external }: { external: ExternalProposal | null }) {
     <section className="card space-y-2">
       <h2 className="font-display text-base text-ink-100">External</h2>
       {!external ? (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           No external proposal queued. Council can route a referendum
           here when they want to bypass the public proposal queue.
         </p>
       ) : (
         <div>
-          <p className="text-xs text-ink-400">{external.threshold}</p>
+          <p className="text-xs text-ink-300">{external.threshold}</p>
           {external.proposalHash && (
             <p className="mt-1 font-mono text-xs text-ink-200 truncate">
               {shortenHex(external.proposalHash)}

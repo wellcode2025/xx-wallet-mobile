@@ -39,7 +39,7 @@ export function BottomNav() {
                   'flex flex-col items-center justify-center gap-1 py-2.5 px-1',
                   'min-h-[56px] transition-colors duration-150',
                   'active:bg-ink-800/60',
-                  isActive ? 'text-xx-500' : 'text-ink-400'
+                  isActive ? 'text-xx-500' : 'text-ink-300'
                 )
               }
             >

@@ -50,7 +50,7 @@ export function AutoNominateBlock({
     return (
       <div className="space-y-2">
         <LoadingIndicator message="Selecting validators for you..." />
-        <p className="text-xs text-ink-400">
+        <p className="text-xs text-ink-300">
           This usually takes 30–60 seconds in the browser. The wallet pulls
           every bonded account, ledger, validator, and nominator from chain,
           runs the election locally, then scores each elected validator by
@@ -95,7 +95,7 @@ export function AutoNominateBlock({
         </button>
       </div>
 
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-ink-300">
         Selected in {(autoResult.timings.totalMs / 1000).toFixed(1)}s.
       </p>
 
@@ -103,7 +103,7 @@ export function AutoNominateBlock({
       <div className="flex items-center justify-between gap-2">
         <button
           onClick={() => setAdvancedOpen(true)}
-          className="flex items-center gap-1.5 text-xs text-ink-400 active:text-ink-200"
+          className="flex items-center gap-1.5 text-xs text-ink-300 active:text-ink-200"
         >
           <SlidersHorizontal size={12} strokeWidth={1.75} />
           Advanced
@@ -112,7 +112,7 @@ export function AutoNominateBlock({
           )}
         </button>
         {selection.leverCount > 0 && selection.changedCount > 0 && (
-          <span className="text-xs text-ink-400">
+          <span className="text-xs text-ink-300">
             {selection.changedCount} pick
             {selection.changedCount === 1 ? '' : 's'} changed
           </span>
@@ -132,7 +132,7 @@ export function AutoNominateBlock({
           How these were chosen
         </button>
         {showHow && (
-          <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+          <p className="text-xs text-ink-300 mt-1 leading-relaxed">
             The wallet runs the network's own election locally, then ranks each
             validator by projected reward — its recent performance (reward
             points over the last ~7 eras), its commission, and how concentrated
@@ -171,7 +171,7 @@ export function AutoNominateBlock({
                   nameOverride={v.displayName ?? undefined}
                   className="text-xs min-w-0 flex-1"
                 />
-                <span className="font-mono text-xs text-ink-400 numeric flex-shrink-0">
+                <span className="font-mono text-xs text-ink-300 numeric flex-shrink-0">
                   {v.commission.toFixed(0)}%
                 </span>
                 <ChevronRight size={14} className="text-ink-400 flex-shrink-0" />

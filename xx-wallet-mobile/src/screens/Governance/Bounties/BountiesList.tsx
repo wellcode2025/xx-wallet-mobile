@@ -69,7 +69,7 @@ export function BountiesList() {
             )}
           </p>
           {!isLoading && totalCount > 0 && (
-            <p className="text-xs text-ink-400 shrink-0">
+            <p className="text-xs text-ink-300 shrink-0">
               {totalCount} all-time
             </p>
           )}
@@ -184,7 +184,7 @@ function TabButton({
         'flex-1 text-center text-sm font-medium py-2 rounded-xl transition-colors',
         active
           ? 'bg-ink-800 text-xx-500'
-          : 'text-ink-400 active:bg-ink-800/50'
+          : 'text-ink-300 active:bg-ink-800/50'
       )}
     >
       {label}
@@ -196,7 +196,7 @@ function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="card">
       <p className="text-sm text-ink-100 font-medium">{title}</p>
-      <p className="mt-1 text-sm text-ink-400">{body}</p>
+      <p className="mt-1 text-sm text-ink-300">{body}</p>
     </div>
   );
 }
@@ -208,7 +208,7 @@ function PastBountiesStub({ count }: { count: number }) {
         <p className="text-sm text-ink-100 font-medium">
           {count} past {count === 1 ? 'bounty' : 'bounties'}
         </p>
-        <p className="mt-1 text-sm text-ink-400">
+        <p className="mt-1 text-sm text-ink-300">
           Once a bounty is awarded and claimed, the chain prunes its
           details. To browse the history with proposers, curators, and
           payout amounts, open the explorer.

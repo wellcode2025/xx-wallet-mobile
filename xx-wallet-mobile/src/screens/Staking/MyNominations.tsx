@@ -53,7 +53,7 @@ export function MyNominations() {
           <p className="font-display font-medium text-base truncate">
             {activeAccount.name}
           </p>
-          <p className="font-mono text-xs text-ink-400 truncate">
+          <p className="font-mono text-xs text-ink-300 truncate">
             {activeAccount.address.slice(0, 10)}…
             {activeAccount.address.slice(-6)}
           </p>
@@ -115,14 +115,14 @@ function RewardsSummaryCard({ address }: { address: string }) {
       className="card block active:bg-ink-800/40 transition-colors"
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+        <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
           Rewards · last 90 eras
         </span>
         <span className="text-xs text-xx-500">View all →</span>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
             Total earned
           </p>
           <p className="font-mono text-sm text-ink-100 numeric">
@@ -133,7 +133,7 @@ function RewardsSummaryCard({ address }: { address: string }) {
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
             Eras with rewards
           </p>
           <p className="font-mono text-sm text-ink-100 numeric">
@@ -185,18 +185,18 @@ function NominatingView({ position }: { position: StakingPosition }) {
       {/* Bonded summary */}
       <div className="card space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Bonded
           </span>
           {submittedInEra !== null && (
-            <span className="text-xs text-ink-400">
+            <span className="text-xs text-ink-300">
               Nominating since era {submittedInEra}
             </span>
           )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
               Total
             </p>
             <p className="font-mono text-sm text-ink-100 numeric">
@@ -209,7 +209,7 @@ function NominatingView({ position }: { position: StakingPosition }) {
             </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
               Active
             </p>
             <p className="font-mono text-sm text-ink-100 numeric">
@@ -248,7 +248,7 @@ function NominatingView({ position }: { position: StakingPosition }) {
           <p className="font-display font-medium text-sm text-ink-100">
             Manage stake
           </p>
-          <p className="text-xs text-ink-400 mt-0.5">
+          <p className="text-xs text-ink-300 mt-0.5">
             Add to stake, change validators, or stop nominating.
           </p>
         </div>
@@ -266,7 +266,7 @@ function NominatingView({ position }: { position: StakingPosition }) {
           {targets.length === 1 ? '' : 's'}
         </h3>
         {activeEra !== null ? (
-          <p className="text-xs text-ink-400 mb-3">
+          <p className="text-xs text-ink-300 mb-3">
             Status shown for era {activeEra}.
           </p>
         ) : (
@@ -321,7 +321,7 @@ function UnlockingSection({
   );
   return (
     <div className="pt-3 border-t border-ink-800/60 space-y-2">
-      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+      <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
         Unbonding
       </p>
       {matured.length > 0 && (
@@ -333,7 +333,7 @@ function UnlockingSection({
             <p className="text-sm text-ink-100">
               Ready to withdraw
             </p>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               {matured.length} chunk{matured.length === 1 ? '' : 's'} matured
             </p>
           </div>
@@ -351,7 +351,7 @@ function UnlockingSection({
                 key={`${c.era}-${idx}`}
                 className="flex items-baseline justify-between gap-3 text-xs"
               >
-                <span className="text-ink-400">
+                <span className="text-ink-300">
                   Available in{' '}
                   {erasLeft !== null
                     ? `${erasLeft} day${erasLeft === 1 ? '' : 's'}`
@@ -381,7 +381,7 @@ function EmptyState({ isBonded }: { isBonded: boolean }) {
           <p className="font-display font-medium text-sm text-ink-100">
             Bonded, not nominating
           </p>
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             This account is bonded but isn't currently nominating any
             validators. Nominate to start earning rewards — your existing
             bond is used, so there's nothing more to lock.
@@ -405,7 +405,7 @@ function EmptyState({ isBonded }: { isBonded: boolean }) {
         <p className="font-display font-medium text-sm text-ink-100">
           Not nominating
         </p>
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           Earn staking rewards by bonding XX and nominating validators.
           xx unbonding takes 28 days.
         </p>
@@ -418,7 +418,7 @@ function EmptyState({ isBonded }: { isBonded: boolean }) {
       </Link>
       <Link
         to="/staking/validate"
-        className="text-xs text-ink-400 active:text-ink-200 transition-colors"
+        className="text-xs text-ink-300 active:text-ink-200 transition-colors"
       >
         Running a validator? Set up here →
       </Link>

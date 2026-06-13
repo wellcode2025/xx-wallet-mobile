@@ -94,7 +94,7 @@ function AlertCard({
                 {(alert.fraction / 1e7).toFixed(2)}%.
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-ink-400">
+            <div className="flex items-center gap-2 text-xs text-ink-300">
               <span>Validator:</span>
               <AddressLabel
                 address={alert.validatorAddress}
@@ -110,7 +110,7 @@ function AlertCard({
               </Link>
             )}
             {alert.isOwnValidator && (
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Your validator stash is at risk — chilling won't undo the
                 offence, but you can review your node operations.
               </p>
@@ -118,7 +118,7 @@ function AlertCard({
           </div>
           <button
             onClick={onDismiss}
-            className="text-ink-400 active:text-ink-300 flex-shrink-0"
+            className="text-ink-300 active:text-ink-300 flex-shrink-0"
             aria-label="Dismiss alert"
           >
             <X size={16} strokeWidth={1.75} />
@@ -150,7 +150,7 @@ function AlertCard({
         </div>
         <button
           onClick={onDismiss}
-          className="text-ink-400 active:text-ink-300 flex-shrink-0"
+          className="text-ink-300 active:text-ink-300 flex-shrink-0"
           aria-label="Dismiss alert"
         >
           <X size={16} strokeWidth={1.75} />

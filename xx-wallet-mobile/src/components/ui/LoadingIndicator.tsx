@@ -31,7 +31,7 @@ export function LoadingIndicator({
       >
         <div className="h-full w-1/4 bg-xx-500 rounded-full animate-progress-slide" />
       </div>
-      {message && <p className="text-xs text-ink-400">{message}</p>}
+      {message && <p className="text-xs text-ink-300">{message}</p>}
     </div>
   );
 }

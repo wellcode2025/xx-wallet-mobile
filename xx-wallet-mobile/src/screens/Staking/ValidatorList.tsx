@@ -88,7 +88,7 @@ export function ValidatorList() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or address"
-          className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none focus:border-ink-600"
+          className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-sm text-ink-100 placeholder:text-ink-300 focus:outline-none focus:border-ink-600"
         />
       </div>
 
@@ -104,7 +104,7 @@ export function ValidatorList() {
                 'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
                 active
                   ? 'bg-xx-500/10 text-xx-500 border-xx-500/30'
-                  : 'bg-ink-900 text-ink-400 border-ink-800 active:bg-ink-800'
+                  : 'bg-ink-900 text-ink-300 border-ink-800 active:bg-ink-800'
               )}
             >
               {label}
@@ -136,14 +136,14 @@ export function ValidatorList() {
 
       {!isLoading && !error && (
         <>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             {search.trim()
               ? `${filtered.length} of ${validators.length} validators`
               : `${validators.length} validators`}
           </p>
           {filtered.length === 0 ? (
             <div className="card">
-              <p className="text-sm text-ink-400">
+              <p className="text-sm text-ink-300">
                 {validators.length === 0
                   ? 'No validators found.'
                   : `No validators match "${search.trim()}".`}
@@ -182,7 +182,7 @@ function ValidatorRow({ validator }: { validator: ValidatorListEntry }) {
           {(validator.blocked || !validator.isActive) && (
             <div className="flex flex-wrap gap-1.5 mt-1">
               {validator.blocked && (
-                <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-ink-400 border border-ink-700/50">
+                <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-ink-300 border border-ink-700/50">
                   Blocked
                 </span>
               )}
@@ -203,7 +203,7 @@ function ValidatorRow({ validator }: { validator: ValidatorListEntry }) {
                 })
               : '—'}
           </p>
-          <p className="text-xs text-ink-400 mt-0.5 numeric">
+          <p className="text-xs text-ink-300 mt-0.5 numeric">
             {validator.commission.toFixed(0)}% ·{' '}
             {validator.eraPoints.toLocaleString()} pts
           </p>

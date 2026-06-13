@@ -235,25 +235,25 @@ export function ContactForm({
                   </p>
                 </div>
                 {contact.identity.legal && (
-                  <p className="text-xs text-ink-400 pl-5">Legal: {contact.identity.legal}</p>
+                  <p className="text-xs text-ink-300 pl-5">Legal: {contact.identity.legal}</p>
                 )}
                 {contact.identity.email && (
-                  <p className="text-xs text-ink-400 pl-5 flex items-center gap-1">
+                  <p className="text-xs text-ink-300 pl-5 flex items-center gap-1">
                     <Mail size={11} />{contact.identity.email}
                   </p>
                 )}
                 {contact.identity.twitter && (
-                  <p className="text-xs text-ink-400 pl-5 flex items-center gap-1">
+                  <p className="text-xs text-ink-300 pl-5 flex items-center gap-1">
                     <Twitter size={11} />{contact.identity.twitter}
                   </p>
                 )}
                 {contact.identity.web && (
-                  <p className="text-xs text-ink-400 pl-5 flex items-center gap-1">
+                  <p className="text-xs text-ink-300 pl-5 flex items-center gap-1">
                     <Globe size={11} />{contact.identity.web}
                   </p>
                 )}
                 {contact.identity.riot && (
-                  <p className="text-xs text-ink-400 pl-5 flex items-center gap-1">
+                  <p className="text-xs text-ink-300 pl-5 flex items-center gap-1">
                     <MessageCircle size={11} />{contact.identity.riot}
                   </p>
                 )}
@@ -262,29 +262,29 @@ export function ContactForm({
 
             {/* Balance */}
             <div className="p-3 rounded-xl bg-ink-800 border border-ink-700/50 space-y-2">
-              <p className="text-xs uppercase tracking-wide text-ink-400 font-medium">Balance</p>
+              <p className="text-xs uppercase tracking-wide text-ink-300 font-medium">Balance</p>
               {contactBalanceLoading ? (
-                <div className="flex items-center gap-2 text-xs text-ink-400">
+                <div className="flex items-center gap-2 text-xs text-ink-300">
                   <Loader2 size={12} className="animate-spin" />
                   Fetching balance…
                 </div>
               ) : contactBalance ? (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                   <div>
-                    <p className="text-xs text-ink-400">Transferable</p>
+                    <p className="text-xs text-ink-300">Transferable</p>
                     <p className="text-sm font-medium font-mono text-ink-100">
                       {formatBalance(contactBalance.transferable, { decimals: 4 })} XX
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-ink-400">Total</p>
+                    <p className="text-xs text-ink-300">Total</p>
                     <p className="text-sm font-medium font-mono text-ink-100">
                       {formatBalance(contactBalance.total, { decimals: 4 })} XX
                     </p>
                   </div>
                   {contactBalance.reserved.gtn(0) && (
                     <div>
-                      <p className="text-xs text-ink-400">Reserved</p>
+                      <p className="text-xs text-ink-300">Reserved</p>
                       <p className="text-xs font-mono text-ink-300">
                         {formatBalance(contactBalance.reserved, { decimals: 4 })} XX
                       </p>
@@ -292,7 +292,7 @@ export function ContactForm({
                   )}
                   {contactBalance.frozen.gtn(0) && (
                     <div>
-                      <p className="text-xs text-ink-400">Frozen</p>
+                      <p className="text-xs text-ink-300">Frozen</p>
                       <p className="text-xs font-mono text-ink-300">
                         {formatBalance(contactBalance.frozen, { decimals: 4 })} XX
                       </p>
@@ -300,7 +300,7 @@ export function ContactForm({
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-ink-400">No balance found — account may be new.</p>
+                <p className="text-xs text-ink-300">No balance found — account may be new.</p>
               )}
             </div>
 
@@ -323,20 +323,20 @@ export function ContactForm({
             </div>
 
             <div className="border-t border-ink-700/50 pt-3">
-              <p className="text-xs uppercase tracking-wide text-ink-400 font-medium mb-2">
+              <p className="text-xs uppercase tracking-wide text-ink-300 font-medium mb-2">
                 Saved info
               </p>
               <div className="space-y-1">
                 <p className="text-xs text-ink-300">
-                  <span className="text-ink-400">Name: </span>
+                  <span className="text-ink-300">Name: </span>
                   {contact.name || <span className="italic text-ink-600">not set</span>}
                 </p>
-                <p className="text-xs font-mono text-ink-400 break-all">
+                <p className="text-xs font-mono text-ink-300 break-all">
                   {contact.address}
                 </p>
                 {contact.note && (
-                  <p className="text-xs text-ink-400">
-                    <span className="text-ink-400">Note: </span>{contact.note}
+                  <p className="text-xs text-ink-300">
+                    <span className="text-ink-300">Note: </span>{contact.note}
                   </p>
                 )}
               </div>
@@ -406,7 +406,7 @@ export function ContactForm({
 
             <div>
               <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Name <span className="text-ink-400 normal-case font-normal">(optional)</span>
+                Name <span className="text-ink-300 normal-case font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -425,7 +425,7 @@ export function ContactForm({
             </div>
             <div>
               <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Note <span className="text-ink-400 normal-case font-normal">(optional)</span>
+                Note <span className="text-ink-300 normal-case font-normal">(optional)</span>
               </label>
               <input
                 type="text"
@@ -520,7 +520,7 @@ function IdentityPreviewCard({
 }) {
   if (loading) {
     return (
-      <div className="flex items-center gap-2 p-3 rounded-xl bg-ink-800/50 border border-ink-700/50 text-xs text-ink-400">
+      <div className="flex items-center gap-2 p-3 rounded-xl bg-ink-800/50 border border-ink-700/50 text-xs text-ink-300">
         <Loader2 size={14} className="animate-spin flex-shrink-0" />
         Looking up on-chain identity…
       </div>
@@ -547,7 +547,7 @@ function IdentityPreviewCard({
             On-chain identity {verified && <span className="text-xx-500">verified</span>}
           </p>
           {jLabel && !verified && (
-            <p className="text-xs text-ink-400">Status: {jLabel}</p>
+            <p className="text-xs text-ink-300">Status: {jLabel}</p>
           )}
         </div>
       </div>
@@ -555,7 +555,7 @@ function IdentityPreviewCard({
       {identity.display && (
         <div className="flex items-center justify-between gap-2 pl-6">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-ink-400">Display name</p>
+            <p className="text-xs uppercase tracking-wide text-ink-300">Display name</p>
             <p className="text-sm font-medium text-ink-100 truncate">{identity.display}</p>
           </div>
           {currentName.trim() !== identity.display && (
@@ -599,8 +599,8 @@ function IdentityField({
 }) {
   return (
     <div className="flex items-center gap-2 pl-6">
-      {icon && <span className="text-ink-400 flex-shrink-0">{icon}</span>}
-      <span className="text-xs uppercase tracking-wide text-ink-400 flex-shrink-0">
+      {icon && <span className="text-ink-300 flex-shrink-0">{icon}</span>}
+      <span className="text-xs uppercase tracking-wide text-ink-300 flex-shrink-0">
         {label}:
       </span>
       <span className="text-xs text-ink-200 truncate min-w-0">{value}</span>

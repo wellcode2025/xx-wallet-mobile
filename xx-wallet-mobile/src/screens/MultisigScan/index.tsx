@@ -232,7 +232,7 @@ export function MultisigScan() {
                 address locally, and shows you what's out there to
                 selectively import.
               </p>
-              <p className="text-ink-400">
+              <p className="text-ink-300">
                 You'll still confirm with at least one cosigner
                 out-of-band before importing — anyone can put your
                 address into a multisig signer set on chain, and that
@@ -499,7 +499,7 @@ function DiscoveryCard({
               <Users size={9} strokeWidth={2.25} />
               {discovery.threshold}-of-{discovery.signers.length}
             </span>
-            <span className="text-xs uppercase tracking-wider text-ink-400">
+            <span className="text-xs uppercase tracking-wider text-ink-300">
               {discovery.activityCount} on-chain action
               {discovery.activityCount === 1 ? '' : 's'}
             </span>
@@ -511,7 +511,7 @@ function DiscoveryCard({
       {selected && selection && (
         <>
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Local nickname
             </p>
             <input
@@ -526,10 +526,10 @@ function DiscoveryCard({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Signers ({discovery.signers.length})
               </p>
-              <p className="text-xs uppercase tracking-wider text-ink-400">
+              <p className="text-xs uppercase tracking-wider text-ink-300">
                 labeled = added to contacts
               </p>
             </div>

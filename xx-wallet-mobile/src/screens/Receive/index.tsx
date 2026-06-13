@@ -87,7 +87,7 @@ export function Receive() {
           <AddressIcon address={active.address} size={40} />
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm truncate">{active.name}</p>
-            <p className="text-xs text-ink-400">Your xx network address</p>
+            <p className="text-xs text-ink-300">Your xx network address</p>
           </div>
         </div>
 
@@ -95,13 +95,13 @@ export function Receive() {
           <div className="p-4 rounded-3xl bg-white">
             <canvas ref={canvasRef} className="block" />
           </div>
-          <p className="mt-4 text-xs text-ink-400 text-center max-w-xs">
+          <p className="mt-4 text-xs text-ink-300 text-center max-w-xs">
             Scan with another xx wallet or share the address below.
           </p>
         </div>
 
         <div className="card">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-2">
             Full address
           </p>
           <p className="font-mono text-xs text-ink-100 break-all leading-relaxed select-all">
@@ -125,7 +125,7 @@ export function Receive() {
 
       <Sheet open={shareOpen} onClose={() => setShareOpen(false)} title="Share address">
         <div className="space-y-3">
-          <p className="text-xs text-ink-400 font-mono break-all bg-ink-900 rounded-xl p-3">
+          <p className="text-xs text-ink-300 font-mono break-all bg-ink-900 rounded-xl p-3">
             {active.address}
           </p>
           <div className="grid grid-cols-2 gap-2 pt-1">

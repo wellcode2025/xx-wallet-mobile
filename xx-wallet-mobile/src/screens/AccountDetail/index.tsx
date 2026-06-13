@@ -130,7 +130,7 @@ function AccountDetailView({ address }: { address: string }) {
                 </span>
               )}
             </div>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               {isLedger
                 ? 'Ledger account · key stays on the device'
                 : 'xx network account'}
@@ -140,7 +140,7 @@ function AccountDetailView({ address }: { address: string }) {
 
         {/* Full address + copy + QR */}
         <div className="card space-y-3">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Full address
           </p>
           <p className="font-mono text-xs text-ink-100 break-all leading-relaxed select-all">
@@ -221,7 +221,7 @@ function AccountDetailView({ address }: { address: string }) {
           </button>
         </div>
 
-        <p className="text-xs text-ink-400 leading-relaxed px-1">
+        <p className="text-xs text-ink-300 leading-relaxed px-1">
           {isLedger
             ? 'Removing this account only deletes its record from this device. ' +
               'The key stays on your Ledger — reconnect the device any time to add it back.'
@@ -238,7 +238,7 @@ function AccountDetailView({ address }: { address: string }) {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2 block">
+            <label className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-2 block">
               New name
             </label>
             <input
@@ -256,7 +256,7 @@ function AccountDetailView({ address }: { address: string }) {
               className="input-base"
               placeholder="e.g. Savings"
             />
-            <p className="text-xs text-ink-400 mt-2">
+            <p className="text-xs text-ink-300 mt-2">
               {isLedger
                 ? 'Local label, only visible on this device.'
                 : "Updates the display name and the keystore JSON's metadata, so an " +

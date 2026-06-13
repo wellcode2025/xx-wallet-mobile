@@ -43,7 +43,7 @@ export function MyGovernance() {
         {!activeAddress ? (
           <div className="card">
             <p className="text-sm text-ink-100 font-medium">No active account</p>
-            <p className="mt-1 text-sm text-ink-400">
+            <p className="mt-1 text-sm text-ink-300">
               Select an account to see your governance commitments.
             </p>
           </div>
@@ -95,12 +95,12 @@ function ActiveAccountCard({
     <div className="card flex items-center gap-3">
       <AddressIcon address={address} size={36} copyOnTap={false} />
       <div className="min-w-0 flex-1 leading-tight">
-        <p className="text-xs text-ink-400">Showing for</p>
+        <p className="text-xs text-ink-300">Showing for</p>
         <p className="text-sm text-ink-100 truncate">
           {localName || name.primary}
         </p>
         {name.secondary && (
-          <p className="text-xs text-ink-400 font-mono truncate">
+          <p className="text-xs text-ink-300 font-mono truncate">
             {name.secondary}
           </p>
         )}
@@ -147,7 +147,7 @@ function DemocracySection({
 
       {!failed && voting.kind === 'none' && (
         <>
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             You haven't voted on any active referenda, and you're not
             delegating. When you vote on a referendum the entry shows
             here with its conviction and lock end.
@@ -164,7 +164,7 @@ function DemocracySection({
       {!failed && voting.kind === 'direct' && (
         <>
           {voting.votes.length === 0 ? (
-            <p className="text-sm text-ink-400">
+            <p className="text-sm text-ink-300">
               You haven't voted on any active referenda yet.
             </p>
           ) : (
@@ -194,7 +194,7 @@ function DemocracySection({
                     )}
                   </div>
                   {v.balance && v.conviction && (
-                    <p className="text-xs text-ink-400 mt-0.5">
+                    <p className="text-xs text-ink-300 mt-0.5">
                       <span className="font-mono text-ink-300">
                         {formatBalance(v.balance, {
                           decimals: 4,
@@ -213,7 +213,7 @@ function DemocracySection({
                         balance: v.balance,
                       })
                     }
-                    className="mt-1 inline-flex items-center gap-1 text-xs text-ink-400 active:text-danger font-medium"
+                    className="mt-1 inline-flex items-center gap-1 text-xs text-ink-300 active:text-danger font-medium"
                   >
                     <XIcon size={10} strokeWidth={2.5} />
                     Remove vote
@@ -239,7 +239,7 @@ function DemocracySection({
               {shortenAddress(voting.target)}
             </span>
           </p>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             <span className="font-mono text-ink-300">
               {formatBalance(voting.balance, {
                 decimals: 4,
@@ -258,7 +258,7 @@ function DemocracySection({
           )}
           <button
             onClick={() => setUndelegateOpen(true)}
-            className="text-xs text-ink-400 active:text-danger font-medium"
+            className="text-xs text-ink-300 active:text-danger font-medium"
           >
             Stop delegating
           </button>
@@ -301,7 +301,7 @@ function PriorLockRow({
 
   return (
     <>
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-ink-300">
         Prior lock:{' '}
         <span className="font-mono text-ink-300">
           {formatBalance(amount, {
@@ -367,7 +367,7 @@ function CouncilSection({
       )}
 
       {!failed && !vote && (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           You haven't cast a council vote. Up to 16 candidates can be
           backed in a single vote.
         </p>
@@ -389,7 +389,7 @@ function CouncilSection({
             </span>
           </p>
           {!vote.deposit.isZero() && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Voting bond:{' '}
               <span className="font-mono text-ink-300">
                 {formatBalance(vote.deposit, {
@@ -406,7 +406,7 @@ function CouncilSection({
               {vote.votes.map((v) => (
                 <li
                   key={v}
-                  className="text-xs text-ink-400 font-mono truncate"
+                  className="text-xs text-ink-300 font-mono truncate"
                 >
                   {shortenAddress(v)}
                 </li>
@@ -449,7 +449,7 @@ function TipsSection({
       )}
 
       {!failed && endorsements.length === 0 && (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           You haven't endorsed any active tips. Endorsing requires being
           a council member.
         </p>
@@ -462,7 +462,7 @@ function TipsSection({
               key={e.hash}
               className="border-b border-ink-800/60 last:border-0 pb-2 last:pb-0"
             >
-              <p className="text-xs text-ink-400 font-mono truncate">
+              <p className="text-xs text-ink-300 font-mono truncate">
                 {e.hash}
               </p>
               <p className="text-sm text-ink-100 mt-0.5">
@@ -471,7 +471,7 @@ function TipsSection({
                   {shortenAddress(e.who)}
                 </span>
               </p>
-              <p className="text-xs text-ink-400 mt-0.5">
+              <p className="text-xs text-ink-300 mt-0.5">
                 Your tip:{' '}
                 <span className="font-mono text-ink-300">
                   {formatBalance(e.tipAmount, {
@@ -501,7 +501,7 @@ function FailedDiagnostic({
     <div className="rounded-xl border border-warning/40 bg-warning/5 p-2.5">
       <p className="text-xs text-warning">{label}</p>
       {diagnostic && (
-        <p className="mt-1 text-xs text-ink-400 font-mono break-all">
+        <p className="mt-1 text-xs text-ink-300 font-mono break-all">
           {diagnostic}
         </p>
       )}

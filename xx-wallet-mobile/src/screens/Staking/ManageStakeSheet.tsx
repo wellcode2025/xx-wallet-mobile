@@ -75,7 +75,7 @@ export function ManageStakeSheet({ open, onClose }: ManageStakeSheetProps) {
             onTap={() => go('/staking/validate')}
           />
         </ul>
-        <p className="text-xs text-ink-400 mt-3 px-1">
+        <p className="text-xs text-ink-300 mt-3 px-1">
           Withdraw appears on My Nominations once an unbonded chunk
           matures (28 days after you initiate unbond).
         </p>
@@ -116,7 +116,7 @@ function ManageRow({
           <p className="font-display font-medium text-sm text-ink-100">
             {title}
           </p>
-          <p className="text-xs text-ink-400 mt-0.5">{subtitle}</p>
+          <p className="text-xs text-ink-300 mt-0.5">{subtitle}</p>
         </div>
         <ChevronRight
           size={16}

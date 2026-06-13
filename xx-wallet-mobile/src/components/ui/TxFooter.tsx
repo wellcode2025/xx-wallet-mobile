@@ -136,7 +136,7 @@ export function TxFooter({
           <Check size={24} strokeWidth={2.5} />
         </div>
         <p className="font-display text-base text-ink-100">{successTitle}</p>
-        <p className="text-sm text-ink-400">{successBody}</p>
+        <p className="text-sm text-ink-300">{successBody}</p>
         <button
           onClick={dismiss}
           className="w-full py-3 rounded-2xl bg-ink-800 text-ink-100 font-medium text-base active:bg-ink-700 transition-colors"
@@ -193,7 +193,7 @@ export function TxFooter({
       {error && status === 'error' && (
         <div className="rounded-xl border border-danger/40 bg-danger/5 p-3 space-y-1">
           <p className="text-xs text-danger font-medium">Submission failed</p>
-          <p className="text-xs text-ink-400 font-mono break-all">
+          <p className="text-xs text-ink-300 font-mono break-all">
             {error.message || String(error)}
           </p>
         </div>
@@ -225,7 +225,7 @@ function SignerPicker({
   const name = displayName(identity, signerAddress);
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-ink-400">Signed by</label>
+      <label className="text-xs text-ink-300">Signed by</label>
       <select
         value={signerAddress}
         onChange={(e) => onChange(e.target.value)}
@@ -260,7 +260,7 @@ function PasswordField({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-ink-400">Password</label>
+      <label className="text-xs text-ink-300">Password</label>
       <input
         type="password"
         value={value}

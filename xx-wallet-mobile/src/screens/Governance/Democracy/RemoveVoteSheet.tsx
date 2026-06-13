@@ -66,7 +66,7 @@ export function RemoveVoteSheet({
             )}
             .
           </p>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             A conviction lock from the original vote may persist until
             its lock end is reached.
           </p>

@@ -37,7 +37,7 @@ export function AdvancedSelectionSheet({
   return (
     <Sheet open={open} onClose={onClose} title="Advanced selection">
       <div className="space-y-4">
-        <p className="text-xs text-ink-400 leading-relaxed">
+        <p className="text-xs text-ink-300 leading-relaxed">
           These change how the wallet ranks validators for your nomination.
           The defaults work well for most people — only adjust them if you
           understand the trade-offs. Your stake goes to whoever ends up
@@ -101,7 +101,7 @@ export function AdvancedSelectionSheet({
             How these work
           </button>
           {showHow && (
-            <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+            <p className="text-xs text-ink-300 mt-1 leading-relaxed">
               The picker ranks validators by projected reward (recent
               performance, commission, and stake spread). These levers nudge
               that ranking: the first two are soft preferences that favour —
@@ -150,7 +150,7 @@ function ToggleRow({
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <p className="text-sm text-ink-100">{label}</p>
-        <p className="text-xs text-ink-400">{caption}</p>
+        <p className="text-xs text-ink-300">{caption}</p>
       </div>
       <button
         role="switch"

@@ -26,13 +26,13 @@ export function MotionsSection({
           {title} · {motions.length}
         </h3>
         {historicalCount > 0 && (
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             {historicalCount} historical
           </p>
         )}
       </div>
       {motions.length === 0 ? (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           No live motions. Active motions appear here with their hash.
         </p>
       ) : (

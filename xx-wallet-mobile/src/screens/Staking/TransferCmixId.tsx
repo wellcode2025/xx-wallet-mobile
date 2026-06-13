@@ -134,7 +134,7 @@ export function TransferCmixId() {
       <TopBar title="Transfer cmixId" showBack />
       <div className="px-5 py-4 space-y-4">
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Transferring from
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
@@ -153,7 +153,7 @@ export function TransferCmixId() {
         {readState === 'ready' && !isDone && currentCmixIdHex && (
           <>
             <div className="card space-y-2">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Current cmixId
               </p>
               <p className="font-mono text-xs text-ink-300 break-all">
@@ -181,7 +181,7 @@ export function TransferCmixId() {
             </div>
 
             <div className="card space-y-2">
-              <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Destination account (SS58)
               </label>
               <textarea
@@ -191,7 +191,7 @@ export function TransferCmixId() {
                 rows={2}
                 disabled={isSubmitting}
                 className={clsx(
-                  'w-full px-3 py-2 rounded-2xl bg-ink-950 border text-xs font-mono text-ink-100 placeholder:text-ink-400 focus:outline-none break-all',
+                  'w-full px-3 py-2 rounded-2xl bg-ink-950 border text-xs font-mono text-ink-100 placeholder:text-ink-300 focus:outline-none break-all',
                   destination && !destValid
                     ? 'border-danger focus:border-danger'
                     : 'border-ink-800 focus:border-ink-600'
@@ -244,7 +244,7 @@ export function TransferCmixId() {
             <p className="font-display font-medium text-sm text-ink-100">
               cmixId transferred
             </p>
-            <p className="text-xs text-ink-400">Returning to staking…</p>
+            <p className="text-xs text-ink-300">Returning to staking…</p>
           </div>
         )}
 

@@ -130,7 +130,7 @@ export function IOSInstallBanner() {
                 strokeWidth={2}
                 className="text-warning flex-shrink-0 mt-0.5"
               />
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Installing creates separate storage from Safari. If you've
                 already made accounts here, export the keystore from Settings
                 first, then import after install.
@@ -139,7 +139,7 @@ export function IOSInstallBanner() {
           </div>
           <button
             onClick={dismiss}
-            className="text-ink-400 active:text-ink-300 flex-shrink-0 -mt-1 -mr-1 p-1"
+            className="text-ink-300 active:text-ink-300 flex-shrink-0 -mt-1 -mr-1 p-1"
             aria-label="Dismiss install banner"
           >
             <X size={18} strokeWidth={1.75} />

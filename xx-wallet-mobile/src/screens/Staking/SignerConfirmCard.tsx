@@ -77,7 +77,7 @@ export function SignerConfirmCard({
     <div className="card space-y-2">
       <label
         htmlFor={`${idPrefix}-password`}
-        className="text-xs uppercase tracking-wider text-ink-400 font-medium"
+        className="text-xs uppercase tracking-wider text-ink-300 font-medium"
       >
         Confirm with password
       </label>
@@ -88,7 +88,7 @@ export function SignerConfirmCard({
         onChange={(e) => onPasswordChange(e.target.value)}
         disabled={disabled}
         className={clsx(
-          'w-full px-3 py-2.5 rounded-2xl bg-ink-950 border text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none',
+          'w-full px-3 py-2.5 rounded-2xl bg-ink-950 border text-sm text-ink-100 placeholder:text-ink-300 focus:outline-none',
           passwordError
             ? 'border-danger focus:border-danger'
             : 'border-ink-800 focus:border-ink-600'

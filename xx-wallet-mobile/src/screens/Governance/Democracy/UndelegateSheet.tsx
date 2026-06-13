@@ -47,10 +47,10 @@ export function UndelegateSheet({
             Stop delegating to{' '}
             <span className="text-ink-100">{targetName.primary}</span>
             {targetName.secondary && (
-              <span className="text-ink-400 font-mono"> {targetName.secondary}</span>
+              <span className="text-ink-300 font-mono"> {targetName.secondary}</span>
             )}
           </p>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             Your conviction lock from the original delegation continues
             until its lock end. Once cleared you can vote directly again.
           </p>

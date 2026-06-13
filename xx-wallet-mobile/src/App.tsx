@@ -202,7 +202,7 @@ export function App() {
 
   if (!initialized) {
     return (
-      <div className="min-h-screen bg-ink-950 flex items-center justify-center">
+      <div role="main" className="min-h-screen bg-ink-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-5">
           <img
             src="/brand/icon-color.svg"
@@ -214,7 +214,7 @@ export function App() {
             <p className="font-display font-medium text-xl tracking-tight text-ink-100">
               xx Wallet
             </p>
-            <p className="text-xs text-ink-400 animate-pulse-subtle">Loading…</p>
+            <p className="text-xs text-ink-300 animate-pulse-subtle">Loading…</p>
           </div>
         </div>
       </div>

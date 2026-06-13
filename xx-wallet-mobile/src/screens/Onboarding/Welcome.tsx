@@ -47,7 +47,7 @@ export function Welcome() {
           <Download size={18} strokeWidth={2} />
           Import existing wallet
         </Link>
-        <p className="text-center text-xs text-ink-400 pt-2 px-4 leading-relaxed">
+        <p className="text-center text-xs text-ink-300 pt-2 px-4 leading-relaxed">
           Your keys never leave this device. Back up your recovery phrase —
           losing it means losing access to your funds.
         </p>

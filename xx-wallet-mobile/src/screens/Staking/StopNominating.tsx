@@ -85,7 +85,7 @@ export function StopNominating() {
       <div className="px-5 py-4 space-y-4">
         {/* Account context */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Account
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
@@ -110,7 +110,7 @@ export function StopNominating() {
         {position && position.isNominating && !isDone && (
           <>
             <div className="card space-y-3">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 What this does
               </p>
               <p className="text-sm text-ink-200">
@@ -118,7 +118,7 @@ export function StopNominating() {
                 stays bonded — you stop earning rewards, but the 28-day
                 unbonding clock does <em>not</em> start.
               </p>
-              <ul className="text-xs text-ink-400 space-y-1.5 pt-1">
+              <ul className="text-xs text-ink-300 space-y-1.5 pt-1">
                 <li className="flex gap-2">
                   <span className="text-ink-500">•</span>
                   <span>
@@ -135,7 +135,7 @@ export function StopNominating() {
               </ul>
               {position.ledger && (
                 <div className="flex items-baseline justify-between gap-3 pt-2 border-t border-ink-800/60">
-                  <span className="text-xs text-ink-400">Currently bonded</span>
+                  <span className="text-xs text-ink-300">Currently bonded</span>
                   <span className="font-mono text-sm text-ink-100 numeric">
                     {formatBalance(position.ledger.total, {
                       decimals: 4,
@@ -145,14 +145,14 @@ export function StopNominating() {
                 </div>
               )}
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-xs text-ink-400">Currently nominating</span>
+                <span className="text-xs text-ink-300">Currently nominating</span>
                 <span className="font-mono text-sm text-ink-100 numeric">
                   {position.targets.length} validator
                   {position.targets.length === 1 ? '' : 's'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-xs text-ink-400">Network fee</span>
+                <span className="text-xs text-ink-300">Network fee</span>
                 <span className="font-mono text-sm text-ink-100 numeric">
                   ~0.013 XX
                 </span>
@@ -197,7 +197,7 @@ export function StopNominating() {
             <p className="font-display font-medium text-sm text-ink-100">
               Nominations stopped
             </p>
-            <p className="text-xs text-ink-400">Returning to staking…</p>
+            <p className="text-xs text-ink-300">Returning to staking…</p>
           </div>
         )}
 

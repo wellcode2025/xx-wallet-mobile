@@ -55,7 +55,7 @@ export function RewardsHistory() {
               Rewards history needs the xx network indexer, which you
               turned off in Settings → Privacy.
             </p>
-            <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+            <p className="text-xs text-ink-300 mt-1 leading-relaxed">
               Your rewards still arrive on chain as always — only this
               historical view is unavailable. Re-enable the indexer to
               see it.
@@ -118,18 +118,18 @@ function Populated({
       {/* Summary */}
       <div className="card space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Last 90 eras
           </span>
           {eraRange && (
-            <span className="text-xs text-ink-400">
+            <span className="text-xs text-ink-300">
               Eras {eraRange[0]} – {eraRange[1]}
             </span>
           )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
               Total earned
             </p>
             <p className="font-mono text-sm text-ink-100 numeric">
@@ -140,7 +140,7 @@ function Populated({
             </p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
               Avg per era
             </p>
             <p className="font-mono text-sm text-ink-100 numeric">
@@ -153,7 +153,7 @@ function Populated({
       {/* Chart */}
       {chartData.length > 0 && (
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Earned per era · last {chartData.length} era
             {chartData.length === 1 ? '' : 's'}
           </p>
@@ -202,13 +202,13 @@ function RewardItem({ row }: { row: RewardRow }) {
       <div className="flex items-baseline justify-between gap-3 mb-1">
         <span className="text-sm text-ink-100">
           Era {row.era}
-          {date && <span className="text-ink-400"> · {date}</span>}
+          {date && <span className="text-ink-300"> · {date}</span>}
         </span>
         <span className="font-mono text-sm text-ink-100 numeric flex-shrink-0">
           +{formatBalance(row.amount, { decimals: 4, withSymbol: true })}
         </span>
       </div>
-      <AddressLabel address={row.validator} className="text-xs text-ink-400" />
+      <AddressLabel address={row.validator} className="text-xs text-ink-300" />
     </li>
   );
 }
@@ -223,7 +223,7 @@ function Empty() {
         <p className="font-display font-medium text-sm text-ink-100">
           No rewards in the last 90 eras
         </p>
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           This account hasn't earned staking rewards in the visible
           window. Bond and nominate to start earning rewards.
         </p>

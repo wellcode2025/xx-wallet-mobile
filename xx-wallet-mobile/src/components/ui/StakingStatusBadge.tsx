@@ -34,7 +34,7 @@ const STATUS_CONFIG: Record<
   inactive: {
     label: 'Inactive',
     dot: 'bg-ink-600',
-    text: 'text-ink-400',
+    text: 'text-ink-300',
     help: "This validator isn't in the elected set this era.",
   },
 };

@@ -26,12 +26,12 @@ export function CommitteeTab({ council }: { council: UseCouncilResult }) {
           </h2>
         </div>
         {tc.members.length === 0 ? (
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             No technical committee members on chain.
           </p>
         ) : (
           <>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               The Technical Committee is appointed by council motion.
               Members are also council members.
             </p>

@@ -253,7 +253,7 @@ export function ImportWallet() {
                 'py-2.5 px-4 rounded-xl text-sm font-medium transition-colors',
                 method === m
                   ? 'bg-ink-600 text-ink-100'
-                  : 'text-ink-400 active:bg-ink-700'
+                  : 'text-ink-300 active:bg-ink-700'
               )}
             >
               {m === 'mnemonic' ? 'Recovery phrase' : 'Keystore file'}
@@ -276,7 +276,7 @@ export function ImportWallet() {
                 autoCorrect="off"
                 spellCheck={false}
               />
-              <p className="text-xs text-ink-400 mt-1.5">
+              <p className="text-xs text-ink-300 mt-1.5">
                 {mnemonic.trim().split(/\s+/).filter(Boolean).length} words entered
               </p>
             </div>
@@ -310,7 +310,7 @@ export function ImportWallet() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-ink-400"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-ink-300"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -371,7 +371,7 @@ export function ImportWallet() {
                   <FileText size={32} className="text-xx-500" strokeWidth={1.5} />
                   <div className="text-center">
                     <p className="font-mono text-sm text-ink-100">{jsonFilename}</p>
-                    <p className="text-xs text-ink-400 mt-1">Tap to change</p>
+                    <p className="text-xs text-ink-300 mt-1">Tap to change</p>
                   </div>
                 </>
               ) : (
@@ -379,7 +379,7 @@ export function ImportWallet() {
                   <Upload size={32} className="text-ink-400" strokeWidth={1.5} />
                   <div className="text-center">
                     <p className="font-medium text-ink-200">Select keystore file</p>
-                    <p className="text-xs text-ink-400 mt-1">
+                    <p className="text-xs text-ink-300 mt-1">
                       .json file exported from the xx wallet
                     </p>
                   </div>

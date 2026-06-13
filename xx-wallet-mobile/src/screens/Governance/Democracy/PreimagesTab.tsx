@@ -30,7 +30,7 @@ export function PreimagesTab({ preimages }: { preimages: PreimageEntry[] }) {
     return (
       <div className="card">
         <p className="text-sm text-ink-100 font-medium">No preimages on chain</p>
-        <p className="mt-1 text-sm text-ink-400">
+        <p className="mt-1 text-sm text-ink-300">
           Preimages are call bytes uploaded ahead of a referendum or
           motion. They appear here once someone calls preimage.notePreimage.
         </p>
@@ -70,7 +70,7 @@ function PreimageRow({ entry }: { entry: PreimageEntry }) {
       <div className="flex items-start gap-2">
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="shrink-0 p-1 -ml-1 rounded text-ink-400 active:bg-ink-800/40"
+          className="shrink-0 p-1 -ml-1 rounded text-ink-300 active:bg-ink-800/40"
           aria-label={expanded ? 'Collapse' : 'Expand'}
         >
           {expanded ? (
@@ -90,7 +90,7 @@ function PreimageRow({ entry }: { entry: PreimageEntry }) {
                 'shrink-0 p-1 rounded transition-colors',
                 copied
                   ? 'text-xx-500'
-                  : 'text-ink-400 active:text-xx-500 active:bg-ink-800/40'
+                  : 'text-ink-300 active:text-xx-500 active:bg-ink-800/40'
               )}
               aria-label="Copy full hash"
               title={copied ? 'Copied!' : 'Copy full hash'}
@@ -98,7 +98,7 @@ function PreimageRow({ entry }: { entry: PreimageEntry }) {
               <Copy size={12} strokeWidth={1.75} />
             </button>
           </div>
-          <p className="mt-1 text-xs text-ink-400 truncate">
+          <p className="mt-1 text-xs text-ink-300 truncate">
             <StatusBadge kind={entry.kind} count={entry.count} /> ·{' '}
             <span className="text-ink-300">{entry.length} bytes</span>
             {entry.deposit && (
@@ -115,11 +115,11 @@ function PreimageRow({ entry }: { entry: PreimageEntry }) {
               </>
             )}
           </p>
-          <p className="mt-0.5 text-xs text-ink-400 truncate">
+          <p className="mt-0.5 text-xs text-ink-300 truncate">
             Submitted by{' '}
             <span className="text-ink-300">{name.primary}</span>
             {name.secondary && (
-              <span className="text-ink-400 font-mono"> {name.secondary}</span>
+              <span className="text-ink-300 font-mono"> {name.secondary}</span>
             )}
           </p>
         </div>
@@ -139,7 +139,7 @@ function DecodeBlock({
 }) {
   if (!entry.decodeResult) {
     return (
-      <p className="ml-6 text-xs text-ink-400 italic">
+      <p className="ml-6 text-xs text-ink-300 italic">
         Preimage bytes not stored — only the hash is on chain.
       </p>
     );
@@ -152,7 +152,7 @@ function DecodeBlock({
           <span>{DECODE_FAILURE_LABEL}</span>
         </p>
         {expanded && entry.decodeResult.error && (
-          <p className="mt-2 text-xs text-ink-400 font-mono break-words">
+          <p className="mt-2 text-xs text-ink-300 font-mono break-words">
             {entry.decodeResult.error}
           </p>
         )}
@@ -177,7 +177,7 @@ function DecodeBlock({
           <p
             className={clsx(
               decoded.friendly && 'mt-2',
-              'text-xs text-ink-400 font-mono break-words'
+              'text-xs text-ink-300 font-mono break-words'
             )}
           >
             {decoded.literal}

@@ -140,7 +140,7 @@ function StatsBody({ validator }: { validator: ValidatorDetail }) {
       {/* Points history */}
       {validator.pointsHistory.length > 0 && (
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Points per era · last {validator.pointsHistory.length} eras
           </p>
           <SparkBarChart
@@ -150,7 +150,7 @@ function StatsBody({ validator }: { validator: ValidatorDetail }) {
             ariaLabel={`Points-per-era history, ${validator.pointsHistory.length} eras`}
           />
           {validator.historicalSnapshot?.relativePerformance != null && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Relative performance:{' '}
               <span className="text-ink-200">
                 {(
@@ -174,7 +174,7 @@ function StatsBody({ validator }: { validator: ValidatorDetail }) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+      <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
         {label}
       </p>
       <p className="font-mono text-sm text-ink-100 numeric">{value}</p>
@@ -185,7 +185,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 function IdentityRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3 text-sm">
-      <span className="text-ink-400 w-16 flex-shrink-0">{label}</span>
+      <span className="text-ink-300 w-16 flex-shrink-0">{label}</span>
       <span className="text-ink-200 break-all min-w-0">{value}</span>
     </div>
   );

@@ -546,7 +546,7 @@ function ProposeView({ address }: { address: string }) {
                   of this multisig, but the Ledger xx network app can't
                   sign multisig transactions yet.
                 </p>
-                <p className="text-xs text-ink-400 leading-relaxed">
+                <p className="text-xs text-ink-300 leading-relaxed">
                   To propose here, add one of the OTHER signer accounts
                   (a password-protected one) to this wallet. Ledger
                   support depends on an updated xx network Ledger app.
@@ -558,7 +558,7 @@ function ProposeView({ address }: { address: string }) {
                   None of the accounts in your wallet are signers of this
                   multisig.
                 </p>
-                <p className="text-xs text-ink-400 leading-relaxed">
+                <p className="text-xs text-ink-300 leading-relaxed">
                   To propose at it, import or create one of its signer
                   accounts in this wallet first.
                 </p>
@@ -578,17 +578,17 @@ function ProposeView({ address }: { address: string }) {
         <div className="card space-y-1">
           <div className="flex items-center gap-2">
             <Users size={14} className="text-xx-500" strokeWidth={2.25} />
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               {isTwoDevice ? 'Funds from protected account' : 'Funds from multisig'}
             </p>
           </div>
           <p className="text-sm font-medium text-ink-100">
             {multisig.localName}
           </p>
-          <p className="font-mono text-xs text-ink-400 truncate">
+          <p className="font-mono text-xs text-ink-300 truncate">
             {address}
           </p>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             Balance:{' '}
             {balance ? formatBalance(balance.transferable) : '—'} {XX_SYMBOL} ·
             Threshold: {multisig.threshold}-of-{multisig.signers.length}
@@ -601,7 +601,7 @@ function ProposeView({ address }: { address: string }) {
         <div className="card space-y-2">
           <div className="flex items-center gap-2">
             <Key size={14} className="text-xx-500" strokeWidth={2.25} />
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Signed by
             </p>
           </div>
@@ -618,7 +618,7 @@ function ProposeView({ address }: { address: string }) {
                 <p className="text-sm font-medium text-ink-100 truncate">
                   {eligibleSigners[0].name}
                 </p>
-                <p className="font-mono text-xs text-ink-400 truncate">
+                <p className="font-mono text-xs text-ink-300 truncate">
                   {eligibleSigners[0].address}
                 </p>
               </div>
@@ -641,14 +641,14 @@ function ProposeView({ address }: { address: string }) {
               than silently hiding it — visible reasoning over quiet
               gatekeeping. */}
           {ledgerSigners.length > 0 && (
-            <p className="text-xs text-ink-400 leading-relaxed">
+            <p className="text-xs text-ink-300 leading-relaxed">
               {ledgerSigners.map((a) => a.name).join(', ')} (Ledger) is
               also a signer of this multisig, but the Ledger xx network
               app can't sign multisig transactions yet.
             </p>
           )}
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-ink-400 leading-relaxed">
+            <p className="text-xs text-ink-300 leading-relaxed">
               Signs the proposal and pays the network fee from its own
               balance. The funds themselves still come from the multisig
               above.
@@ -742,7 +742,7 @@ function ProposeView({ address }: { address: string }) {
               is a valid address this wallet doesn't recognize — that's
               where a pasted exchange deposit address would land. */}
           {!exchangeAckNeeded ? (
-            <p className="text-xs text-ink-400 mt-2 leading-relaxed">
+            <p className="text-xs text-ink-300 mt-2 leading-relaxed">
               Sending to an exchange? Don't send from{' '}
               {isTwoDevice ? 'a protected account' : 'a multisig'} directly
               — route through one of your regular accounts first.
@@ -847,7 +847,7 @@ function ProposeView({ address }: { address: string }) {
               </div>
               <div className="text-xs text-ink-300 leading-relaxed pl-6 space-y-1">
                 <p>What that means for this multisig:</p>
-                <ul className="list-disc pl-4 space-y-0.5 text-ink-400">
+                <ul className="list-disc pl-4 space-y-0.5 text-ink-300">
                   <li>
                     The multisig
                     <span className="text-ink-200"> address itself</span>
@@ -901,7 +901,7 @@ function ProposeView({ address }: { address: string }) {
             content depends on threshold: at 1, a single signature
             executes immediately; at ≥2, this is the first of N
             signatures and the rest must approve before execution. */}
-        <div className="card text-xs text-ink-400 leading-relaxed space-y-1">
+        <div className="card text-xs text-ink-300 leading-relaxed space-y-1">
           {isImmediate ? (
             <>
               <p className="text-ink-300">When you tap Execute:</p>
@@ -997,7 +997,7 @@ function ProposeView({ address }: { address: string }) {
       >
         <div className="space-y-3">
           {contacts.length === 0 ? (
-            <div className="card text-center text-sm text-ink-400">
+            <div className="card text-center text-sm text-ink-300">
               No contacts yet. Add some from the Send screen.
             </div>
           ) : (
@@ -1013,7 +1013,7 @@ function ProposeView({ address }: { address: string }) {
               )}
               <ul className="space-y-1.5 max-h-[60vh] overflow-y-auto">
                 {filteredContacts.length === 0 && (
-                  <li className="text-xs text-ink-400 text-center py-4">
+                  <li className="text-xs text-ink-300 text-center py-4">
                     No contacts match "{contactSearch}".
                   </li>
                 )}
@@ -1032,11 +1032,11 @@ function ProposeView({ address }: { address: string }) {
                         <p className="text-sm font-medium text-ink-100 truncate">
                           {c.name || '(unnamed contact)'}
                         </p>
-                        <p className="font-mono text-xs text-ink-400 truncate">
+                        <p className="font-mono text-xs text-ink-300 truncate">
                           {shortenAddress(c.address, { start: 8, end: 6 })}
                         </p>
                         {c.note && (
-                          <p className="text-xs text-ink-400 truncate">
+                          <p className="text-xs text-ink-300 truncate">
                             {c.note}
                           </p>
                         )}
@@ -1162,7 +1162,7 @@ function ProposeView({ address }: { address: string }) {
                   ? 'Spend started'
                   : 'Proposal submitted'}
             </h2>
-            <p className="text-sm text-ink-400 mt-1 leading-relaxed">
+            <p className="text-sm text-ink-300 mt-1 leading-relaxed">
               {isImmediate
                 ? 'The transfer has executed on chain. The funds have moved out of the multisig.'
                 : isTwoDevice
@@ -1172,7 +1172,7 @@ function ProposeView({ address }: { address: string }) {
           </div>
           {txHash && (
             <div className="w-full">
-              <p className="text-xs text-ink-400 mb-1 uppercase tracking-wide">
+              <p className="text-xs text-ink-300 mb-1 uppercase tracking-wide">
                 Transaction hash
               </p>
               <AddressChip address={txHash} shortened className="w-full" />
@@ -1200,7 +1200,7 @@ function Row({
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <span className="text-xs text-ink-400 uppercase tracking-wide flex-shrink-0 pt-0.5">
+      <span className="text-xs text-ink-300 uppercase tracking-wide flex-shrink-0 pt-0.5">
         {label}
       </span>
       <div className="min-w-0 text-right">{children}</div>

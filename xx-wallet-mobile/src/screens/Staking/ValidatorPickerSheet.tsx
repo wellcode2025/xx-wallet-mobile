@@ -154,7 +154,7 @@ export function ValidatorPickerSheet({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or address"
-            className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-ink-950 border border-ink-800 text-sm text-ink-100 placeholder:text-ink-400 focus:outline-none focus:border-ink-600"
+            className="w-full pl-9 pr-3 py-2.5 rounded-2xl bg-ink-950 border border-ink-800 text-sm text-ink-100 placeholder:text-ink-300 focus:outline-none focus:border-ink-600"
           />
         </div>
 
@@ -170,7 +170,7 @@ export function ValidatorPickerSheet({
                   'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
                   active
                     ? 'bg-xx-500/10 text-xx-500 border-xx-500/30'
-                    : 'bg-ink-950 text-ink-400 border-ink-800 active:bg-ink-800'
+                    : 'bg-ink-950 text-ink-300 border-ink-800 active:bg-ink-800'
                 )}
               >
                 {label}
@@ -199,7 +199,7 @@ export function ValidatorPickerSheet({
 
         {!isLoading && !error && (
           <>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               {search.trim()
                 ? `${filtered.length} of ${validators.length} validators`
                 : `${validators.length} validators`}
@@ -291,7 +291,7 @@ function PickerRow({
           {(validator.blocked || !validator.isActive) && (
             <div className="flex flex-wrap gap-1.5 mt-1">
               {validator.blocked && (
-                <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-ink-400 border border-ink-700/50">
+                <span className="px-1.5 py-0.5 rounded text-xs bg-ink-800 text-ink-300 border border-ink-700/50">
                   Blocked
                 </span>
               )}
@@ -312,7 +312,7 @@ function PickerRow({
                 })
               : '—'}
           </p>
-          <p className="text-xs text-ink-400 mt-0.5 numeric">
+          <p className="text-xs text-ink-300 mt-0.5 numeric">
             {validator.commission.toFixed(0)}%
           </p>
         </div>
@@ -323,7 +323,7 @@ function PickerRow({
       <button
         onClick={onInfo}
         aria-label="View validator stats"
-        className="flex items-center px-3 text-ink-400 active:text-ink-100 active:bg-ink-800/40 transition-colors"
+        className="flex items-center px-3 text-ink-300 active:text-ink-100 active:bg-ink-800/40 transition-colors"
       >
         <Info size={16} strokeWidth={1.75} />
       </button>

@@ -51,7 +51,7 @@ export function SparkBarChart({
     return (
       <div
         className={clsx(
-          'flex items-center justify-center text-xs text-ink-400',
+          'flex items-center justify-center text-xs text-ink-300',
           className
         )}
         style={{ height }}
@@ -89,14 +89,14 @@ export function SparkBarChart({
       {showReadout && (
         <div className="flex items-baseline justify-between mb-1.5 text-xs">
           {sel ? (
-            <span className="text-ink-400">
+            <span className="text-ink-300">
               Era <span className="text-ink-200">{sel.era}</span> ·{' '}
               <span className="text-ink-100 font-mono">
                 {formatValue(sel.points)}
               </span>
             </span>
           ) : (
-            <span className="text-ink-400">
+            <span className="text-ink-300">
               Avg{' '}
               <span className="text-ink-200 font-mono">{formatValue(avgY)}</span>{' '}
               · High{' '}

@@ -29,12 +29,12 @@ export function ProposalsTab({ treasury }: { treasury: TreasuryResult }) {
           <h2 className="font-display text-base text-ink-100">
             Pending · {treasury.pendingProposals.length}
           </h2>
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             {treasury.proposalCountHistorical} all-time
           </p>
         </div>
         {treasury.pendingProposals.length === 0 ? (
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             No pending proposals. New proposals appear here with their
             proposer, beneficiary, and value.
           </p>
@@ -44,7 +44,7 @@ export function ProposalsTab({ treasury }: { treasury: TreasuryResult }) {
               <ProposalRow key={p.id} proposal={p} />
             ))}
             {treasury.pendingProposals.length > 5 && (
-              <li className="pt-2 text-xs text-ink-400">
+              <li className="pt-2 text-xs text-ink-300">
                 + {treasury.pendingProposals.length - 5} more pending
               </li>
             )}
@@ -57,7 +57,7 @@ export function ProposalsTab({ treasury }: { treasury: TreasuryResult }) {
           Approved · {treasury.approvalsQueue.length}
         </h2>
         {treasury.approvalsQueue.length === 0 ? (
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             No proposals awaiting payout. Approved proposals queue here
             until the next spend period.
           </p>
@@ -87,14 +87,14 @@ function ProposalRow({ proposal }: { proposal: TreasuryProposal }) {
   return (
     <li className="py-3 space-y-2">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="font-mono text-xs text-ink-400">#{proposal.id}</p>
+        <p className="font-mono text-xs text-ink-300">#{proposal.id}</p>
         <p className="font-mono text-sm text-ink-100 numeric whitespace-nowrap">
           {formatBalance(proposal.value, {
             decimals: 4,
             trim: true,
             grouping: true,
           })}{' '}
-          <span className="text-ink-400">XX</span>
+          <span className="text-ink-300">XX</span>
         </p>
       </div>
 
@@ -105,7 +105,7 @@ function ProposalRow({ proposal }: { proposal: TreasuryProposal }) {
         name={beneficiaryName}
       />
 
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-ink-300">
         Proposer bond:{' '}
         <span className="font-mono text-ink-200">
           {formatBalance(proposal.bond, {
@@ -133,11 +133,11 @@ function PersonInline({
     <div className="flex items-center gap-2">
       <AddressIcon address={address} size={24} copyOnTap={false} />
       <div className="min-w-0 flex-1 leading-tight">
-        <p className="text-xs text-ink-400">{role}</p>
+        <p className="text-xs text-ink-300">{role}</p>
         <p className="text-sm text-ink-200 truncate">
           {name.primary}
           {name.secondary && (
-            <span className="text-ink-400 font-mono ml-1.5">{name.secondary}</span>
+            <span className="text-ink-300 font-mono ml-1.5">{name.secondary}</span>
           )}
         </p>
       </div>

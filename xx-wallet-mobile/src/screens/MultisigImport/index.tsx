@@ -327,7 +327,7 @@ export function MultisigImport() {
               safe to load configs received over Slack, email, AirDrop,
               or any other channel you trust the SENDER on.
             </p>
-            <p className="text-ink-400">
+            <p className="text-ink-300">
               You will still confirm the signer addresses with at least
               one cosigner out-of-band before the wallet treats the
               config as canonical.
@@ -514,7 +514,7 @@ export function MultisigImport() {
 
         {/* Multisig details */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Multisig
           </p>
           <div className="flex items-center gap-3">
@@ -523,7 +523,7 @@ export function MultisigImport() {
               <p className="font-mono text-xs text-ink-100 break-all leading-snug">
                 {parsed.multisigAddress}
               </p>
-              <p className="text-xs text-ink-400 mt-0.5">
+              <p className="text-xs text-ink-300 mt-0.5">
                 {parsed.threshold}-of-{parsed.signers.length}
               </p>
             </div>
@@ -584,7 +584,7 @@ export function MultisigImport() {
 
         {/* Local nickname */}
         <div className="card space-y-2">
-          <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <label className="block text-xs uppercase tracking-wider text-ink-300 font-medium">
             Local nickname
           </label>
           <input
@@ -597,14 +597,14 @@ export function MultisigImport() {
             maxLength={64}
             className="input-base text-sm"
           />
-          <p className="text-xs text-ink-400 leading-relaxed">
+          <p className="text-xs text-ink-300 leading-relaxed">
             Local label, only visible to you. Other signers can use
             different nicknames for the same multisig.
             {parsed.suggestedName && (
               <>
                 {' '}
                 (Sender suggested:{' '}
-                <span className="text-ink-400">
+                <span className="text-ink-300">
                   "{parsed.suggestedName}"
                 </span>
                 .)
@@ -622,10 +622,10 @@ export function MultisigImport() {
             logic in handleSave. */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Signers ({parsed.signers.length})
             </p>
-            <p className="text-xs uppercase tracking-wider text-ink-400">
+            <p className="text-xs uppercase tracking-wider text-ink-300">
               labeled = added to contacts
             </p>
           </div>
@@ -707,9 +707,9 @@ export function MultisigImport() {
         </div>
 
         {parsed.createdBy && (
-          <p className="text-xs text-ink-400 px-1 leading-relaxed">
+          <p className="text-xs text-ink-300 px-1 leading-relaxed">
             Sender claims this config was created by{' '}
-            <span className="font-mono text-ink-400">
+            <span className="font-mono text-ink-300">
               {shortenAddress(parsed.createdBy, { start: 8, end: 6 })}
             </span>
             . The wallet has not authenticated this — it's
@@ -873,7 +873,7 @@ function LegacyReview({
         {/* Live-derived multisig address — the central thing the user
             must see before save. Updates as they change the threshold. */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Multisig address (derived from your inputs)
           </p>
           {derivedAddress ? (
@@ -881,7 +881,7 @@ function LegacyReview({
               {derivedAddress}
             </p>
           ) : (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Pick a valid threshold to see the derived address.
             </p>
           )}
@@ -968,7 +968,7 @@ function LegacyReview({
 
         {/* Threshold input */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Threshold (signatures required)
           </p>
           <div className="flex items-center gap-3">
@@ -984,7 +984,7 @@ function LegacyReview({
               <span className="text-2xl font-display font-medium text-ink-100 numeric">
                 {threshold}
               </span>
-              <span className="text-sm text-ink-400">of {signers.length}</span>
+              <span className="text-sm text-ink-300">of {signers.length}</span>
             </div>
             <button
               type="button"
@@ -997,7 +997,7 @@ function LegacyReview({
               +
             </button>
           </div>
-          <p className="text-xs text-ink-400 text-center leading-relaxed">
+          <p className="text-xs text-ink-300 text-center leading-relaxed">
             Most foundation multisigs use 2-of-N. If you're not sure,
             check with another cosigner.
           </p>
@@ -1005,7 +1005,7 @@ function LegacyReview({
 
         {/* Local nickname */}
         <div className="card space-y-2">
-          <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <label className="block text-xs uppercase tracking-wider text-ink-300 font-medium">
             Local nickname
           </label>
           <input
@@ -1017,9 +1017,9 @@ function LegacyReview({
             className="input-base text-sm"
           />
           {filenameNameHint && (
-            <p className="text-xs text-ink-400 leading-relaxed">
+            <p className="text-xs text-ink-300 leading-relaxed">
               Filename suggests:{' '}
-              <span className="text-ink-400">"{filenameNameHint}"</span>
+              <span className="text-ink-300">"{filenameNameHint}"</span>
             </p>
           )}
         </div>
@@ -1027,10 +1027,10 @@ function LegacyReview({
         {/* Signers + per-signer labels */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Signers ({signers.length})
             </p>
-            <p className="text-xs uppercase tracking-wider text-ink-400">
+            <p className="text-xs uppercase tracking-wider text-ink-300">
               labeled = added to contacts
             </p>
           </div>

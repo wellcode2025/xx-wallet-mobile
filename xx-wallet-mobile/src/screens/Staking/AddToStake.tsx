@@ -124,12 +124,12 @@ export function AddToStake() {
       <div className="px-5 py-4 space-y-4">
         {/* Account context */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Adding to
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
           {transferable && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Available:{' '}
               <span className="font-mono text-ink-200">
                 {formatBalance(transferable, { decimals: 4, withSymbol: true })}
@@ -137,7 +137,7 @@ export function AddToStake() {
             </p>
           )}
           {position?.ledger && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Currently bonded:{' '}
               <span className="font-mono text-ink-200">
                 {formatBalance(position.ledger.total, {
@@ -163,7 +163,7 @@ export function AddToStake() {
           <>
             {/* Amount */}
             <div className="card space-y-2">
-              <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Amount to add
               </label>
               <div className="flex items-stretch gap-2">
@@ -174,9 +174,9 @@ export function AddToStake() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.0"
-                    className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-400 focus:outline-none numeric"
+                    className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-300 focus:outline-none numeric"
                   />
-                  <span className="text-sm text-ink-400 pl-2">XX</span>
+                  <span className="text-sm text-ink-300 pl-2">XX</span>
                 </div>
                 <button
                   onClick={handleMax}
@@ -192,7 +192,7 @@ export function AddToStake() {
                 </p>
               )}
               {(!amountTooLarge || isSubmitting) && (
-                <p className="text-xs text-ink-400">
+                <p className="text-xs text-ink-300">
                   Max keeps ~0.1 XX in reserve for the bondExtra fee and
                   existential deposit.
                 </p>
@@ -202,7 +202,7 @@ export function AddToStake() {
             {/* Review */}
             {amountValid && projectedTotal && (
               <div className="card space-y-2">
-                <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+                <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                   Review
                 </p>
                 <ReviewRow
@@ -266,7 +266,7 @@ export function AddToStake() {
             <p className="font-display font-medium text-sm text-ink-100">
               Stake increased
             </p>
-            <p className="text-xs text-ink-400">Returning to staking…</p>
+            <p className="text-xs text-ink-300">Returning to staking…</p>
           </div>
         )}
 
@@ -297,7 +297,7 @@ function submitLabel(
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-xs text-ink-400">{label}</span>
+      <span className="text-xs text-ink-300">{label}</span>
       <span className="font-mono text-sm text-ink-100 numeric">{value}</span>
     </div>
   );

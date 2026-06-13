@@ -202,10 +202,10 @@ export function QrScanner({ onScan, onClose }: QrScannerProps) {
                 </div>
               )}
             </div>
-            <p className="text-sm text-ink-400 text-center">
+            <p className="text-sm text-ink-300 text-center">
               Point your camera at an xx network address QR code
             </p>
-            <button onClick={() => setManualMode(true)} className="btn-ghost text-ink-400">
+            <button onClick={() => setManualMode(true)} className="btn-ghost text-ink-300">
               <ClipboardPaste size={16} />
               Paste address instead
             </button>

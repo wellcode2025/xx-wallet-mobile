@@ -63,7 +63,7 @@ export function ValidatorDetail() {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+      <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
         {label}
       </p>
       <p className="font-mono text-sm text-ink-100 numeric">{value}</p>
@@ -97,7 +97,7 @@ function IdentityCard({ validator }: { validator: ValidatorDetailType }) {
       </div>
       {validator.cmixId && (
         <div>
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
             cMix node id
           </p>
           <p className="font-mono text-xs text-ink-200 break-all">
@@ -131,7 +131,7 @@ function IdentityCard({ validator }: { validator: ValidatorDetailType }) {
 function IdentityRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3 text-sm">
-      <span className="text-ink-400 w-16 flex-shrink-0">{label}</span>
+      <span className="text-ink-300 w-16 flex-shrink-0">{label}</span>
       <span className="text-ink-200 break-all min-w-0">{value}</span>
     </div>
   );
@@ -144,7 +144,7 @@ function LiveStatusCard({ validator }: { validator: ValidatorDetailType }) {
   return (
     <div className="card space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+        <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
           Current era
           {validator.currentEra !== null && ` · ${validator.currentEra}`}
         </span>
@@ -183,7 +183,7 @@ function LiveStatusCard({ validator }: { validator: ValidatorDetailType }) {
 function BondedCard({ validator }: { validator: ValidatorDetailType }) {
   return (
     <div className="card space-y-3">
-      <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+      <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
         Bonded
       </span>
       <div className="grid grid-cols-2 gap-3">
@@ -221,7 +221,7 @@ function CurrentBackersCard({ validator }: { validator: ValidatorDetailType }) {
         Current backers ({validator.currentBackers.length})
       </h3>
       {validator.currentEra !== null && (
-        <p className="text-xs text-ink-400 mb-3">
+        <p className="text-xs text-ink-300 mb-3">
           In the rewarded set this era (era {validator.currentEra}).
         </p>
       )}
@@ -253,7 +253,7 @@ function HistoricalSnapshotCard({
   return (
     <div className="card space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+        <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
           Historical snapshot
         </span>
         <span className="text-xs text-warning">As of {asOf}</span>
@@ -264,7 +264,7 @@ function HistoricalSnapshotCard({
           <p className="text-sm text-ink-200">
             {snap.location.city}, {snap.location.country}
             {snap.location.geoBin && (
-              <span className="text-ink-400"> · {snap.location.geoBin}</span>
+              <span className="text-ink-300"> · {snap.location.geoBin}</span>
             )}
           </p>
         </div>
@@ -277,7 +277,7 @@ function HistoricalSnapshotCard({
       )}
       {validator.pointsHistory.length > 0 && (
         <div>
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-2">
             Points per era · last {validator.pointsHistory.length} eras
           </p>
           <SparkBarChart

@@ -34,7 +34,7 @@ export function TransactionItem({ transfer }: TransactionItemProps) {
     self: {
       icon: RefreshCw,
       label: 'Self',
-      color: 'text-ink-400',
+      color: 'text-ink-300',
       bgColor: 'bg-ink-700/40',
       prefix: '',
     },
@@ -83,7 +83,7 @@ export function TransactionItem({ transfer }: TransactionItemProps) {
           <span
             className={clsx(
               'font-mono text-sm font-medium flex-shrink-0',
-              success ? config.color : 'text-ink-400 line-through'
+              success ? config.color : 'text-ink-300 line-through'
             )}
           >
             {config.prefix}
@@ -91,12 +91,12 @@ export function TransactionItem({ transfer }: TransactionItemProps) {
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">
-          <span className="font-mono text-xs text-ink-400 truncate">
+          <span className="font-mono text-xs text-ink-300 truncate">
             {direction === 'self'
               ? 'Self transfer'
               : shortenAddress(counterparty, { start: 6, end: 4 })}
           </span>
-          <span className="text-xs text-ink-400 flex-shrink-0">{timeStr}</span>
+          <span className="text-xs text-ink-300 flex-shrink-0">{timeStr}</span>
         </div>
       </div>
     </Link>

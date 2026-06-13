@@ -62,10 +62,10 @@ export function CouncilOverview() {
 
         {termInfo && (
           <div className="rounded-2xl border border-ink-800 bg-ink-900/40 p-3">
-            <p className="text-xs text-ink-400">Term progress</p>
+            <p className="text-xs text-ink-300">Term progress</p>
             <p className="mt-0.5 text-sm text-ink-100">
               <span className="font-medium">{termInfo.remainingLabel}</span>
-              <span className="text-ink-400"> · cycle {termInfo.cycle}</span>
+              <span className="text-ink-300"> · cycle {termInfo.cycle}</span>
             </p>
             <div className="mt-2 h-1 rounded-full bg-ink-800 overflow-hidden">
               <div
@@ -127,7 +127,7 @@ function TabButton({
       onClick={onClick}
       className={clsx(
         'flex-1 text-center text-sm font-medium py-2 rounded-xl transition-colors',
-        active ? 'bg-ink-800 text-xx-500' : 'text-ink-400 active:bg-ink-800/50'
+        active ? 'bg-ink-800 text-xx-500' : 'text-ink-300 active:bg-ink-800/50'
       )}
     >
       {label}

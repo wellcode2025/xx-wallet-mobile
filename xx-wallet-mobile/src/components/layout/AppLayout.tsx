@@ -29,6 +29,7 @@ export function OnboardingLayout() {
     <div className="min-h-screen bg-ink-950 relative overflow-hidden">
       <div className="absolute inset-0 bg-mesh opacity-60 pointer-events-none" />
       <div
+        role="main"
         className="relative z-10 min-h-screen flex flex-col"
         style={{
           paddingTop: 'env(safe-area-inset-top)',

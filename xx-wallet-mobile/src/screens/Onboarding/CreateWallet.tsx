@@ -360,7 +360,7 @@ export function CreateWallet() {
               <h2 className="font-display font-semibold text-2xl tracking-tight">
                 Name & password
               </h2>
-              <p className="text-ink-400 text-sm mt-1">
+              <p className="text-ink-300 text-sm mt-1">
                 Your password encrypts your wallet on this device.
               </p>
             </div>
@@ -396,7 +396,7 @@ export function CreateWallet() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-ink-400"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-ink-300"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -443,7 +443,7 @@ export function CreateWallet() {
               <h2 className="font-display font-semibold text-2xl tracking-tight">
                 Security check
               </h2>
-              <p className="text-ink-400 text-sm mt-1">
+              <p className="text-ink-300 text-sm mt-1">
                 A few acknowledgements before we generate your recovery
                 phrases.
               </p>
@@ -540,7 +540,7 @@ export function CreateWallet() {
                   <p className="font-display font-medium text-lg text-ink-100">
                     Generating your Sleeve wallet
                   </p>
-                  <p className="text-sm text-ink-400 max-w-xs leading-relaxed">
+                  <p className="text-sm text-ink-300 max-w-xs leading-relaxed">
                     Producing two recovery phrases — one for everyday use,
                     one for future quantum-secure rollover.
                   </p>
@@ -553,7 +553,7 @@ export function CreateWallet() {
                   <p className="font-display font-medium text-lg text-ink-100">
                     Generation failed
                   </p>
-                  <p className="text-sm text-ink-400 max-w-xs leading-relaxed">
+                  <p className="text-sm text-ink-300 max-w-xs leading-relaxed">
                     {generationError}
                   </p>
                 </div>
@@ -638,7 +638,7 @@ export function CreateWallet() {
               <h2 className="font-display font-semibold text-2xl tracking-tight">
                 Verify both backups
               </h2>
-              <p className="text-ink-400 text-sm mt-1">
+              <p className="text-ink-300 text-sm mt-1">
                 Enter the requested words from each phrase to confirm you
                 have them safely written down.
               </p>
@@ -794,7 +794,7 @@ function PhraseCard({
           {title}
         </p>
       </div>
-      <p className="text-xs text-ink-400 leading-relaxed">{description}</p>
+      <p className="text-xs text-ink-300 leading-relaxed">{description}</p>
 
       <div className="relative">
         <div
@@ -811,7 +811,7 @@ function PhraseCard({
                 accentBg
               )}
             >
-              <span className="text-ink-400 text-xs font-mono w-5 text-right">
+              <span className="text-ink-300 text-xs font-mono w-5 text-right">
                 {i + 1}
               </span>
               <span className="font-mono text-sm text-ink-100">{word}</span>

@@ -54,7 +54,7 @@ export function BountyRow({ bounty }: { bounty: BountySummary }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 min-w-0">
-            <span className="font-mono text-xs text-ink-400 shrink-0">
+            <span className="font-mono text-xs text-ink-300 shrink-0">
               #{bounty.id}
             </span>
             <span className="text-sm text-ink-100 truncate">{title}</span>
@@ -74,7 +74,7 @@ export function BountyRow({ bounty }: { bounty: BountySummary }) {
               <UpdateDueChip kind={updateDue.kind} label={updateDue.label} />
             )}
             {curatorName && (
-              <span className="text-xs text-ink-400 truncate min-w-0">
+              <span className="text-xs text-ink-300 truncate min-w-0">
                 Curator: <span className="text-ink-300">{curatorName.primary}</span>
               </span>
             )}
@@ -89,7 +89,7 @@ export function BountyRow({ bounty }: { bounty: BountySummary }) {
               grouping: true,
             })}
           </p>
-          <p className="text-xs text-ink-400">XX</p>
+          <p className="text-xs text-ink-300">XX</p>
         </div>
       </Link>
     </li>

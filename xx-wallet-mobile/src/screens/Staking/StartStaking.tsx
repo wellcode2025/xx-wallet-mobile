@@ -201,12 +201,12 @@ export function StartStaking() {
       <div className="px-5 py-4 space-y-4">
         {/* Account context */}
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Bonding from
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
           {transferable && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Available:{' '}
               <span className="font-mono text-ink-200">
                 {formatBalance(transferable, { decimals: 4, withSymbol: true })}
@@ -217,7 +217,7 @@ export function StartStaking() {
 
         {/* Amount */}
         <div className="card space-y-2">
-          <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Amount to bond
           </label>
           <div className="flex items-stretch gap-2">
@@ -228,9 +228,9 @@ export function StartStaking() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.0"
-                className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-400 focus:outline-none numeric"
+                className="flex-1 bg-transparent py-2.5 text-base font-mono text-ink-100 placeholder:text-ink-300 focus:outline-none numeric"
               />
-              <span className="text-sm text-ink-400 pl-2">XX</span>
+              <span className="text-sm text-ink-300 pl-2">XX</span>
             </div>
             <button
               onClick={handleMax}
@@ -250,7 +250,7 @@ export function StartStaking() {
             </p>
           )}
           {(!amountTooLarge || isSubmitting || isDone) && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Max keeps ~0.1 XX in reserve for the bond fee and existential
               deposit. You can change validators or unbond later.
             </p>
@@ -259,7 +259,7 @@ export function StartStaking() {
 
         {/* Validator selection */}
         <div className="card space-y-3">
-          <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Validators
           </label>
 
@@ -272,7 +272,7 @@ export function StartStaking() {
                   'flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors',
                   mode === m
                     ? 'bg-ink-800 text-xx-500'
-                    : 'text-ink-400 active:bg-ink-800/50'
+                    : 'text-ink-300 active:bg-ink-800/50'
                 )}
               >
                 {m === 'auto' ? 'Auto-recommend' : 'Hand-pick'}
@@ -298,7 +298,7 @@ export function StartStaking() {
         {/* Review */}
         {amountValid && targetsValid && (
           <div className="card space-y-2">
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Review
             </p>
             <ReviewRow
@@ -371,7 +371,7 @@ export function StartStaking() {
             <p className="font-display font-medium text-sm text-ink-100">
               Bonded and nominating
             </p>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Returning to staking…
             </p>
           </div>
@@ -390,7 +390,7 @@ export function StartStaking() {
               {txError.message}
             </p>
             {failedStep?.label === 'nominate' && (
-              <p className="text-xs text-ink-400 mt-1 leading-relaxed">
+              <p className="text-xs text-ink-300 mt-1 leading-relaxed">
                 Your XX is bonded — only the validator selection didn't go
                 through. Finish from the staking screen: Manage stake →
                 Change validators.
@@ -435,7 +435,7 @@ function submitLabel(
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-xs text-ink-400">{label}</span>
+      <span className="text-xs text-ink-300">{label}</span>
       <span className="font-mono text-sm text-ink-100 numeric">{value}</span>
     </div>
   );
@@ -451,7 +451,7 @@ function PickBlock({
   return (
     <div className="space-y-2">
       {handPicked.length === 0 ? (
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-ink-300">
           No validators chosen. Tap below to pick from the live validator list.
         </p>
       ) : (
@@ -471,7 +471,7 @@ function PickBlock({
               </li>
             ))}
             {handPicked.length > 5 && (
-              <li className="text-xs text-ink-400 pl-7">
+              <li className="text-xs text-ink-300 pl-7">
                 + {handPicked.length - 5} more
               </li>
             )}

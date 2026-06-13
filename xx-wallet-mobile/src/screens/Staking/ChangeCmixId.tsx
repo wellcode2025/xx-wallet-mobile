@@ -132,7 +132,7 @@ export function ChangeCmixId() {
       <TopBar title="Change cmixId" showBack />
       <div className="px-5 py-4 space-y-4">
         <div className="card space-y-2">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Account
           </p>
           <AddressLabel address={activeAccount.address} className="text-sm" />
@@ -151,7 +151,7 @@ export function ChangeCmixId() {
         {readState === 'ready' && !isDone && (
           <>
             <div className="card space-y-2">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Current cmixId
               </p>
               {currentCmixIdHex ? (
@@ -159,7 +159,7 @@ export function ChangeCmixId() {
                   {currentCmixIdHex}
                 </p>
               ) : (
-                <p className="text-xs text-ink-400">
+                <p className="text-xs text-ink-300">
                   No cmixId currently set on this bond. Setting one here is
                   equivalent to setting it for the first time.
                 </p>
@@ -167,7 +167,7 @@ export function ChangeCmixId() {
             </div>
 
             <div className="card space-y-2">
-              <label className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 New cmixId (H256 hex)
               </label>
               <textarea
@@ -177,7 +177,7 @@ export function ChangeCmixId() {
                 rows={2}
                 disabled={isSubmitting}
                 className={clsx(
-                  'w-full px-3 py-2 rounded-2xl bg-ink-950 border text-xs font-mono text-ink-100 placeholder:text-ink-400 focus:outline-none break-all',
+                  'w-full px-3 py-2 rounded-2xl bg-ink-950 border text-xs font-mono text-ink-100 placeholder:text-ink-300 focus:outline-none break-all',
                   cmixId && !cmixIdValid
                     ? 'border-danger focus:border-danger'
                     : 'border-ink-800 focus:border-ink-600'
@@ -189,7 +189,7 @@ export function ChangeCmixId() {
                 </p>
               )}
               {cmixIdValid && !changed && (
-                <p className="text-xs text-ink-400">
+                <p className="text-xs text-ink-300">
                   Same as current — change the value to enable submission.
                 </p>
               )}
@@ -229,7 +229,7 @@ export function ChangeCmixId() {
             <p className="font-display font-medium text-sm text-ink-100">
               cmixId updated
             </p>
-            <p className="text-xs text-ink-400">Returning to staking…</p>
+            <p className="text-xs text-ink-300">Returning to staking…</p>
           </div>
         )}
 

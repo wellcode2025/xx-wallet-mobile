@@ -64,7 +64,7 @@ export function AddressLabel({
     return (
       <span className={clsx('inline-flex flex-col leading-tight', className)}>
         <span className="font-medium text-ink-100">{name}</span>
-        <span className="font-mono text-xs text-ink-400">{fragment}</span>
+        <span className="font-mono text-xs text-ink-300">{fragment}</span>
       </span>
     );
   }
@@ -75,7 +75,7 @@ export function AddressLabel({
       <span className="font-medium text-ink-100">
         {unquoted ? name : `"${name}"`}
       </span>{' '}
-      <span className="font-mono text-xs text-ink-400">[{fragment}]</span>
+      <span className="font-mono text-xs text-ink-300">[{fragment}]</span>
     </span>
   );
 }

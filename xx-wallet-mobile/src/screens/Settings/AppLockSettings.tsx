@@ -59,7 +59,7 @@ export function AppLockSettings() {
   return (
     <section className="space-y-2">
       <div className="px-1">
-        <h2 className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+        <h2 className="text-xs uppercase tracking-wider text-ink-300 font-medium">
           App lock
         </h2>
       </div>
@@ -100,7 +100,7 @@ export function AppLockSettings() {
           </>
         )}
 
-        <p className="px-1 text-xs text-ink-400 leading-relaxed">
+        <p className="px-1 text-xs text-ink-300 leading-relaxed">
           Requires a PIN to open the wallet{bioAvailable ? ', or your fingerprint / face' : ''}.
           This protects your privacy on a shared or lost phone — it doesn't
           replace your wallet password, which is still needed to send.
@@ -139,7 +139,7 @@ function LockRow({
         {icon}
         <span className="text-sm text-ink-100">{label}</span>
       </span>
-      <span className="text-sm text-ink-400 flex-shrink-0">{value}</span>
+      <span className="text-sm text-ink-300 flex-shrink-0">{value}</span>
     </button>
   );
 }
@@ -323,7 +323,7 @@ function PinManageSheet({
       <div className="space-y-3">
         {step === 'current' && (
           <>
-            <p className="text-sm text-ink-400">Enter your current PIN.</p>
+            <p className="text-sm text-ink-300">Enter your current PIN.</p>
             {pinInput(current, setCurrent, '••••••', verifyCurrent)}
             {error && <p className="text-xs text-danger">{error}</p>}
             <PrimaryButton
@@ -336,7 +336,7 @@ function PinManageSheet({
 
         {step === 'new' && (
           <>
-            <p className="text-sm text-ink-400">
+            <p className="text-sm text-ink-300">
               Choose a PIN ({PIN_MIN_LENGTH}+ digits).
             </p>
             {pinInput(pin, setPin, 'New PIN', submitNew)}
@@ -351,7 +351,7 @@ function PinManageSheet({
 
         {step === 'confirm' && (
           <>
-            <p className="text-sm text-ink-400">Re-enter your PIN to confirm.</p>
+            <p className="text-sm text-ink-300">Re-enter your PIN to confirm.</p>
             {pinInput(confirm, setConfirm, 'Confirm PIN', submitConfirm)}
             {error && <p className="text-xs text-danger">{error}</p>}
             <PrimaryButton
@@ -377,7 +377,7 @@ function AutoLockSheet({
   const setAutoLockMs = useSettingsStore((s) => s.setAutoLockMs);
   return (
     <Sheet open={open} onClose={onClose} title="Auto-lock">
-      <p className="text-sm text-ink-400 mb-3">
+      <p className="text-sm text-ink-300 mb-3">
         Lock the app after it's been in the background this long.
       </p>
       <ul className="space-y-1">

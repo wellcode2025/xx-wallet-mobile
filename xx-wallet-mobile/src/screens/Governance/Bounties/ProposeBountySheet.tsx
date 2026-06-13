@@ -140,7 +140,7 @@ export function ProposeBountySheet({ open, onClose }: ProposeBountySheetProps) {
             <p className="text-xs text-warning">
               Couldn't read bounty constants
             </p>
-            <p className="text-xs text-ink-400 font-mono break-all">
+            <p className="text-xs text-ink-300 font-mono break-all">
               {constsError.message}
             </p>
           </div>
@@ -148,17 +148,17 @@ export function ProposeBountySheet({ open, onClose }: ProposeBountySheetProps) {
 
         {depositPreview && (
           <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-3 space-y-1">
-            <p className="text-xs text-ink-400">Proposer deposit (refundable)</p>
+            <p className="text-xs text-ink-300">Proposer deposit (refundable)</p>
             <p className="font-mono text-base text-ink-100 numeric">
               {formatBalance(depositPreview, {
                 decimals: 4,
                 trim: true,
                 grouping: true,
               })}{' '}
-              <span className="text-ink-400">XX</span>
+              <span className="text-ink-300">XX</span>
             </p>
             {consts && (
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 {formatBalance(consts.depositBase, {
                   decimals: 4,
                   trim: true,
@@ -220,7 +220,7 @@ function ValueInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-ink-400">Bounty value</label>
+      <label className="text-xs text-ink-300">Bounty value</label>
       <div className="relative">
         <input
           type="text"
@@ -230,12 +230,12 @@ function ValueInput({
           placeholder="0.0000"
           className="w-full pl-3 pr-12 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-base font-mono text-ink-100 numeric placeholder:text-ink-300 focus:outline-none focus:border-ink-600"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-400 pointer-events-none">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-300 pointer-events-none">
           XX
         </span>
       </div>
       {minimum && (
-        <p className="text-xs text-ink-400">
+        <p className="text-xs text-ink-300">
           Minimum:{' '}
           <span className="font-mono">
             {formatBalance(minimum, {
@@ -272,10 +272,10 @@ function DescriptionInput({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between">
-        <label className="text-xs text-ink-400">Description</label>
+        <label className="text-xs text-ink-300">Description</label>
         <span
           className={`text-xs font-mono ${
-            tooLong ? 'text-danger' : 'text-ink-400'
+            tooLong ? 'text-danger' : 'text-ink-300'
           }`}
         >
           {byteCount} / {maxBytes} bytes
@@ -290,7 +290,7 @@ function DescriptionInput({
           tooLong ? 'border-danger/50' : 'border-ink-800'
         }`}
       />
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-ink-300">
         Foundation convention: wrap a forum.xx.network thread in an
         HTML anchor so the bounty list can link out cleanly.
       </p>

@@ -74,7 +74,7 @@ export function ReferendumDetail() {
             <p className="text-sm text-danger">
               Couldn't load referendum state — check your connection.
             </p>
-            <p className="mt-2 text-xs text-ink-400 font-mono break-all">
+            <p className="mt-2 text-xs text-ink-300 font-mono break-all">
               {error.message || String(error)}
             </p>
           </div>
@@ -85,7 +85,7 @@ export function ReferendumDetail() {
             <p className="text-sm text-ink-100 font-medium">
               No active referendum with that id
             </p>
-            <p className="mt-1 text-sm text-ink-400">
+            <p className="mt-1 text-sm text-ink-300">
               Referendum #{id} isn't currently active. It may have been
               closed, cancelled, or never opened. Past referenda are
               available on the explorer.
@@ -97,8 +97,8 @@ export function ReferendumDetail() {
           <>
             <div className="card space-y-3">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-xs text-ink-400 font-mono">#{referendum.id}</p>
-                <p className="text-xs text-ink-400">{referendum.threshold}</p>
+                <p className="text-xs text-ink-300 font-mono">#{referendum.id}</p>
+                <p className="text-xs text-ink-300">{referendum.threshold}</p>
               </div>
 
               {/* Tally */}
@@ -115,12 +115,12 @@ export function ReferendumDetail() {
               </div>
 
               {/* End block + countdown */}
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Ends in{' '}
                 <span className="text-ink-200">
                   {blocksToHuman(blockNumber, referendum.end).label}
                 </span>
-                <span className="text-ink-400">
+                <span className="text-ink-300">
                   {' '}
                   (block #{referendum.end.toLocaleString()})
                 </span>
@@ -129,7 +129,7 @@ export function ReferendumDetail() {
 
             {referendum.proposalHash && (
               <div className="card space-y-2">
-                <p className="text-xs text-ink-400">Proposal hash</p>
+                <p className="text-xs text-ink-300">Proposal hash</p>
                 <p className="font-mono text-xs text-ink-200 break-all">
                   {referendum.proposalHash}
                 </p>
@@ -139,7 +139,7 @@ export function ReferendumDetail() {
             {/* Vote section */}
             {myVoteOnThis ? (
               <div className="card space-y-2">
-                <p className="text-xs text-ink-400">Your vote</p>
+                <p className="text-xs text-ink-300">Your vote</p>
                 <div className="flex items-baseline gap-2">
                   {myVoteOnThis.aye === true && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-xx-500/10 text-xx-500 border border-xx-500/30">
@@ -154,7 +154,7 @@ export function ReferendumDetail() {
                     </span>
                   )}
                   {myVoteOnThis.aye === null && (
-                    <span className="text-xs text-ink-400">Split vote</span>
+                    <span className="text-xs text-ink-300">Split vote</span>
                   )}
                   {myVoteOnThis.balance && (
                     <span className="font-mono text-xs text-ink-200">
@@ -167,7 +167,7 @@ export function ReferendumDetail() {
                     </span>
                   )}
                   {myVoteOnThis.conviction && (
-                    <span className="text-xs text-ink-400">
+                    <span className="text-xs text-ink-300">
                       · {myVoteOnThis.conviction}
                     </span>
                   )}
@@ -190,7 +190,7 @@ export function ReferendumDetail() {
             )}
 
             {activeAddress && (
-              <p className="text-xs text-ink-400 text-center">
+              <p className="text-xs text-ink-300 text-center">
                 Voting as {shortenAddress(activeAddress)}
               </p>
             )}
@@ -250,7 +250,7 @@ function TallyCell({
       ? 'text-xx-500'
       : highlight === 'nay'
       ? 'text-warning'
-      : 'text-ink-400';
+      : 'text-ink-300';
   return (
     <div>
       <p className={labelCls}>{label}</p>
@@ -260,7 +260,7 @@ function TallyCell({
           trim: true,
           grouping: true,
         })}
-        <span className="text-ink-400"> XX</span>
+        <span className="text-ink-300"> XX</span>
       </p>
     </div>
   );

@@ -89,16 +89,16 @@ export function ProposeSpendSheet({ open, onClose }: ProposeSpendSheetProps) {
 
         {bondPreview && (
           <div className="rounded-xl border border-ink-800 bg-ink-900/40 p-3 space-y-1">
-            <p className="text-xs text-ink-400">Proposer bond (refundable)</p>
+            <p className="text-xs text-ink-300">Proposer bond (refundable)</p>
             <p className="font-mono text-base text-ink-100 numeric">
               {formatBalance(bondPreview, {
                 decimals: 4,
                 trim: true,
                 grouping: true,
               })}{' '}
-              <span className="text-ink-400">XX</span>
+              <span className="text-ink-300">XX</span>
             </p>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               {formatBondRule(
                 treasury.proposalBondPerMill,
                 treasury.proposalBondMinimum,
@@ -148,7 +148,7 @@ function ValueInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-ink-400">Spend value</label>
+      <label className="text-xs text-ink-300">Spend value</label>
       <div className="relative">
         <input
           type="text"
@@ -158,11 +158,11 @@ function ValueInput({
           placeholder="0.0000"
           className="w-full pl-3 pr-12 py-2.5 rounded-2xl bg-ink-900 border border-ink-800 text-base font-mono text-ink-100 numeric placeholder:text-ink-300 focus:outline-none focus:border-ink-600"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-400 pointer-events-none">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-300 pointer-events-none">
           XX
         </span>
       </div>
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-ink-300">
         Amount to be paid out from the treasury pot if approved.
       </p>
     </div>
@@ -180,7 +180,7 @@ function BeneficiaryInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-ink-400">Beneficiary address</label>
+      <label className="text-xs text-ink-300">Beneficiary address</label>
       <input
         type="text"
         value={value}

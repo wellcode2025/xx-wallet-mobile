@@ -46,7 +46,7 @@ export function MemberRow({
           )}
         </div>
         {name.secondary && (
-          <p className="text-xs text-ink-400 font-mono truncate">
+          <p className="text-xs text-ink-300 font-mono truncate">
             {name.secondary}
           </p>
         )}
@@ -59,9 +59,9 @@ export function MemberRow({
               trim: true,
               grouping: true,
             })}{' '}
-            <span className="text-ink-400">XX</span>
+            <span className="text-ink-300">XX</span>
           </p>
-          <p className="text-xs text-ink-400">backing</p>
+          <p className="text-xs text-ink-300">backing</p>
         </div>
       )}
     </li>

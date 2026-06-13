@@ -56,7 +56,7 @@ export function TreasuryOverview() {
       <div className="px-5 py-4 space-y-4 max-w-md mx-auto pb-8">
         <div className="rounded-2xl border border-ink-800 bg-ink-900/40 p-4 space-y-3">
           <div>
-            <p className="text-xs text-ink-400">Spendable pot</p>
+            <p className="text-xs text-ink-300">Spendable pot</p>
             <p className="font-mono text-2xl text-ink-100 numeric">
               {treasury.isLoading
                 ? '…'
@@ -67,11 +67,11 @@ export function TreasuryOverview() {
                     grouping: true,
                   })
                 : '—'}{' '}
-              <span className="text-sm text-ink-400">XX</span>
+              <span className="text-sm text-ink-300">XX</span>
             </p>
           </div>
           {nextBurn && treasury.burnPerMill > 0 && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               Next burn at spend tick:{' '}
               <span className="font-mono text-ink-200">
                 {formatBalance(nextBurn, {
@@ -88,10 +88,10 @@ export function TreasuryOverview() {
 
         {spendInfo && (
           <div className="rounded-2xl border border-ink-800 bg-ink-900/40 p-3">
-            <p className="text-xs text-ink-400">Spend period</p>
+            <p className="text-xs text-ink-300">Spend period</p>
             <p className="mt-0.5 text-sm text-ink-100">
               <span className="font-medium">{spendInfo.remainingLabel}</span>
-              <span className="text-ink-400"> · cycle {spendInfo.cycle}</span>
+              <span className="text-ink-300"> · cycle {spendInfo.cycle}</span>
             </p>
             <div className="mt-2 h-1 rounded-full bg-ink-800 overflow-hidden">
               <div
@@ -137,7 +137,7 @@ export function TreasuryOverview() {
               <p className="text-sm text-danger">
                 Couldn't load treasury state — check your connection and try again.
               </p>
-              <p className="mt-2 text-xs text-ink-400 font-mono break-all">
+              <p className="mt-2 text-xs text-ink-300 font-mono break-all">
                 {treasury.error.message || String(treasury.error)}
               </p>
             </div>
@@ -154,7 +154,7 @@ export function TreasuryOverview() {
               <p className="text-sm text-danger">
                 Couldn't load tips — check your connection and try again.
               </p>
-              <p className="mt-2 text-xs text-ink-400 font-mono break-all">
+              <p className="mt-2 text-xs text-ink-300 font-mono break-all">
                 {tips.error.message || String(tips.error)}
               </p>
             </div>
@@ -186,7 +186,7 @@ function TabButton({
       onClick={onClick}
       className={clsx(
         'flex-1 text-center text-sm font-medium py-2 rounded-xl transition-colors',
-        active ? 'bg-ink-800 text-xx-500' : 'text-ink-400 active:bg-ink-800/50'
+        active ? 'bg-ink-800 text-xx-500' : 'text-ink-300 active:bg-ink-800/50'
       )}
     >
       {label}

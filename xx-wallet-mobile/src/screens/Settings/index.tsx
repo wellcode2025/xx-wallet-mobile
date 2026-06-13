@@ -165,7 +165,7 @@ export function Settings() {
             value={indexerEnabled ? 'On' : 'Off'}
             onClick={() => setIndexerEnabled(!indexerEnabled)}
           />
-          <p className="px-1 text-xs text-ink-400 leading-relaxed">
+          <p className="px-1 text-xs text-ink-300 leading-relaxed">
             The indexer (run by the xx Foundation) powers transaction
             history, rewards history, multisig activity and chain scan,
             and identity names. Like any web service, it sees your IP
@@ -230,7 +230,7 @@ export function Settings() {
                     </span>
                   )}
                 </div>
-                <p className="font-mono text-xs text-ink-400 truncate mt-0.5">
+                <p className="font-mono text-xs text-ink-300 truncate mt-0.5">
                   {acct.address.slice(0, 14)}…
                 </p>
               </div>
@@ -262,8 +262,8 @@ export function Settings() {
           <div className="px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 space-y-3">
             <div>
               <p className="text-sm font-medium text-ink-200">xx Wallet Mobile</p>
-              <p className="text-xs text-ink-400">Version 0.1.0</p>
-              <p className="text-xs text-ink-400 pt-1">
+              <p className="text-xs text-ink-300">Version 0.1.0</p>
+              <p className="text-xs text-ink-300 pt-1">
                 Open source, non-custodial. Your keys stay on this device.
               </p>
             </div>
@@ -274,7 +274,7 @@ export function Settings() {
                 className="w-5 h-5"
                 draggable={false}
               />
-              <span className="text-xs text-ink-400">
+              <span className="text-xs text-ink-300">
                 Built for{' '}
                 <span className="text-ink-200 font-medium">xx network</span>
               </span>
@@ -286,7 +286,7 @@ export function Settings() {
       {/* Add account sheet */}
       <Sheet open={addOpen} onClose={() => setAddOpen(false)} title="Add account">
         <div className="space-y-3">
-          <p className="text-sm text-ink-400">
+          <p className="text-sm text-ink-300">
             How would you like to add the new account?
           </p>
           <button
@@ -423,16 +423,16 @@ export function Settings() {
           <div className="flex items-center justify-center gap-4 py-2">
             <div className="flex flex-col items-center gap-1">
               <Smartphone size={24} className="text-xx-500" strokeWidth={1.5} />
-              <span className="text-xs text-ink-400">Phone</span>
+              <span className="text-xs text-ink-300">Phone</span>
             </div>
             <ArrowRight size={16} className="text-ink-600" />
             <div className="flex flex-col items-center gap-1">
               <Monitor size={24} className="text-ink-400" strokeWidth={1.5} />
-              <span className="text-xs text-ink-400">Desktop</span>
+              <span className="text-xs text-ink-300">Desktop</span>
             </div>
           </div>
 
-          <p className="text-xs text-ink-400 text-center">
+          <p className="text-xs text-ink-300 text-center">
             Works between phone ↔ desktop ↔ wallet.xx.network
           </p>
         </div>
@@ -462,7 +462,7 @@ export function Settings() {
                     <span className="text-xs text-xx-500 font-medium">Active</span>
                   )}
                 </div>
-                <p className="font-mono text-xs text-ink-400 mt-1 break-all">
+                <p className="font-mono text-xs text-ink-300 mt-1 break-all">
                   {ep.url}
                 </p>
               </button>
@@ -509,7 +509,7 @@ export function Settings() {
               >
                 Connect
               </button>
-              <p className="text-xs text-ink-400 mt-3 leading-relaxed">
+              <p className="text-xs text-ink-300 mt-3 leading-relaxed">
                 Point at a self-hosted xx node or alternate RPC provider. Use{' '}
                 <code className="font-mono text-xx-500">wss://</code> for remote
                 hosts; <code className="font-mono text-xx-500">ws://</code> only
@@ -605,7 +605,7 @@ function MultisigSection() {
             <p className="text-sm font-medium text-ink-200">
               Stale-proposal threshold
             </p>
-            <p className="text-xs text-ink-400 leading-snug">
+            <p className="text-xs text-ink-300 leading-snug">
               Pending proposals older than this get the stale treatment in
               your wallet — depositors are nudged to cancel and reclaim
               their deposit.
@@ -623,7 +623,7 @@ function MultisigSection() {
             className="input-base w-24 text-center font-mono"
             inputMode="numeric"
           />
-          <span className="text-sm text-ink-400">days</span>
+          <span className="text-sm text-ink-300">days</span>
           {staleThresholdDays !== STALE_THRESHOLD_DAYS_DEFAULT && (
             <button
               onClick={() => setStaleThresholdDays(STALE_THRESHOLD_DAYS_DEFAULT)}
@@ -633,7 +633,7 @@ function MultisigSection() {
             </button>
           )}
         </div>
-        <p className="text-xs text-ink-400">
+        <p className="text-xs text-ink-300">
           Bounds: {STALE_THRESHOLD_DAYS_MIN}–{STALE_THRESHOLD_DAYS_MAX} days.
         </p>
       </div>
@@ -653,7 +653,7 @@ function Section({
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+        <h2 className="text-xs uppercase tracking-wider text-ink-300 font-medium">
           {title}
         </h2>
         {action}
@@ -832,7 +832,7 @@ function BatchExportSheet({
   return (
     <Sheet open={open} onClose={onClose} title="Batch export accounts">
       <div className="space-y-4">
-        <p className="text-xs text-ink-400 leading-relaxed">
+        <p className="text-xs text-ink-300 leading-relaxed">
           Bundle multiple accounts into a single JSON file shaped for the
           "import all accounts" flow used by the official xx desktop wallet
           and other polkadot{'{.js}'}-derived wallets. Each account stays
@@ -842,7 +842,7 @@ function BatchExportSheet({
         {/* Account selector */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Select accounts ({selected.size}/{accounts.length})
             </p>
             <div className="flex items-center gap-3">
@@ -856,7 +856,7 @@ function BatchExportSheet({
               <button
                 onClick={selectNone}
                 disabled={selected.size === 0 || verifying}
-                className="text-xs text-ink-400 active:text-ink-200 disabled:opacity-40"
+                className="text-xs text-ink-300 active:text-ink-200 disabled:opacity-40"
               >
                 None
               </button>
@@ -905,7 +905,7 @@ function BatchExportSheet({
                       <p className="text-sm font-medium text-ink-100 truncate">
                         {acct.name}
                       </p>
-                      <p className="font-mono text-xs text-ink-400 truncate">
+                      <p className="font-mono text-xs text-ink-300 truncate">
                         {acct.address.slice(0, 14)}…
                       </p>
                     </div>
@@ -1002,7 +1002,7 @@ function BatchExportSheet({
               )}
             </button>
             {pendingPasswordCount > 0 && !verifying && (
-              <p className="text-xs text-ink-400 text-center leading-relaxed">
+              <p className="text-xs text-ink-300 text-center leading-relaxed">
                 {pendingPasswordCount} selected account
                 {pendingPasswordCount === 1 ? '' : 's'} still need
                 {pendingPasswordCount === 1 ? 's' : ''} a password.
@@ -1011,7 +1011,7 @@ function BatchExportSheet({
           </div>
         )}
 
-        <p className="text-xs text-ink-400 leading-relaxed text-center">
+        <p className="text-xs text-ink-300 leading-relaxed text-center">
           The exported file is a JSON array of encrypted keystores —
           import it on the receiving wallet via its "Import all accounts"
           or equivalent batch flow.
@@ -1038,7 +1038,7 @@ function Row({
     <>
       {icon}
       <span className="flex-1 text-sm font-medium">{label}</span>
-      <span className="text-sm text-ink-400 font-mono truncate max-w-[140px]">
+      <span className="text-sm text-ink-300 font-mono truncate max-w-[140px]">
         {value}
       </span>
       {!readonly && <ChevronRight size={16} className="text-ink-400" />}

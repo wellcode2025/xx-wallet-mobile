@@ -277,7 +277,7 @@ export function TwoDeviceApproval() {
               />
             </div>
 
-            <p className="text-xs text-ink-400 leading-relaxed">
+            <p className="text-xs text-ink-300 leading-relaxed">
               Because any two of the three can approve, losing one device
               doesn't lock you out — you recover with your remaining device and
               the offline backup. This is on-chain protection enforced by the
@@ -347,7 +347,7 @@ export function TwoDeviceApproval() {
               Use a file or paste instead
             </button>
 
-            <p className="text-xs text-ink-400 leading-relaxed">
+            <p className="text-xs text-ink-300 leading-relaxed">
               One thing to check first: when the account was created, your
               other device scanned an address from THIS device as the second
               signer. That account must still be in this wallet — otherwise
@@ -389,7 +389,7 @@ export function TwoDeviceApproval() {
                         <p className="text-sm font-medium text-ink-100 truncate">
                           {acct.name}
                         </p>
-                        <p className="font-mono text-xs text-ink-400 truncate">
+                        <p className="font-mono text-xs text-ink-300 truncate">
                           {shortenAddress(acct.address, { start: 8, end: 6 })}
                         </p>
                       </div>
@@ -432,7 +432,7 @@ export function TwoDeviceApproval() {
             </button>
 
             <div className="card space-y-2">
-              <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="block text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Or paste its address
               </label>
               <textarea
@@ -519,7 +519,7 @@ export function TwoDeviceApproval() {
               </div>
             </button>
 
-            <p className="text-xs text-ink-400 leading-relaxed">
+            <p className="text-xs text-ink-300 leading-relaxed">
               Either way, the backup must stay{' '}
               <span className="text-ink-200 font-medium">offline</span> — not on
               either of your two devices. If it shared a device with another
@@ -546,7 +546,7 @@ export function TwoDeviceApproval() {
             </button>
 
             <div className="card space-y-2">
-              <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="block text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Or paste its address
               </label>
               <textarea
@@ -566,7 +566,7 @@ export function TwoDeviceApproval() {
               )}
             </div>
 
-            <p className="text-xs text-ink-400 leading-relaxed">
+            <p className="text-xs text-ink-300 leading-relaxed">
               This must be a third, separate key — not either of your two
               devices, and not a key stored on this phone.
             </p>
@@ -602,7 +602,7 @@ export function TwoDeviceApproval() {
                   <p className="font-display font-medium text-lg text-ink-100">
                     Generating your backup key
                   </p>
-                  <p className="text-sm text-ink-400 max-w-xs leading-relaxed">
+                  <p className="text-sm text-ink-300 max-w-xs leading-relaxed">
                     Producing the recovery phrases for your offline safety net.
                   </p>
                 </div>
@@ -614,7 +614,7 @@ export function TwoDeviceApproval() {
                   <p className="font-display font-medium text-lg text-ink-100">
                     Generation failed
                   </p>
-                  <p className="text-sm text-ink-400 max-w-xs leading-relaxed">
+                  <p className="text-sm text-ink-300 max-w-xs leading-relaxed">
                     {genError}
                   </p>
                 </div>
@@ -706,7 +706,7 @@ export function TwoDeviceApproval() {
             />
 
             <div className="card space-y-2">
-              <label className="block text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <label className="block text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Name
               </label>
               <input
@@ -717,13 +717,13 @@ export function TwoDeviceApproval() {
                 className="input-base"
                 placeholder="Protected account"
               />
-              <p className="text-xs text-ink-400 leading-relaxed">
+              <p className="text-xs text-ink-300 leading-relaxed">
                 Local label, only visible to you.
               </p>
             </div>
 
             <div className="card space-y-2.5">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Signers (2 of 3 required)
               </p>
               <SignerRow
@@ -745,7 +745,7 @@ export function TwoDeviceApproval() {
             </div>
 
             <div className="card space-y-2">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Protected account address
               </p>
               {derivedAddress ? (
@@ -803,7 +803,7 @@ export function TwoDeviceApproval() {
                 Move funds into it to protect them. Spending now needs approval
                 from a second device — propose on one, approve on the other.
               </p>
-              <p className="text-xs text-ink-400 leading-relaxed">
+              <p className="text-xs text-ink-300 leading-relaxed">
                 One more step: share this account's config with your second
                 device so it shows up there too. On your other device — and on
                 block explorers — this account appears as what it really is, a
@@ -882,7 +882,7 @@ function StepLine({
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium text-ink-100">{title}</p>
-        <p className="text-xs text-ink-400 leading-relaxed">{body}</p>
+        <p className="text-xs text-ink-300 leading-relaxed">{body}</p>
       </div>
     </div>
   );
@@ -908,11 +908,11 @@ function SignerRow({
           <p className="text-sm font-medium text-ink-100 truncate">
             {label}
             {sublabel ? (
-              <span className="text-ink-400 font-normal"> · {sublabel}</span>
+              <span className="text-ink-300 font-normal"> · {sublabel}</span>
             ) : null}
           </p>
         </div>
-        <p className="font-mono text-xs text-ink-400 truncate">
+        <p className="font-mono text-xs text-ink-300 truncate">
           {shortenAddress(address, { start: 8, end: 6 })}
         </p>
       </div>
@@ -963,7 +963,7 @@ function PhraseBlock({
               key={i}
               className={clsx('flex items-center gap-2 p-2 rounded-lg', accentBg)}
             >
-              <span className="text-ink-400 text-xs font-mono w-5 text-right">
+              <span className="text-ink-300 text-xs font-mono w-5 text-right">
                 {i + 1}
               </span>
               <span className="font-mono text-sm text-ink-100">{word}</span>

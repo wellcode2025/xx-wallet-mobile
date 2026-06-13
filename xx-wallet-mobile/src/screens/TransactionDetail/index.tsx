@@ -130,14 +130,14 @@ function DetailView({ transfer }: { transfer: Transfer }) {
               <XCircle size={28} className="text-danger" strokeWidth={2} />
             )}
           </div>
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             {success ? config.label : 'Failed transfer'}
           </p>
           <div className="flex items-baseline gap-2 justify-center">
             <span
               className={clsx(
                 'text-balance numeric',
-                success ? 'text-ink-100' : 'text-ink-400 line-through'
+                success ? 'text-ink-100' : 'text-ink-300 line-through'
               )}
             >
               {config.prefix}
@@ -168,7 +168,7 @@ function DetailView({ transfer }: { transfer: Transfer }) {
 
         {/* On-chain details */}
         <div className="card space-y-3">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             On-chain details
           </p>
           <DetailRow label="Block" value={`#${blockNumber.toLocaleString()}`} mono />
@@ -198,7 +198,7 @@ function DetailView({ transfer }: { transfer: Transfer }) {
             View on explorer
           </a>
         ) : (
-          <p className="text-xs text-ink-400 text-center">
+          <p className="text-xs text-ink-300 text-center">
             No transaction hash recorded — cannot link to explorer.
           </p>
         )}
@@ -244,7 +244,7 @@ function PartyCard({
     >
       <AddressIcon address={address} size={36} />
       <div className="flex-1 min-w-0">
-        <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+        <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
           {label}
         </p>
         {identity ? (
@@ -252,7 +252,7 @@ function PartyCard({
             <p className="text-sm font-medium text-ink-100 truncate">
               {identity}
             </p>
-            <p className="font-mono text-xs text-ink-400 truncate">
+            <p className="font-mono text-xs text-ink-300 truncate">
               {address}
             </p>
           </>
@@ -280,10 +280,10 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-ink-400">{label}</span>
+      <span className="text-xs text-ink-300">{label}</span>
       <span className="flex items-baseline gap-2 min-w-0">
         {hint && (
-          <span className="text-xs text-ink-400 italic">{hint}</span>
+          <span className="text-xs text-ink-300 italic">{hint}</span>
         )}
         <span
           className={clsx(
@@ -313,10 +313,10 @@ function HashCard({ hash }: { hash: string }) {
   if (!hash) {
     return (
       <div className="card">
-        <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-1">
+        <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-1">
           Transaction hash
         </p>
-        <p className="text-sm text-ink-400">Not available for this transfer.</p>
+        <p className="text-sm text-ink-300">Not available for this transfer.</p>
       </div>
     );
   }
@@ -324,7 +324,7 @@ function HashCard({ hash }: { hash: string }) {
   return (
     <div className="card space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+        <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
           Transaction hash
         </p>
         <button

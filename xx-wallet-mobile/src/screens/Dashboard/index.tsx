@@ -120,7 +120,7 @@ export function Dashboard() {
             <p className="font-display font-medium text-base truncate">
               {activeAccount.name}
             </p>
-            <p className="font-mono text-xs text-ink-400 truncate">
+            <p className="font-mono text-xs text-ink-300 truncate">
               {activeAccount.address.slice(0, 10)}…
               {activeAccount.address.slice(-6)}
             </p>
@@ -136,11 +136,11 @@ export function Dashboard() {
           <div className="absolute inset-0 bg-mesh opacity-40 pointer-events-none" />
           <div className="relative p-6 space-y-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+              <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
                 Transferable
               </span>
               {isLoading && !balance && (
-                <span className="text-xs text-ink-400 animate-pulse-subtle">
+                <span className="text-xs text-ink-300 animate-pulse-subtle">
                   Loading…
                 </span>
               )}
@@ -195,7 +195,7 @@ export function Dashboard() {
         {/* Address card */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <span className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Your address
             </span>
             <AddressChip address={activeAccount.address} shortened className="flex-shrink-0" />
@@ -211,13 +211,13 @@ export function Dashboard() {
             <h3 className="font-display font-medium text-sm text-ink-200">
               Recent activity
               {txTotal > 0 && (
-                <span className="ml-2 text-xs text-ink-400 font-sans font-normal">
+                <span className="ml-2 text-xs text-ink-300 font-sans font-normal">
                   ({txTotal.toLocaleString()} total)
                 </span>
               )}
             </h3>
             {txLoading && (
-              <div className="flex items-center gap-1.5 text-xs text-ink-400">
+              <div className="flex items-center gap-1.5 text-xs text-ink-300">
                 <Loader2 size={12} className="animate-spin" />
                 Loading…
               </div>
@@ -226,7 +226,7 @@ export function Dashboard() {
 
           {txError &&
             (isIndexerDisabledError(txError) ? (
-              <p className="text-xs text-ink-400 py-2">
+              <p className="text-xs text-ink-300 py-2">
                 Transaction history is off — you disabled the indexer in
                 Settings → Privacy. Your balance and sending are
                 unaffected.
@@ -238,7 +238,7 @@ export function Dashboard() {
             ))}
 
           {transfers.length === 0 && !txLoading && !txError && (
-            <p className="text-sm text-ink-400 py-2">
+            <p className="text-sm text-ink-300 py-2">
               No recent transactions found.
             </p>
           )}
@@ -319,7 +319,7 @@ export function Dashboard() {
                             'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
                             highlight
                               ? 'bg-amber-500/20 text-amber-300'
-                              : 'bg-ink-700/50 text-ink-400'
+                              : 'bg-ink-700/50 text-ink-300'
                           )}
                         >
                           <Users size={16} strokeWidth={2} />
@@ -336,7 +336,7 @@ export function Dashboard() {
                               ? 'Your proposal'
                               : 'Awaiting other signers'}
                           </p>
-                          <p className="text-xs text-ink-400 truncate">
+                          <p className="text-xs text-ink-300 truncate">
                             {m.localName} · {p.approvals.length} of{' '}
                             {m.threshold} signed
                             {stale.ageDays > 0 && (
@@ -355,7 +355,7 @@ export function Dashboard() {
           {/* Accounts section */}
           <div className="space-y-2">
             {accounts.length > 1 && (
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium px-1">
                 Your accounts
               </p>
             )}
@@ -385,7 +385,7 @@ export function Dashboard() {
           {/* Multisigs section (only renders when there's at least one) */}
           {multisigs.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium px-1">
                 Multisigs
               </p>
               <ul className="space-y-2">
@@ -479,7 +479,7 @@ export function Dashboard() {
                 <p className="font-display font-medium text-sm text-ink-100">
                   Contacts
                 </p>
-                <p className="text-xs text-ink-400 mt-0.5">
+                <p className="text-xs text-ink-300 mt-0.5">
                   Address book and saved addresses
                 </p>
               </div>
@@ -532,7 +532,7 @@ export function Dashboard() {
             </div>
           </button>
 
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium pt-1 px-1">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium pt-1 px-1">
             Or set up manually
           </p>
 
@@ -706,7 +706,7 @@ function BalanceRow({
 }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-0.5">
+      <p className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-0.5">
         {label}
       </p>
       <p className="font-mono text-sm text-ink-200">
@@ -782,7 +782,7 @@ function AccountSwitcherRow({
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <p className="font-mono text-xs text-ink-400 truncate">
+          <p className="font-mono text-xs text-ink-300 truncate">
             {address.slice(0, 10)}…
           </p>
           <span className="text-ink-600">·</span>

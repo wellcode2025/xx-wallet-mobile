@@ -174,7 +174,7 @@ function MultisigView({ address }: { address: string }) {
             </span>
           </div>
           {balance && balance.reserved.gtn(0) && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               {formatBalance(balance.reserved)} {XX_SYMBOL} reserved
               <span className="text-ink-600"> · multisig deposits</span>
             </p>
@@ -199,7 +199,7 @@ function MultisigView({ address }: { address: string }) {
 
         {/* Cosigners */}
         <div className="card space-y-3">
-          <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+          <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
             Signers ({multisig.threshold} required to execute)
           </p>
           <div className="space-y-2">
@@ -270,7 +270,7 @@ function MultisigView({ address }: { address: string }) {
                           ? "You've approved"
                           : 'Awaiting other signers'}
                       </p>
-                      <p className="text-xs text-ink-400">
+                      <p className="text-xs text-ink-300">
                         {p.approvals.length} of {multisig.threshold} signed
                         {stale.ageDays > 0 && (
                           <> · {formatAge(stale.ageDays)} old</>
@@ -287,33 +287,33 @@ function MultisigView({ address }: { address: string }) {
         {/* Activity */}
         <div className="card space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium">
               Recent activity
             </p>
             {total > 0 && (
-              <span className="text-xs text-ink-400">
+              <span className="text-xs text-ink-300">
                 {total} executed
               </span>
             )}
           </div>
           {activityLoading && (
-            <p className="text-xs text-ink-400">Loading activity…</p>
+            <p className="text-xs text-ink-300">Loading activity…</p>
           )}
           {activityError &&
             (isIndexerDisabledError(activityError) ? (
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Activity history is off — you disabled the indexer in
                 Settings → Privacy. The multisig itself (balance, pending
                 proposals, signing) works without it.
               </p>
             ) : (
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Couldn't load activity. The multisig itself is fine — only the
                 historical view is affected.
               </p>
             ))}
           {!activityLoading && !activityError && activity.length === 0 && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               No executed actions yet at this multisig.
             </p>
           )}
@@ -353,7 +353,7 @@ function MultisigView({ address }: { address: string }) {
             <Share2 size={18} className="text-ink-400 flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-sm font-medium text-ink-100">Export config</p>
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Share this multisig with cosigners
               </p>
             </div>
@@ -369,7 +369,7 @@ function MultisigView({ address }: { address: string }) {
             <Pencil size={18} className="text-ink-400 flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-sm font-medium text-ink-100">Rename</p>
-              <p className="text-xs text-ink-400">Change the local nickname</p>
+              <p className="text-xs text-ink-300">Change the local nickname</p>
             </div>
           </button>
           {/* Protected-account toggle — the catch-all for multisigs that
@@ -396,7 +396,7 @@ function MultisigView({ address }: { address: string }) {
                     ? 'Treat as regular multisig'
                     : 'Mark as protected account'}
                 </p>
-                <p className="text-xs text-ink-400">
+                <p className="text-xs text-ink-300">
                   {multisig.preset === 'two-device'
                     ? 'Switch spend screens back to multisig language'
                     : 'Use two-device approval language · local only'}
@@ -414,7 +414,7 @@ function MultisigView({ address }: { address: string }) {
             <X size={18} className="text-ink-400 flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-sm font-medium text-ink-200">Forget multisig</p>
-              <p className="text-xs text-ink-400">
+              <p className="text-xs text-ink-300">
                 Remove from this wallet · reversible
               </p>
             </div>
@@ -436,7 +436,7 @@ function MultisigView({ address }: { address: string }) {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-xs uppercase tracking-wider text-ink-400 font-medium mb-2 block">
+            <label className="text-xs uppercase tracking-wider text-ink-300 font-medium mb-2 block">
               New name
             </label>
             <input
@@ -454,7 +454,7 @@ function MultisigView({ address }: { address: string }) {
               className="input-base"
               placeholder="e.g. Treasury vault"
             />
-            <p className="text-xs text-ink-400 mt-2">
+            <p className="text-xs text-ink-300 mt-2">
               Local label, only visible to you. It doesn't change the shared
               on-chain address — other signers can name it differently.
             </p>
@@ -667,7 +667,7 @@ function ExportConfigSheet({
   return (
     <Sheet open={open} onClose={onClose} title="Export multisig config">
       <div className="space-y-3">
-        <p className="text-xs text-ink-400 leading-relaxed">
+        <p className="text-xs text-ink-300 leading-relaxed">
           Share this with other signers so they can import this multisig
           into their wallet — no need for them to manually retype every
           signer or threshold. Their wallet re-derives the address from
@@ -689,7 +689,7 @@ function ExportConfigSheet({
               <Download size={16} strokeWidth={2} />
               Download as file
             </button>
-            <p className="text-xs text-ink-400 leading-relaxed -mt-1 px-1">
+            <p className="text-xs text-ink-300 leading-relaxed -mt-1 px-1">
               Recommended. Saves <code>{fileName}</code> — share via any
               channel you trust.
             </p>
@@ -710,7 +710,7 @@ function ExportConfigSheet({
                     className="w-full max-w-[280px] h-auto"
                   />
                 ) : (
-                  <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-400 text-xs">
+                  <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-300 text-xs">
                     Generating…
                   </div>
                 )}
@@ -758,7 +758,7 @@ function SignerRow({ address, label }: { address: string; label?: string }) {
           // what's being signed.
           <>
             <p className="text-sm font-medium text-ink-100 truncate">{label}</p>
-            <p className="font-mono text-xs text-ink-400 truncate">
+            <p className="font-mono text-xs text-ink-300 truncate">
               {shortenAddress(address)}
             </p>
           </>
@@ -790,12 +790,12 @@ function ActivityRow({ item }: { item: MultisigActivityItem }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-ink-400 numeric">{date}</span>
+        <span className="text-xs text-ink-300 numeric">{date}</span>
         <a
           href={explorerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-ink-400 active:text-ink-300"
+          className="inline-flex items-center gap-1 text-xs text-ink-300 active:text-ink-300"
           title="View block on explorer"
         >
           #{item.blockNumber.toLocaleString()}
@@ -805,7 +805,7 @@ function ActivityRow({ item }: { item: MultisigActivityItem }) {
       <p
         className={clsx(
           'text-sm leading-snug',
-          item.success ? 'text-ink-100' : 'text-ink-400'
+          item.success ? 'text-ink-100' : 'text-ink-300'
         )}
       >
         {action.kind === 'transfer' ? (
@@ -828,7 +828,7 @@ function ActivityRow({ item }: { item: MultisigActivityItem }) {
           <span className="text-danger text-xs ml-2">· failed</span>
         )}
       </p>
-      <p className="text-xs text-ink-400 truncate">
+      <p className="text-xs text-ink-300 truncate">
         finalized by{' '}
         <AddressLabel address={item.signer} className="text-xs" />
       </p>

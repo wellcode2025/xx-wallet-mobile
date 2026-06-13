@@ -129,7 +129,7 @@ function HeaderCard({
 }) {
   return (
     <div className="card">
-      <p className="text-xs text-ink-400 font-mono">#{id}</p>
+      <p className="text-xs text-ink-300 font-mono">#{id}</p>
       <h1 className="mt-1 font-display text-xl text-ink-100 leading-snug">
         {title}
       </h1>
@@ -143,7 +143,7 @@ function HeaderCard({
               grouping: true,
             })}
           </p>
-          <p className="text-xs text-ink-400">XX</p>
+          <p className="text-xs text-ink-300">XX</p>
         </div>
       </div>
     </div>
@@ -165,11 +165,11 @@ function DescriptionCard({
   if (!href) {
     return (
       <div className="card">
-        <p className="text-xs text-ink-400 mb-1">Description</p>
+        <p className="text-xs text-ink-300 mb-1">Description</p>
         {raw.trim().length > 0 ? (
           <p className="text-sm text-ink-200 break-words">{raw}</p>
         ) : (
-          <p className="text-sm text-ink-400 italic">No description on chain.</p>
+          <p className="text-sm text-ink-300 italic">No description on chain.</p>
         )}
       </div>
     );
@@ -177,7 +177,7 @@ function DescriptionCard({
   if (isCanonical) {
     return (
       <div className="card">
-        <p className="text-xs text-ink-400 mb-2">Description</p>
+        <p className="text-xs text-ink-300 mb-2">Description</p>
         <a
           href={href}
           target="_blank"
@@ -188,7 +188,7 @@ function DescriptionCard({
           <span className="truncate">{host}</span>
           <ExternalLink size={14} strokeWidth={1.75} className="shrink-0" />
         </a>
-        <p className="mt-2 text-xs text-ink-400">
+        <p className="mt-2 text-xs text-ink-300">
           Tap to read the proposer's full description on the xx forum.
         </p>
       </div>
@@ -212,7 +212,7 @@ function DescriptionCard({
         <span className="truncate">{host ?? href}</span>
         <ExternalLink size={14} strokeWidth={1.75} className="shrink-0" />
       </a>
-      <p className="mt-2 text-xs text-ink-400">
+      <p className="mt-2 text-xs text-ink-300">
         The proposer chose both the link text and where it points. Verify
         the host before tapping through.
       </p>
@@ -227,7 +227,7 @@ function StatusDetailCard({ status }: { status: BountyStatus }) {
     const delta = blocksToHuman(blockNumber, status.updateDue);
     return (
       <div className="card">
-        <p className="text-xs text-ink-400 mb-1">Update due</p>
+        <p className="text-xs text-ink-300 mb-1">Update due</p>
         {delta.isOverdue ? (
           <p className="text-sm text-danger font-medium">
             Update overdue ({delta.label})
@@ -235,10 +235,10 @@ function StatusDetailCard({ status }: { status: BountyStatus }) {
         ) : (
           <p className="text-sm text-ink-100">
             <span className="font-medium">{delta.label}</span>
-            <span className="text-ink-400"> remaining</span>
+            <span className="text-ink-300"> remaining</span>
           </p>
         )}
-        <p className="mt-1 text-xs text-ink-400">
+        <p className="mt-1 text-xs text-ink-300">
           The curator must post a status update on the forum before block{' '}
           <span className="font-mono">#{status.updateDue.toLocaleString()}</span>.
         </p>
@@ -250,15 +250,15 @@ function StatusDetailCard({ status }: { status: BountyStatus }) {
     const delta = blocksToHuman(blockNumber, status.unlockAt);
     return (
       <div className="card">
-        <p className="text-xs text-ink-400 mb-1">Payout unlock</p>
+        <p className="text-xs text-ink-300 mb-1">Payout unlock</p>
         <p className="text-sm text-ink-100">
           <span className="font-medium">{delta.label}</span>
-          <span className="text-ink-400">
+          <span className="text-ink-300">
             {' '}
             {delta.isOverdue ? 'past' : 'remaining'}
           </span>
         </p>
-        <p className="mt-1 text-xs text-ink-400">
+        <p className="mt-1 text-xs text-ink-300">
           Beneficiary can claim after block{' '}
           <span className="font-mono">#{status.unlockAt.toLocaleString()}</span>.
         </p>
@@ -276,7 +276,7 @@ function StatusDetailCard({ status }: { status: BountyStatus }) {
         <p className="text-sm text-ink-200 break-words font-mono">
           {JSON.stringify(status.raw)}
         </p>
-        <p className="mt-2 text-xs text-ink-400">
+        <p className="mt-2 text-xs text-ink-300">
           The chain returned a status variant this wallet doesn't yet
           recognise. The bounty is still visible above; tap-through actions
           on this bounty may not behave as expected.
@@ -302,7 +302,7 @@ function MoneyCard({
 }) {
   return (
     <div className="card space-y-2">
-      <p className="text-xs text-ink-400">Funding</p>
+      <p className="text-xs text-ink-300">Funding</p>
       <MoneyRow label="Bounty value" amount={value} />
       <MoneyRow
         label="Curator fee"
@@ -336,7 +336,7 @@ function MoneyRow({
     <div className="flex items-baseline justify-between gap-3">
       <div className="min-w-0 flex-1">
         <p className="text-sm text-ink-200">{label}</p>
-        {hint && <p className="text-xs text-ink-400 mt-0.5">{hint}</p>}
+        {hint && <p className="text-xs text-ink-300 mt-0.5">{hint}</p>}
       </div>
       <p className="font-mono text-sm text-ink-100 numeric whitespace-nowrap shrink-0">
         {formatBalance(amount, {
@@ -344,7 +344,7 @@ function MoneyRow({
           trim: true,
           grouping: true,
         })}{' '}
-        <span className="text-ink-400">XX</span>
+        <span className="text-ink-300">XX</span>
       </p>
     </div>
   );
@@ -359,7 +359,7 @@ function PeopleCard({
 }) {
   return (
     <div className="card space-y-3">
-      <p className="text-xs text-ink-400">People</p>
+      <p className="text-xs text-ink-300">People</p>
       <PersonRow role="Proposer" address={proposer} />
       {curator && <PersonRow role="Curator" address={curator} />}
     </div>
@@ -373,10 +373,10 @@ function PersonRow({ role, address }: { role: string; address: string }) {
     <div className="flex items-center gap-3">
       <AddressIcon address={address} size={32} />
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-ink-400">{role}</p>
+        <p className="text-xs text-ink-300">{role}</p>
         <p className="text-sm text-ink-100 truncate">{name.primary}</p>
         {name.secondary && (
-          <p className="text-xs text-ink-400 font-mono truncate">
+          <p className="text-xs text-ink-300 font-mono truncate">
             {name.secondary}
           </p>
         )}
@@ -393,8 +393,8 @@ function ChildBountiesCard({
   if (children_.length === 0) {
     return (
       <div className="card">
-        <p className="text-xs text-ink-400 mb-1">Child bounties</p>
-        <p className="text-sm text-ink-400 italic">
+        <p className="text-xs text-ink-300 mb-1">Child bounties</p>
+        <p className="text-sm text-ink-300 italic">
           No child bounties under this bounty.
         </p>
       </div>
@@ -402,13 +402,13 @@ function ChildBountiesCard({
   }
   return (
     <div className="card space-y-2">
-      <p className="text-xs text-ink-400">Child bounties · {children_.length}</p>
+      <p className="text-xs text-ink-300">Child bounties · {children_.length}</p>
       <ul className="divide-y divide-ink-800/60">
         {children_.map((c) => (
           <li key={c.childId} className="py-2">
             <div className="flex items-baseline justify-between gap-3">
               <p className="text-sm text-ink-100 truncate">
-                <span className="font-mono text-ink-400">#{c.childId}</span>{' '}
+                <span className="font-mono text-ink-300">#{c.childId}</span>{' '}
                 {c.descriptionLink.title.trim().length > 0
                   ? c.descriptionLink.title
                   : `Child #${c.childId}`}
@@ -419,7 +419,7 @@ function ChildBountiesCard({
                   trim: true,
                   grouping: true,
                 })}{' '}
-                <span className="text-ink-400">XX</span>
+                <span className="text-ink-300">XX</span>
               </p>
             </div>
             <div className="mt-1">

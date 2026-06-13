@@ -418,17 +418,17 @@ export function Send() {
                   )}
                 </div>
                 {matchedContact.name && matchedContact.identity?.display && matchedContact.identity.display !== matchedContact.name && (
-                  <p className="text-xs text-ink-400 truncate">
+                  <p className="text-xs text-ink-300 truncate">
                     on-chain: {matchedContact.identity.display}
                   </p>
                 )}
                 {matchedContact.note && (
-                  <p className="text-xs text-ink-400 truncate">{matchedContact.note}</p>
+                  <p className="text-xs text-ink-300 truncate">{matchedContact.note}</p>
                 )}
               </div>
               <button
                 onClick={() => handleOpenDetails(matchedContact.id)}
-                className="text-xs font-medium text-ink-400 active:text-ink-200 px-2 py-1"
+                className="text-xs font-medium text-ink-300 active:text-ink-200 px-2 py-1"
               >
                 Details
               </button>
@@ -506,7 +506,7 @@ export function Send() {
               </div>
               <div className="text-xs text-ink-300 leading-relaxed pl-6 space-y-1">
                 <p>What that means in practice:</p>
-                <ul className="list-disc pl-4 space-y-0.5 text-ink-400">
+                <ul className="list-disc pl-4 space-y-0.5 text-ink-300">
                   <li>
                     Your address (and its private key / seed) are
                     <span className="text-ink-200"> unchanged</span>.
@@ -669,13 +669,13 @@ export function Send() {
           </div>
           <div>
             <h2 className="font-display font-semibold text-xl">Transaction sent</h2>
-            <p className="text-sm text-ink-400 mt-1">
+            <p className="text-sm text-ink-300 mt-1">
               Finalized on the xx network.
             </p>
           </div>
           {txHash && (
             <div className="w-full">
-              <p className="text-xs text-ink-400 mb-1 uppercase tracking-wide">
+              <p className="text-xs text-ink-300 mb-1 uppercase tracking-wide">
                 Transaction hash
               </p>
               <AddressChip address={txHash} shortened className="w-full" />
@@ -754,7 +754,7 @@ export function Send() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-ink-400 uppercase tracking-wide flex-shrink-0">
+      <span className="text-xs text-ink-300 uppercase tracking-wide flex-shrink-0">
         {label}
       </span>
       <div className="min-w-0">{children}</div>

@@ -71,12 +71,12 @@ export function UnlockSheet({
             .
           </p>
           {unlockAt != null && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-ink-300">
               The lock matured at block{' '}
               <span className="font-mono">#{unlockAt.toLocaleString()}</span>.
             </p>
           )}
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-ink-300">
             Only locks whose end block has passed get released. Active
             votes and delegations keep their locks until they expire.
           </p>

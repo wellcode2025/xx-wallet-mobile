@@ -225,13 +225,13 @@ export function ContactsSheet({
                 <p>Imported <span className="font-medium">{importResult.added}</span> new contact{importResult.added === 1 ? '' : 's'}.</p>
               )}
               {importResult.skipped > 0 && (
-                <p className="text-ink-400">Skipped {importResult.skipped} duplicate{importResult.skipped === 1 ? '' : 's'}.</p>
+                <p className="text-ink-300">Skipped {importResult.skipped} duplicate{importResult.skipped === 1 ? '' : 's'}.</p>
               )}
               {importResult.errors > 0 && (
                 <p className="text-danger/90">{importResult.errors} invalid entr{importResult.errors === 1 ? 'y' : 'ies'} skipped.</p>
               )}
               {importResult.added === 0 && importResult.skipped === 0 && importResult.errors === 0 && (
-                <p className="text-ink-400">No valid contacts found in the file.</p>
+                <p className="text-ink-300">No valid contacts found in the file.</p>
               )}
             </div>
           </div>
@@ -241,7 +241,7 @@ export function ContactsSheet({
             Auto-derived from the accounts store; not editable here. */}
         {filteredMyAccounts.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1">
+            <p className="text-xs uppercase tracking-wider text-ink-300 font-medium px-1">
               My accounts
             </p>
             <ul className="space-y-2">
@@ -259,11 +259,11 @@ export function ContactsSheet({
                     <AddressIcon address={a.address} size={36} />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{a.name}</p>
-                      <p className="font-mono text-xs text-ink-400 truncate">
+                      <p className="font-mono text-xs text-ink-300 truncate">
                         {shortenAddress(a.address, { start: 8, end: 6 })}
                       </p>
                     </div>
-                    <span className="text-xs uppercase tracking-wider text-ink-400 font-medium flex-shrink-0">
+                    <span className="text-xs uppercase tracking-wider text-ink-300 font-medium flex-shrink-0">
                       yours
                     </span>
                   </button>
@@ -271,7 +271,7 @@ export function ContactsSheet({
               ))}
             </ul>
             {contacts.length > 0 && (
-              <p className="text-xs uppercase tracking-wider text-ink-400 font-medium px-1 pt-2">
+              <p className="text-xs uppercase tracking-wider text-ink-300 font-medium px-1 pt-2">
                 Contacts
               </p>
             )}
@@ -284,7 +284,7 @@ export function ContactsSheet({
             <UserCircle2 size={40} className="text-ink-600" strokeWidth={1.25} />
             <div>
               <p className="font-medium text-ink-300 text-sm">No contacts yet</p>
-              <p className="text-xs text-ink-400 mt-1 max-w-xs">
+              <p className="text-xs text-ink-300 mt-1 max-w-xs">
                 Save addresses you send to frequently so you don't have to type them each time.
               </p>
             </div>
@@ -292,7 +292,7 @@ export function ContactsSheet({
         )}
 
         {contacts.length > 0 && filteredContacts.length === 0 && (
-          <p className="text-center text-sm text-ink-400 py-4">
+          <p className="text-center text-sm text-ink-300 py-4">
             No contacts match "{contactSearch}"
           </p>
         )}
@@ -318,7 +318,7 @@ export function ContactsSheet({
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className="font-medium text-sm truncate">
                       {c.name || c.identity?.display || (
-                        <span className="text-ink-400 font-mono text-xs">{shortenAddress(c.address)}</span>
+                        <span className="text-ink-300 font-mono text-xs">{shortenAddress(c.address)}</span>
                       )}
                     </p>
                     {isVerifiedJudgement(c.identity?.judgement) && (
@@ -326,15 +326,15 @@ export function ContactsSheet({
                     )}
                   </div>
                   {c.name && c.identity?.display && c.identity.display !== c.name && (
-                    <p className="text-xs text-ink-400 truncate">
+                    <p className="text-xs text-ink-300 truncate">
                       on-chain: {c.identity.display}
                     </p>
                   )}
-                  <p className="font-mono text-xs text-ink-400 truncate">
+                  <p className="font-mono text-xs text-ink-300 truncate">
                     {shortenAddress(c.address, { start: 8, end: 6 })}
                   </p>
                   {c.note && (
-                    <p className="text-xs text-ink-400 truncate">{c.note}</p>
+                    <p className="text-xs text-ink-300 truncate">{c.note}</p>
                   )}
                 </div>
               </button>
