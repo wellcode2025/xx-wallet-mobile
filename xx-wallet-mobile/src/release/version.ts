@@ -19,24 +19,41 @@
  *     upgrades, or other invisible work; that produces notification
  *     fatigue and trains users to dismiss the sheet without reading.
  *   - APP_VERSION's only requirement is that it's a string that
- *     changes when you want the sheet to fire. The date-stamp format
- *     below sorts naturally by commit chronology; append `-b`, `-c`,
- *     etc. for multiple flagged builds in one day.
+ *     changes when you want the sheet to fire. It now tracks the app's
+ *     semver (kept in sync with package.json and the Settings → About
+ *     screen) so the sheet's "v0.9.0" header matches the version users
+ *     see everywhere else. Bump it when you cut a release worth a nudge.
  *   - RELEASE_NOTES wants 3–6 short bullets. This isn't a changelog
  *     (the commit log is the changelog); it's a launch nudge.
  *   - RELEASE_TAGLINE is optional — leave as empty string to skip.
+ *
+ * House style — keep every release looking consistent and professional.
+ * The WhatsNewSheet component owns the visuals (badge, layout, button), so
+ * never restyle it per release; only edit the copy below, to these rules:
+ *   - TAGLINE: <=8 words, sentence case, no end punctuation required.
+ *     Describe the release's THEME, not the version number (the sheet already
+ *     shows "v<APP_VERSION>"). e.g. "Sharper, safer, and more accessible."
+ *   - BULLETS: 3–6, each ONE sentence, sentence case, ending in a period.
+ *     Benefit-first and user-facing — say what the user can now do, not what
+ *     we built ("Connect a Ledger…", not "Added Ledger transport"). Keep a
+ *     parallel grammatical shape across bullets; lead with the marquee item;
+ *     use an em-dash to elaborate a single bullet.
+ *   - TONE: plain and confident, never hype. Don't over-claim (e.g. avoid
+ *     "production-ready" until it's earned). No internal/dev framing
+ *     (refactors, dependency bumps, file names). Substrate terms are fine.
  */
 
-export const APP_VERSION = '2026-05-18';
+export const APP_VERSION = '0.9.0';
 
 /** Optional one-line subtitle rendered above the bullets. Keep <8 words. */
-export const RELEASE_TAGLINE = 'Smoother daily flows';
+export const RELEASE_TAGLINE = 'Sharper, safer, and more accessible.';
 
 /** Short, user-facing bullets. Substrate jargon is fine — foundation
  *  members and power users already speak it. */
 export const RELEASE_NOTES: readonly string[] = [
-  'Account switcher in the Dashboard now opens for single-account wallets, shows balance per row, and offers Add account and Contacts shortcuts.',
-  'Multisig approvals accept a bytes-package file or QR code from the proposer — no more pasting raw hex.',
-  'Wallet import now refuses misformatted JSON files (including multisig configs) with a helpful message.',
-  'New: this update banner. When a fresh build is deployed, your wallet will offer to apply it directly instead of leaving you stuck on the old version.',
+  'Connect a Ledger hardware wallet and sign transactions with your keys never leaving the device.',
+  'Take part in on-chain governance — vote on referenda, delegate your vote, second proposals, and follow treasury, council, and bounties.',
+  'Protect your funds with an optional app lock (PIN or biometric) and two-device approval for larger balances.',
+  'Clearer, more legible text across every screen, with higher-contrast labels and addresses that meet WCAG AA.',
+  'Completed an independent security review with every finding resolved, ahead of a planned external audit.',
 ];
