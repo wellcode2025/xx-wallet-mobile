@@ -49,11 +49,21 @@ export function TransactionItem({ transfer }: TransactionItemProps) {
       })
     : `#${blockNumber}`;
 
+  // Disambiguating accessible name: two same-amount receives would otherwise
+  // share an identical aria-label (Lighthouse "identical links / same purpose").
+  // Fold in the counterparty fragment + time so each row's accessible name is
+  // unique and more informative for screen-reader users.
+  const counterpartyLabel =
+    direction === 'self'
+      ? ''
+      : ` ${direction === 'out' ? 'to' : 'from'} ${shortenAddress(counterparty, { start: 6, end: 4 })}`;
+  const ariaLabel = `${success ? config.label : 'Failed'} ${humanAmount} ${XX_SYMBOL}${counterpartyLabel}, ${timeStr}`;
+
   return (
     <Link
       to={`/tx/${id}`}
       state={{ transfer }}
-      aria-label={`${success ? config.label : 'Failed'} ${humanAmount} ${XX_SYMBOL}`}
+      aria-label={ariaLabel}
       className={clsx(
         'flex items-center gap-3 py-3 -mx-1 px-1 rounded-lg',
         'border-b border-ink-800/60 last:border-0',

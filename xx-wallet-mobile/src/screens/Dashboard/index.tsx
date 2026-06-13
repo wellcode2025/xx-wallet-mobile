@@ -208,14 +208,14 @@ export function Dashboard() {
         {/* Transaction history */}
         <div className="card">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display font-medium text-sm text-ink-200">
+            <h2 className="font-display font-medium text-sm text-ink-200">
               Recent activity
               {txTotal > 0 && (
                 <span className="ml-2 text-xs text-ink-300 font-sans font-normal">
                   ({txTotal.toLocaleString()} total)
                 </span>
               )}
-            </h3>
+            </h2>
             {txLoading && (
               <div className="flex items-center gap-1.5 text-xs text-ink-300">
                 <Loader2 size={12} className="animate-spin" />
