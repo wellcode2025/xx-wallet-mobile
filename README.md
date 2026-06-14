@@ -10,6 +10,7 @@
 [![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8.svg)](https://mobile.xx.network)
 [![Built with React + Vite](https://img.shields.io/badge/React_18-Vite-06b6d4.svg)](#tech-stack)
 [![Chain: xx network](https://img.shields.io/badge/chain-xx_network-08cdd7.svg)](https://xx.network)
+[![Version 0.9.0](https://img.shields.io/badge/version-0.9.0-08cdd7.svg)](https://mobile.xx.network)
 
 [**Open the wallet → mobile.xx.network**](https://mobile.xx.network)
 
@@ -34,8 +35,9 @@ native multisig, and Ledger hardware accounts — with quantum-resistant key gen
 > **Self-custody, your responsibility.** The wallet is non-custodial — you alone hold your keys
 > and recovery phrases. There is no password reset and no way to recover lost phrases.
 >
-> **Not independently audited.** The code has not yet had a third-party security audit. Treat it
-> as experimental and use it at your own risk. See [Security](#security) and [`SECURITY.md`](SECURITY.md).
+> **Not independently audited.** An internal security review has been completed and its findings
+> addressed, but the code has not yet had a *third-party* audit. Treat it as experimental and use it
+> at your own risk. See [Security](#security) and [`SECURITY.md`](SECURITY.md).
 
 ---
 
@@ -69,24 +71,24 @@ experience without asking you to trust anything new.
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/01-dashboard.jpeg" width="220" alt="Dashboard" /><br/><sub><b>Dashboard</b></sub></td>
-    <td align="center"><img src="docs/screenshots/02-send.jpeg" width="220" alt="Send" /><br/><sub><b>Send</b></sub></td>
-    <td align="center"><img src="docs/screenshots/04-receive.jpeg" width="220" alt="Receive" /><br/><sub><b>Receive</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/wallet-dashboard.png" width="220" alt="Wallet dashboard" /><br/><sub><b>Wallet</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/account-add.png" width="220" alt="Add account, including a Ledger hardware account" /><br/><sub><b>Add account &middot; Ledger</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/settings-app-lock.png" width="220" alt="App lock and privacy settings" /><br/><sub><b>App lock &amp; privacy</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/03-transaction-details.jpeg" width="220" alt="Transaction details" /><br/><sub><b>Transaction details</b></sub></td>
-    <td align="center"><img src="docs/screenshots/05-share-contact.jpeg" width="220" alt="Share contact" /><br/><sub><b>Share contact</b></sub></td>
-    <td align="center"><img src="docs/screenshots/06-staking-nominations.jpeg" width="220" alt="My Nominations" /><br/><sub><b>Staking · My Nominations</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/staking-start.png" width="220" alt="Start staking with recommended validators" /><br/><sub><b>Staking &middot; nominate</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/staking-validators.png" width="220" alt="Network-wide validator list" /><br/><sub><b>Staking &middot; validators</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/staking-advanced-selection.png" width="220" alt="Tunable validator selection" /><br/><sub><b>Staking &middot; tunable picks</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/07-staking-validators.jpeg" width="220" alt="Validators" /><br/><sub><b>Staking · Validators</b></sub></td>
-    <td align="center"><img src="docs/screenshots/09-validator-details.jpeg" width="220" alt="Validator details" /><br/><sub><b>Validator details</b></sub></td>
-    <td align="center"><img src="docs/screenshots/08-staking-rewards.jpeg" width="220" alt="Rewards" /><br/><sub><b>Staking · Rewards</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/governance.png" width="220" alt="Governance index" /><br/><sub><b>Governance</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/governance-treasury.png" width="220" alt="Treasury" /><br/><sub><b>Treasury</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/governance-democracy.png" width="220" alt="Democracy" /><br/><sub><b>Democracy</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/10-governance.jpeg" width="220" alt="Governance" /><br/><sub><b>Governance</b></sub></td>
-    <td></td>
-    <td></td>
+    <td align="center"><img src="docs/screenshots/redacted/governance-council.png" width="220" alt="Council members" /><br/><sub><b>Council</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/governance-bounties.png" width="220" alt="Bounties" /><br/><sub><b>Bounties</b></sub></td>
+    <td align="center"><img src="docs/screenshots/redacted/multisig-add.png" width="220" alt="Add multisig, including two-device approval" /><br/><sub><b>Multisig &middot; two-device 2FA</b></sub></td>
   </tr>
 </table>
 
