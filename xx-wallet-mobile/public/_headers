@@ -13,10 +13,9 @@
 #   - font-src                                Google Fonts files (Roboto + JetBrains Mono)
 #   - img-src                                 own + data: (SVG inlining, blob: for QR canvases)
 #   - connect-src                             same-origin + xxfoundation indexer + localhost dev RPC + wss://*
-#                                             audit-accepted (AUDIT-2026-06-12-005): the wss://* wildcard is
-#                                             retained deliberately — users can set custom RPC URLs, so hosts
-#                                             can't be enumerated in a static header. It subsumes the chain
-#                                             RPC hosts (xx.network/dwellir), which were dropped as redundant.
+#                                             The wss://* wildcard is intentional — users can configure custom
+#                                             RPC URLs, so the set of hosts can't be enumerated in a static
+#                                             header. It subsumes the chain RPC hosts (xx.network/dwellir).
 #   - worker-src                              service worker is same-origin only
 #   - manifest-src                            PWA manifest same-origin
 #   - frame-ancestors 'none'                  prevent click-jacking via iframe embedding on attacker pages
@@ -25,11 +24,11 @@
 #   - object-src 'none'                       no Flash/legacy embeds at all
 #
 # Strict-Transport-Security:
-#   2-year HSTS with subdomain coverage. The `preload` token was intentionally
-#   removed (AUDIT-2026-06-12-006): submitting xx.network to the browser preload
-#   list would force HTTPS on every *.xx.network subdomain, browser-side and hard
-#   to undo. Do NOT re-add `preload` until every *.xx.network subdomain is
-#   confirmed HTTPS-ready. includeSubDomains is kept (header-scoped, reversible).
+#   2-year HSTS with subdomain coverage. The `preload` token is intentionally
+#   omitted: submitting xx.network to the browser preload list would force HTTPS
+#   on every *.xx.network subdomain, browser-side and hard to undo. Do NOT add
+#   `preload` until every *.xx.network subdomain is confirmed HTTPS-ready.
+#   includeSubDomains is kept (header-scoped, reversible).
 #
 # Permissions-Policy:
 #   Camera allowed for the QR scanner. USB and HID allowed (same-origin

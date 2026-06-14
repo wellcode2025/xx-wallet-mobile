@@ -105,11 +105,10 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    // audit-accepted (AUDIT-2026-06-12-007): production source maps are
-    // intentional. The repo is public OSS, so the original source is already
-    // readable; shipping maps aids debugging the deployed PWA at negligible
-    // confidentiality cost. Switch to false or 'hidden' if any private logic
-    // is ever bundled in.
+    // Production source maps are intentional: the repo is public OSS, so the
+    // original source is already readable, and shipping maps aids debugging the
+    // deployed PWA at negligible confidentiality cost. Switch to false or
+    // 'hidden' if any private logic is ever bundled in.
     sourcemap: true,
     rollupOptions: {
       output: {

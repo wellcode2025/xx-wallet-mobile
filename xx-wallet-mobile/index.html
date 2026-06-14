@@ -31,11 +31,11 @@
     <link rel="apple-touch-startup-image" href="/splash/ipad-pro-11-portrait.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
     <link rel="apple-touch-startup-image" href="/splash/ipad-pro-13-portrait.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
 
-    <!-- audit-accepted (a11y review 2026-06-13): user-scalable=no + maximum-scale=1.0
-         disable pinch-zoom. This is a deliberate native-app-feel choice for the
-         installed PWA. The WCAG 1.4.4 resize concern is to be addressed instead by
-         an in-app font-size control (planned), not browser zoom. Modern iOS Safari
-         ignores user-scalable=no regardless. Do not "fix" by re-enabling zoom. -->
+    <!-- user-scalable=no + maximum-scale=1.0 disable pinch-zoom. This is a
+         deliberate native-app-feel choice for the installed PWA; on-screen
+         legibility is served by an in-app font-size control (planned) rather
+         than browser zoom. Modern iOS Safari ignores user-scalable=no
+         regardless. Do not re-enable zoom without revisiting that decision. -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"

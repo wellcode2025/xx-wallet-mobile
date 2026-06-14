@@ -586,7 +586,7 @@ class XxKeyring {
   async unlock(address: string, password: string): Promise<KeyringPair> {
     const keyring = this.ensureReady();
     const account = this.listAccounts().find((a) => a.address === address);
-    // Same message as a failed decrypt (L-4): the unlock path must not
+    // Same message as a failed decrypt: the unlock path must not
     // reveal whether an address exists in this wallet — an attacker
     // probing with a stolen address list learns nothing either way.
     // Account-not-found here is a caller bug regardless (addresses come

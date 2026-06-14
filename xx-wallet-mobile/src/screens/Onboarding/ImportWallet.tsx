@@ -138,7 +138,7 @@ export function ImportWallet() {
   };
 
   const mnemonicValid = mnemonic.trim().split(/\s+/).length >= 12;
-  // L-3: refuse common passwords on the new-password (mnemonic-import) path.
+  // Refuse common passwords on the new-password (mnemonic-import) path.
   // The keystore-import path doesn't use this — that password is set by
   // whoever exported the JSON, and we can't change theirs.
   const passwordTooCommon = password.length > 0 && isCommonPassword(password);

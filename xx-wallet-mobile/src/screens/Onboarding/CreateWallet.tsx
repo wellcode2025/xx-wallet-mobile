@@ -253,7 +253,7 @@ export function CreateWallet() {
     }
   }, [step, confirmPicks.quantum.length]);
 
-  // L-3: refuse the worst-offending common passwords. This isn't a strength
+  // Refuse the worst-offending common passwords. This isn't a strength
   // meter — just a hard floor that catches `12345678`, `password123`, etc.
   // before they get encrypted under any KDF.
   const passwordTooCommon = password.length > 0 && isCommonPassword(password);
@@ -281,13 +281,13 @@ export function CreateWallet() {
     if (ok) {
       setCopiedKey(kind);
       setTimeout(() => setCopiedKey((c) => (c === kind ? null : c)), 1500);
-      // Clipboard hygiene (AUDIT-2026-06-12-009): a recovery phrase left on the
-      // system clipboard can be read by clipboard-history managers and
-      // cross-device clipboard sync. Best-effort: after a delay, clear it — but
-      // only if OUR phrase is still the clipboard contents, so we never clobber
-      // anything the user copied since. Silently no-ops on the legacy/HTTP path
-      // or where clipboard read is denied; the on-screen caution is the
-      // user-facing guarantee, this is defense-in-depth.
+      // Clipboard hygiene: a recovery phrase left on the system clipboard can be
+      // read by clipboard-history managers and cross-device clipboard sync.
+      // Best-effort: after a delay, clear it — but only if our phrase is still
+      // the clipboard contents, so we never clobber anything the user copied
+      // since. Silently no-ops on the legacy/HTTP path or where clipboard read
+      // is denied; the on-screen caution is the user-facing guarantee, this is
+      // defense-in-depth.
       if (navigator.clipboard && window.isSecureContext) {
         window.setTimeout(async () => {
           try {

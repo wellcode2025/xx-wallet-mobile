@@ -58,6 +58,14 @@ These are explicitly out of scope. Users should understand them before storing s
 | Hash primitives in Sleeve | SHA3-256, BLAKE2b | upstream xxfoundation/sleeve via WASM |
 | Random number source for entropy | `crypto.getRandomValues` (browser CSPRNG) | host browser; via Go's `crypto/rand` for Sleeve |
 
+## Keystore hardening
+
+These are specific properties the keystore implementation upholds. The keyring source references them by these identifiers (H-1 / H-2 / H-3).
+
+- **H-1 — strong key derivation.** Account keystores are encrypted with a key derived via scrypt at N=131072, r=8, p=1 — matching `wallet.xx.network` rather than `@polkadot/util-crypto`'s weaker default of N=32768. A keystore exported from this wallet therefore has the same brute-force resistance as one exported from the official wallet.
+- **H-2 — minimal plaintext-key lifetime.** Intermediate decrypted PKCS8 buffers are zeroed in `finally` blocks, and the in-memory keypair is locked (`pair.lock()`) immediately after each signing operation, so plaintext secret material is not kept in memory longer than necessary. JavaScript cannot guarantee a true memory wipe (the engine may relocate buffers or retain register copies), so this is best-effort defence-in-depth, not a guarantee.
+- **H-3 — keystore format pinning.** Only v3 `scrypt` + `xsalsa20-poly1305` keystores are accepted on import; other versions or cipher suites are rejected explicitly rather than parsed at the wrong byte offsets, so an unexpected or malformed file fails closed.
+
 ## Deployment trust model
 
 The wallet is a static SPA hosted on Cloudflare Workers Static Assets, with auto-deploy from this GitHub repository. The chain of trust is:

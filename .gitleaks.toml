@@ -1,7 +1,7 @@
 # gitleaks configuration for xx-wallet-mobile
 #
 # Extends gitleaks' default ruleset and adds a single allowlist entry for a
-# confirmed false positive (audit AUDIT-2026-06-12-010):
+# confirmed false positive:
 #
 #   src/keyring/store.ts contains `const secretStart = PKCS8_HEADER.length;`
 #
@@ -21,7 +21,7 @@ title = "xx-wallet-mobile gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "secretStart is a PKCS8 offset (PKCS8_HEADER.length), not a credential — AUDIT-2026-06-12-010"
+description = "secretStart is a PKCS8 offset (PKCS8_HEADER.length), not a credential"
 regexTarget = "line"
 regexes = [
   '''secretStart\s*=''',

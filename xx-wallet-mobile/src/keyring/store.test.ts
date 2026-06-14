@@ -193,9 +193,9 @@ describe('manualScryptDecrypt', () => {
     });
 
     it('round-trips at the tightened N=262144 ceiling (inclusive boundary)', async () => {
-      // AUDIT-2026-06-12-004: the import bound was lowered to N<=262144.
-      // Prove the ceiling is inclusive and the ~256 MiB worst-case working
-      // set still decrypts, so the tightening can't reject a legitimate file.
+      // The keystore-import bound caps N at 262144. This proves the ceiling is
+      // inclusive and the ~256 MiB worst-case working set still decrypts, so the
+      // bound can't reject a legitimate file.
       const json = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 262144);
       const decrypted = await manualScryptDecrypt(json, PASSWORD);
 
@@ -220,9 +220,9 @@ describe('manualScryptDecrypt', () => {
     });
 
     it('rejects N above the 262144 sanity ceiling', async () => {
-      // 524288 (2^19) was accepted under the old 1048576 ceiling; the
-      // tightened bound (AUDIT-2026-06-12-004) rejects it before scrypt runs,
-      // capping the working set so a crafted keystore can't OOM the tab.
+      // 524288 (2^19) is above the 262144 ceiling, so it's rejected before
+      // scrypt runs — capping the working set so a crafted keystore can't OOM
+      // the tab.
       const valid = await buildEncryptedJson(SECRET_KEY, PUBLIC_KEY, PASSWORD, 32768);
       const tampered = tamperParams(valid, { N: 524288 });
       await expect(manualScryptDecrypt(tampered, PASSWORD)).rejects.toThrow(/out-of-range/i);

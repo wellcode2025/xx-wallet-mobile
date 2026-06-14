@@ -50,9 +50,9 @@ export function TransactionItem({ transfer }: TransactionItemProps) {
     : `#${blockNumber}`;
 
   // Disambiguating accessible name: two same-amount receives would otherwise
-  // share an identical aria-label (Lighthouse "identical links / same purpose").
-  // Fold in the counterparty fragment + time so each row's accessible name is
-  // unique and more informative for screen-reader users.
+  // share an identical aria-label, which screen readers can't tell apart. Fold
+  // in the counterparty fragment + time so each row's accessible name is unique
+  // and more informative.
   const counterpartyLabel =
     direction === 'self'
       ? ''
