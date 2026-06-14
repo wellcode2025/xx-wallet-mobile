@@ -88,8 +88,8 @@ describe('mapLedgerError — transport-layer throws', () => {
   }
 
   it('no device / dismissed picker → full connect ritual incl. opening the app', () => {
-    // The open-the-app step is the one users miss (Aaron's field
-    // feedback 2026-06-12) — both no-device messages must carry it.
+    // The open-the-app step is the one users miss in practice — both
+    // no-device messages must carry it.
     const cancelled = mapLedgerError(
       namedError('TransportOpenUserCancelled', 'cancelled')
     );

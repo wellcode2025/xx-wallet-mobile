@@ -79,4 +79,3 @@ levers are actually useful here:
 
 - Selection + scoring: `xx-wallet-mobile/src/staking/selectValidators.ts`
 - Lever re-ranking: `xx-wallet-mobile/src/staking/qualityLevers.ts`
-- Feasibility / distribution spike: `xx-wallet-mobile/scripts/spikes/quality-bias-spike.mjs`
