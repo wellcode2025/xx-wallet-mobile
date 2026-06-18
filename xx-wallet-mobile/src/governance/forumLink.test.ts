@@ -144,12 +144,34 @@ describe('extractForumLink — fallback / edge cases', () => {
     expect(out.raw).toBe('');
   });
 
-  it('returns host=null on a malformed URL', () => {
-    const out = extractForumLink(
-      '<a href="not a valid url">Bogus</a>'
-    );
-    expect(out.href).toBe('not a valid url');
+  it('drops the href on a malformed / unparseable URL (plain-text fallback)', () => {
+    const out = extractForumLink('<a href="not a valid url">Bogus</a>');
+    expect(out.href).toBeNull();
     expect(out.host).toBeNull();
+    expect(out.isCanonicalForumLink).toBe(false);
+    expect(out.title).toBe('Bogus');
+  });
+
+  it('drops a javascript: href so it never renders as a clickable link', () => {
+    const out = extractForumLink(
+      '<a href="javascript:alert(document.cookie)">Click me</a>'
+    );
+    expect(out.href).toBeNull();
+    expect(out.host).toBeNull();
+    expect(out.isCanonicalForumLink).toBe(false);
+    // The proposer-chosen title still renders — but only as plain text.
+    expect(out.title).toBe('Click me');
+  });
+
+  it('drops a data: href', () => {
+    const out = extractForumLink('<a href="data:text/html,<b>x</b>">x</a>');
+    expect(out.href).toBeNull();
+  });
+
+  it('keeps a plain http(s) non-forum link (still flagged non-canonical)', () => {
+    const out = extractForumLink('<a href="http://example.com/x">x</a>');
+    expect(out.href).toBe('http://example.com/x');
+    expect(out.host).toBe('example.com');
     expect(out.isCanonicalForumLink).toBe(false);
   });
 });

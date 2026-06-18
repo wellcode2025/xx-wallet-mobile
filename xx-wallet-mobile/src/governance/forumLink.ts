@@ -93,18 +93,25 @@ export function extractForumLink(raw: string): ExtractedForumLink {
       host: null,
     };
   }
-  const href = match[1].trim();
+  const rawHref = match[1].trim();
   const innerText = stripInnerTags(match[2]).trim();
-  const isCanonical = href.toLowerCase().startsWith(CANONICAL_FORUM_PREFIX);
+  // The href comes from proposer-controlled on-chain bytes, so only render a
+  // clickable anchor for http(s) URLs. Any other scheme (javascript:, data:,
+  // etc.) — or a URL that doesn't parse — drops the href to null, and the UI
+  // falls back to rendering the title as plain text with no clickable link.
+  let href: string | null = null;
   let host: string | null = null;
   try {
-    host = new URL(href).host;
+    const url = new URL(rawHref);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      href = rawHref;
+      host = url.host;
+    }
   } catch {
-    // Malformed URL — keep the link visible but flag it as non-canonical
-    // and without a host. The UI will render it disabled-ish so users
-    // don't tap through to something the wallet can't validate.
-    host = null;
+    // Malformed URL — leave href null (plain-text fallback).
   }
+  const isCanonical =
+    href !== null && href.toLowerCase().startsWith(CANONICAL_FORUM_PREFIX);
   return {
     href,
     title: innerText.length > 0 ? innerText : raw.trim(),
