@@ -44,3 +44,12 @@ scratch/
 # stops any future `git add -A` from re-introducing them.)
 xx-wallet-mobile/scripts/spikes/
 *.patch
+
+# Internal design docs — for internal use only, never the public release.
+docs/CMIX_PRIVATE_INDEXER_DESIGN.md
+
+# Audit workstream — security reports, templates, and the user guide drafted
+# under it. Belongs to the audit work and must never be published.
+.audit/
+docs/audit-template/
+docs/USER_GUIDE.*
