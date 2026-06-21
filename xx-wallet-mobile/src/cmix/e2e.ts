@@ -1,0 +1,173 @@
+/**
+ * The wallet's e2e messaging layer, built on the cMix session.
+ *
+ * After a one-time authenticated-channel handshake with a partner (Request →
+ * Confirm), a durable, forward-secret channel exists and either side can send
+ * indefinitely with no re-handshake. This is the foundation for BOTH multisig
+ * coordination memos (between cosigners) and general wallet-to-wallet messaging
+ * (any two wallets) — the partner is just another wallet's cMix identity.
+ *
+ * RELIABLE DELIVERY IS BUILT IN. Every send is verified with WaitForRoundResult
+ * on the send report's rounds — the receipt check that, when skipped, makes
+ * messages silently drop (the Haven failure). A caller can see `delivered` and
+ * retry on failure rather than assuming-sent.
+ *
+ * The auth-channel message is a TRANSPORT, never an instruction: the multisig
+ * use case feeds the received payload through the existing bytes-package hash
+ * gate (§6.4/§7.3), exactly as a pasted/QR'd package is.
+ */
+import type { CMix } from 'xxdk-wasm';
+import { asE2eCmix, getE2eGlobals, type AuthCallbacks, type E2e, type E2eListener } from './e2eApi';
+import { ensureReceptionIdentity } from './identity';
+
+/** Empty fact list for a channel request (we don't attach UD facts). */
+const EMPTY_FACTS = new TextEncoder().encode('[]');
+/** How long to wait for a round-result receipt before reporting a timeout. */
+const RECEIPT_TIMEOUT_MS = 30_000;
+const LISTENER_NAME = 'xx-wallet-e2e';
+
+/** Result of a send, derived from the round-result receipt. */
+export interface SendResult {
+  /** True iff all of the message's rounds completed (the message went out). */
+  delivered: boolean;
+  /** True if the receipt monitoring timed out without a definitive result. */
+  timedOut: boolean;
+}
+
+/** A decoded incoming e2e message. */
+export interface ReceivedMessage {
+  /** The application payload (decoded from the message's base64 `Payload`). */
+  payload: Uint8Array;
+  /** The full parsed message object, or null if it didn't parse as JSON. */
+  raw: unknown;
+}
+
+export interface E2eSession {
+  /** The underlying E2e object, for advanced use. */
+  readonly e2e: E2e;
+  /** Our shareable contact — give to a partner so they can request a channel. */
+  contact(): Uint8Array;
+  /** Our reception ID — a partner sends to this. */
+  receptionId(): Uint8Array;
+  /** Request an authenticated channel with a partner (the one-time handshake). */
+  requestChannel(partnerContact: Uint8Array, facts?: Uint8Array): Promise<number>;
+  /** Confirm a partner's incoming channel request. */
+  confirmChannel(partnerContact: Uint8Array): Promise<number>;
+  /** Whether an authenticated channel with this partner exists. */
+  hasChannel(partnerId: Uint8Array): Promise<boolean>;
+  /** Send a payload to a partner, verified with a delivery receipt. */
+  send(partnerId: Uint8Array, messageType: number, payload: Uint8Array): Promise<SendResult>;
+  /** Register a handler for incoming messages of `messageType` from `senderId`. */
+  onMessage(senderId: Uint8Array, messageType: number, handler: (msg: ReceivedMessage) => void): Promise<void>;
+}
+
+const NO_OP_AUTH: AuthCallbacks = {
+  Request: () => {},
+  Confirm: () => {},
+  Reset: () => {},
+};
+
+/**
+ * Create the e2e messaging session on top of a live, healthy cMix session. Logs
+ * in with the persisted per-device reception identity, so the messaging identity
+ * survives restarts. Intended to be called once per app lifetime.
+ *
+ * `authCallbacks` lets the caller react to handshake events (e.g. auto-confirm a
+ * known cosigner, or surface an incoming connection request to the user). Any
+ * omitted callback defaults to a no-op.
+ */
+export async function createE2eSession(
+  cmix: CMix,
+  authCallbacks: Partial<AuthCallbacks> = {}
+): Promise<E2eSession> {
+  const globals = getE2eGlobals();
+  const identity = await ensureReceptionIdentity(cmix);
+  const e2eParams = globals.GetDefaultE2EParams();
+  const e2e = globals.Login(cmix.GetID(), { ...NO_OP_AUTH, ...authCallbacks }, identity, e2eParams);
+
+  return {
+    e2e,
+    contact: () => e2e.GetContact(),
+    receptionId: () => e2e.GetReceptionID(),
+    requestChannel: (partnerContact, facts = EMPTY_FACTS) => e2e.Request(partnerContact, facts),
+    confirmChannel: (partnerContact) => e2e.Confirm(partnerContact),
+    hasChannel: (partnerId) => e2e.HasAuthenticatedChannel(partnerId),
+    send: (partnerId, messageType, payload) =>
+      sendWithReceipt(cmix, e2e, partnerId, messageType, payload, e2eParams),
+    onMessage: async (senderId, messageType, handler) => {
+      const listener: E2eListener = {
+        Hear: (item) => handler(parseReceivedMessage(item)),
+        Name: () => LISTENER_NAME,
+      };
+      await e2e.RegisterListener(senderId, messageType, listener);
+    },
+  };
+}
+
+/**
+ * SendE2E + verify the rounds actually completed (the receipt Haven skipped).
+ * Resolves once WaitForRoundResult reports a result, so callers can retry on a
+ * non-delivered result rather than assuming the message was sent.
+ */
+async function sendWithReceipt(
+  cmix: CMix,
+  e2e: E2e,
+  partnerId: Uint8Array,
+  messageType: number,
+  payload: Uint8Array,
+  e2eParams: Uint8Array
+): Promise<SendResult> {
+  const report = await e2e.SendE2E(messageType, partnerId, payload, e2eParams);
+  return waitForRoundResult(cmix, report, RECEIPT_TIMEOUT_MS);
+}
+
+/** Wrap WaitForRoundResult (whose result arrives via a callback) in a promise. */
+function waitForRoundResult(cmix: CMix, report: Uint8Array, timeoutMs: number): Promise<SendResult> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: SendResult) => {
+      if (!settled) {
+        settled = true;
+        resolve(result);
+      }
+    };
+    try {
+      asE2eCmix(cmix).WaitForRoundResult(
+        report,
+        { EventCallback: (delivered, timedOut) => finish({ delivered, timedOut }) },
+        timeoutMs
+      );
+    } catch {
+      // Bad report or unavailable API — report as not delivered rather than throw.
+      finish({ delivered: false, timedOut: false });
+    }
+    // Safety net: if the callback never fires, treat it as a timeout.
+    setTimeout(() => finish({ delivered: false, timedOut: true }), timeoutMs + 5000);
+  });
+}
+
+/**
+ * Parse a received e2e message — the marshalled `bindings.Message` JSON whose
+ * `Payload` is the base64 application bytes. Falls back to the raw bytes if it
+ * doesn't parse. Pure; exported for tests.
+ */
+export function parseReceivedMessage(item: Uint8Array): ReceivedMessage {
+  try {
+    const raw = JSON.parse(new TextDecoder().decode(item)) as Record<string, unknown>;
+    const payloadB64 = raw.Payload ?? raw.payload;
+    const payload = typeof payloadB64 === 'string' ? base64ToBytes(payloadB64) : new Uint8Array();
+    return { payload, raw };
+  } catch {
+    return { payload: item, raw: null };
+  }
+}
+
+/** Decode standard base64 to bytes. Pure; exported for tests. */
+export function base64ToBytes(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
