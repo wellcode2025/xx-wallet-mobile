@@ -37,3 +37,10 @@ xx-wallet-mobile/sleeve-wasm/coverage.out
 
 # Throwaway / scratch
 scratch/
+
+# Personal / sensitive — NEVER commit. Local spike scripts + patches contain
+# real names, addresses, and throwaway test secrets; they must stay out of the
+# public repo. (The spike scripts were purged from history once already — this
+# stops any future `git add -A` from re-introducing them.)
+xx-wallet-mobile/scripts/spikes/
+*.patch
