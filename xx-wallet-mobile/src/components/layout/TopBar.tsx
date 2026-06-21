@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ConnectionBadge } from '../ui/ConnectionBadge';
 
@@ -6,6 +6,8 @@ interface TopBarProps {
   title?: string;
   showBack?: boolean;
   showConnection?: boolean;
+  /** Render a gear in the top corner that opens Settings (tab-root screens). */
+  showSettings?: boolean;
   right?: React.ReactNode;
 }
 
@@ -13,6 +15,7 @@ export function TopBar({
   title,
   showBack = false,
   showConnection = true,
+  showSettings = false,
   right,
 }: TopBarProps) {
   const navigate = useNavigate();
@@ -50,6 +53,15 @@ export function TopBar({
         <div className="flex items-center gap-2">
           {showConnection && <ConnectionBadge />}
           {right}
+          {showSettings && (
+            <button
+              onClick={() => navigate('/settings')}
+              className="-mr-1 p-2 rounded-full active:bg-ink-800 transition-colors"
+              aria-label="Settings"
+            >
+              <Settings size={20} strokeWidth={1.75} />
+            </button>
+          )}
         </div>
       </div>
     </header>

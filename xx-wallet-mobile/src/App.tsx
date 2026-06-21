@@ -26,6 +26,7 @@ import { Dashboard } from '@/screens/Dashboard';
 import { Send } from '@/screens/Send';
 import { Receive } from '@/screens/Receive';
 import { Settings } from '@/screens/Settings';
+import { Memos } from '@/screens/Memos';
 import { AccountDetail } from '@/screens/AccountDetail';
 import { AddLedgerAccount } from '@/screens/AddLedgerAccount';
 import {
@@ -256,6 +257,7 @@ export function App() {
             <Route path="/account/ledger/add" element={<AddLedgerAccount />} />
             <Route path="/account/:address" element={<AccountDetail />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/memos" element={<Memos />} />
             <Route path="/staking" element={<StakingLayout />}>
               <Route index element={<MyNominations />} />
               <Route path="validators" element={<ValidatorList />} />

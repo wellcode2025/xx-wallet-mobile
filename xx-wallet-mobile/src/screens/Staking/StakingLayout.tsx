@@ -40,7 +40,7 @@ export function StakingLayout() {
 
   return (
     <>
-      <TopBar title="Staking" />
+      <TopBar title="Staking" showSettings />
       <div className="px-5 pt-4">
         <div className="flex gap-1 p-1 rounded-2xl bg-ink-900 border border-ink-800">
           {TABS.map(({ to, label, end }) => (

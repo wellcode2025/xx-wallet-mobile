@@ -114,7 +114,7 @@ export function Settings() {
 
   return (
     <>
-      <TopBar title="Settings" />
+      <TopBar title="Settings" showBack />
 
       <div className="px-5 py-4 space-y-6 max-w-md mx-auto">
         {/* Install xx Wallet — visible only when Chrome has captured an

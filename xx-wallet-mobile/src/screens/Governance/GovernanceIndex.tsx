@@ -72,7 +72,7 @@ const ROWS: Row[] = [
 export function GovernanceIndex() {
   return (
     <>
-      <TopBar title="Governance" />
+      <TopBar title="Governance" showSettings />
       <div className="px-5 pt-5 pb-8 max-w-md mx-auto">
         <div className="flex items-start gap-3 mb-6">
           <div className="mt-0.5 shrink-0 w-10 h-10 rounded-2xl bg-xx-500/10 text-xx-500 flex items-center justify-center">

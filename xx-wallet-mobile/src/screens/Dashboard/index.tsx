@@ -80,6 +80,7 @@ export function Dashboard() {
     <>
       <TopBar
         title="Wallet"
+        showSettings
         right={
           <button
             onClick={toggleHideBalances}

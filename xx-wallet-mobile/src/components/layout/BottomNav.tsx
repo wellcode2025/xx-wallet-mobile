@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { Wallet, Coins, Landmark, Settings } from 'lucide-react';
+import { Wallet, Coins, Landmark, MessageSquare } from 'lucide-react';
 import clsx from 'clsx';
 
 /**
  * Fixed bottom tab bar — the primary navigation on mobile.
  * Sits above the home indicator on iOS via safe-area padding.
  *
- * Four top-level destinations: Wallet / Staking / Governance / Settings.
+ * Four top-level destinations: Wallet / Staking / Governance / Memos.
+ * Settings moved to a gear in each screen's top corner (TopBar showSettings).
  * Send and Receive aren't tabs because they're per-action verbs reached
  * from the Dashboard's quick-action buttons; bottom-nav is reserved for
  * the top-level *categories*.
@@ -20,7 +21,7 @@ export function BottomNav() {
     { to: '/', label: 'Wallet', icon: Wallet, end: true },
     { to: '/staking', label: 'Staking', icon: Coins, end: false },
     { to: '/governance', label: 'Governance', icon: Landmark, end: false },
-    { to: '/settings', label: 'Settings', icon: Settings, end: false },
+    { to: '/memos', label: 'Memos', icon: MessageSquare, end: false },
   ];
 
   return (
