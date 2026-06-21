@@ -27,12 +27,35 @@ export interface SignedContactBinding {
 }
 
 /**
+ * The minimal signer a binding needs: an account address and a raw-message
+ * signer. A @polkadot/keyring `KeyringPair` satisfies this, so callers pass an
+ * unlocked pair without this module depending on the keyring types.
+ */
+export interface BindingSigner {
+  address: string;
+  sign(message: Uint8Array): Uint8Array;
+}
+
+/**
  * The canonical, domain-separated message a device signs to bind its cMix
  * contact to an account. Deterministic, so signer and verifier always agree.
  */
 export function buildContactBindingMessage(account: string, cMixContact: Uint8Array): Uint8Array {
   const body = `${DOMAIN}\n${account}\n${bytesToBase64(cMixContact)}`;
   return new TextEncoder().encode(body);
+}
+
+/**
+ * Sign a contact binding: bind `signer`'s account to a device cMix contact by
+ * signing the canonical binding message with the account key. The result
+ * verifies under `verifyContactBinding`. Requires `cryptoWaitReady()`.
+ */
+export function signContactBinding(signer: BindingSigner, cMixContact: Uint8Array): SignedContactBinding {
+  return {
+    account: signer.address,
+    cMixContact,
+    signature: signer.sign(buildContactBindingMessage(signer.address, cMixContact)),
+  };
 }
 
 /**

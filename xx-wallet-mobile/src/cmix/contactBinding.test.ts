@@ -12,6 +12,7 @@ import type { KeyringPair } from '@polkadot/keyring/types';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import {
   buildContactBindingMessage,
+  signContactBinding,
   verifyContactBinding,
   serializeSignedBinding,
   parseSignedBinding,
@@ -59,6 +60,19 @@ describe('verifyContactBinding', () => {
   it('rejects a garbage signature without throwing', () => {
     const b = bind(alice, alice.address, CONTACT);
     expect(verifyContactBinding({ ...b, signature: new Uint8Array([1, 2, 3]) })).toBe(false);
+  });
+});
+
+describe('signContactBinding', () => {
+  it('produces a binding bound to the signer account that verifies', () => {
+    const b = signContactBinding(alice, new Uint8Array([10, 20, 30]));
+    expect(b.account).toBe(alice.address);
+    expect(verifyContactBinding(b)).toBe(true);
+  });
+
+  it('cannot be re-claimed by another account (signature is over the signer address)', () => {
+    const b = signContactBinding(alice, new Uint8Array([10, 20, 30]));
+    expect(verifyContactBinding({ ...b, account: mallory.address })).toBe(false);
   });
 });
 
