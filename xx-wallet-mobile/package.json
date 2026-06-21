@@ -37,6 +37,7 @@
     "react-router-dom": "^6.23.1",
     "scrypt-js": "^3.0.1",
     "tweetnacl": "^1.0.3",
+    "xxdk-wasm": "^0.3.22",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
