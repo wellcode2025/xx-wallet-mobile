@@ -102,6 +102,16 @@ export default defineConfig({
     // If that's too much hassle, fall back to Cloudflare deploy testing —
     // see env_wsl_cowork notes.
     host: true,
+    // Serve the xxdk wasm same-origin in dev too, mirroring the production
+    // Worker proxy (worker/index.ts): /xxdk-wasm/* -> elixxir's CDN. Keeps the
+    // wasm base path identical in dev and prod, and the CSP off the CDN.
+    proxy: {
+      '/xxdk-wasm': {
+        target: 'https://elixxir-bins.s3-us-west-1.amazonaws.com/wasm/xxdk-wasm-0.3.22',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/xxdk-wasm/, ''),
+      },
+    },
   },
   build: {
     target: 'es2020',

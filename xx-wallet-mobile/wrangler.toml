@@ -6,9 +6,12 @@
 #   1. (cd xx-wallet-mobile) npm install && npm run build
 #   2. npx wrangler deploy
 #
-# Wrangler reads this file to know what to upload. We deploy as a
-# static-assets-only Worker (no script entrypoint, just the built dist/
-# served at the URL root with SPA routing fallback for deep links).
+# Wrangler reads this file to know what to upload. We deploy as a Worker with a
+# static-assets binding: the entry in `worker/index.ts` serves the built dist/
+# via env.ASSETS (SPA routing fallback for deep links) for every route EXCEPT
+# /xxdk-wasm/*, which it proxies to elixxir's CDN server-side — keeping the 45MB
+# xxdk wasm off Cloudflare's 25 MiB static-asset cap while the browser only
+# talks to this origin.
 #
 # The `name` here MUST match the existing Worker on Cloudflare so this
 # becomes an update to that Worker rather than a new one — preserves the
@@ -16,11 +19,15 @@
 # we wire up later (e.g. mobile.xx.network).
 
 name = "xx-wallet-mobile"
+main = "worker/index.ts"
 compatibility_date = "2026-05-05"
 
 [assets]
 # Path is relative to this wrangler.toml (i.e. xx-wallet-mobile/dist).
 directory = "./dist"
+# Binding so the Worker entry can serve assets (incl. SPA fallback) for
+# non-proxy routes via env.ASSETS.fetch.
+binding = "ASSETS"
 
 # Any URL that doesn't match a static file serves index.html instead of
 # 404. Required for React Router — without this, deep links like

@@ -24,7 +24,7 @@ import type { XXDKUtils } from 'xxdk-wasm';
 interface XXDKModule {
   InitXXDK: () => Promise<XXDKUtils>;
   GetDefaultNDF: () => string;
-  setXXDKBasePath: (path: URL) => void;
+  setXXDKBasePath: (path: string) => void;
 }
 
 export interface LoadedXXDK {
@@ -36,10 +36,10 @@ export interface LoadedXXDK {
 
 export interface LoadXXDKOptions {
   /**
-   * Override the wasm asset base path (e.g. a self-hosted same-origin copy).
-   * Omit to use xxdk-wasm's default CDN. Used by A3 self-hosting and by tests.
+   * Override the wasm asset base path (an absolute same-origin URL string).
+   * Omit to use the default same-origin self-hosted path. Used by tests.
    */
-  basePath?: URL;
+  basePath?: string;
   /** Test hook: inject a stand-in module instead of `import('xxdk-wasm')`. */
   moduleOverride?: XXDKModule;
 }
@@ -66,12 +66,34 @@ async function doLoad(opts: LoadXXDKOptions): Promise<LoadedXXDK> {
   // GetDefaultNDF as `() => String` (the wrapper object), which is incompatible
   // with our primitive `string`. We coerce on the way out instead of fighting it.
   const mod = opts.moduleOverride ?? (await import('xxdk-wasm'));
-  if (opts.basePath) {
-    mod.setXXDKBasePath(opts.basePath);
+  // Default to the SAME-ORIGIN /xxdk-wasm path, served by a proxy (the Vite dev
+  // server in dev, the Cloudflare Worker in prod — see worker/index.ts) that
+  // fetches the assets from elixxir's CDN server-side. So the browser never
+  // contacts a third-party CDN (connect-src stays 'self') and the 45MB wasm
+  // stays off Cloudflare's 25 MiB static-asset cap. The base must be a STRING
+  // (the xxdk API does string ops on it; a URL object is silently ignored).
+  const basePath = opts.basePath ?? defaultBasePath();
+  if (basePath) {
+    // xxdk-wasm's published types declare setXXDKBasePath(path: URL), but its
+    // runtime — and its own README — expect a STRING path (a URL object is
+    // silently ignored). Pass the string through the mistyped signature.
+    (mod.setXXDKBasePath as unknown as (path: string) => void)(basePath);
   }
   const utils = await mod.InitXXDK();
   // xxdk-wasm types GetDefaultNDF as `() => String`; coerce to a primitive string.
   return { utils, getDefaultNDF: () => String(mod.GetDefaultNDF()) };
+}
+
+/**
+ * Same-origin base for the self-hosted xxdk assets. Returns undefined off the
+ * main thread (no `window`), where the loader isn't used anyway.
+ */
+function defaultBasePath(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  // Origin-based + absolute — NOT location.href (which the xxdk README uses),
+  // because href includes the current SPA route and would break when going
+  // online from /multisig/:address. Resolves to the same-origin /xxdk-wasm proxy.
+  return `${window.location.origin}/xxdk-wasm`;
 }
 
 /**
