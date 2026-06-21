@@ -52,6 +52,7 @@ import {
 } from '@/utils';
 import { isIndexerDisabledError } from '@/api/indexer';
 import { XX_SYMBOL } from '@/api';
+import { CosignerMessaging } from './CosignerMessaging';
 
 const EXPLORER_BASE = 'https://explorer.xx.network/blocks/';
 
@@ -212,6 +213,9 @@ function MultisigView({ address }: { address: string }) {
             ))}
           </div>
         </div>
+
+        {/* Cosigner messaging (cMix) — only meaningful if the user can act here. */}
+        {userIsSigner && <CosignerMessaging multisig={multisig} />}
 
         {/* Pending proposals — surfaced before historical activity since they
             need attention. Each row links to the same approval flow as the
