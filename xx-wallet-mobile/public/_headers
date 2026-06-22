@@ -12,7 +12,9 @@
 #                                             and Google Fonts CSS
 #   - font-src                                Google Fonts files (Roboto + JetBrains Mono)
 #   - img-src                                 own + data: (SVG inlining, blob: for QR canvases)
-#   - connect-src                             same-origin + xxfoundation indexer + localhost dev RPC + wss://*
+#   - connect-src                             same-origin + indexer + cMix infra (gateways *.xxnode.io,
+#                                             registration/scheduling *.cmix.rip — gRPC-web over HTTPS) +
+#                                             localhost dev RPC + wss://*
 #                                             The wss://* wildcard is intentional — users can configure custom
 #                                             RPC URLs, so the set of hosts can't be enumerated in a static
 #                                             header. It subsumes the chain RPC hosts (xx.network/dwellir).
@@ -40,7 +42,7 @@
 #   start the mic or read geolocation.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://indexer.xx.network https://*.xxnode.io:* ws://localhost:* wss://*; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://indexer.xx.network https://*.xxnode.io:* https://*.cmix.rip:* ws://localhost:* wss://*; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
