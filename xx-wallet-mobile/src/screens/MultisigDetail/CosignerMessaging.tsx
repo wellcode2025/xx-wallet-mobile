@@ -25,12 +25,17 @@ import {
   Download,
   QrCode,
   Clipboard,
+  UserPlus,
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { Sheet, AddressIcon, AddressLabel } from '@/components/ui';
+import { Sheet, AddressIcon, AddressLabel, QrScanner } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 import { isLocalAccount, xxKeyring } from '@/keyring/store';
-import { signContactBinding, serializeSignedBinding } from '@/cmix/contactBinding';
+import {
+  signContactBinding,
+  serializeSignedBinding,
+  parseSignedBinding,
+} from '@/cmix/contactBinding';
 import { useCmixOnlineStore, type OnlineStatus } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { CONNECT_PHASE_ORDER, CONNECT_PHASE_LABEL, CONNECT_STORY } from '@/cmix/phases';
@@ -43,6 +48,7 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
   const { accounts } = useAccountsStore();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   // Accounts with at least one registered contact are "connected".
   const connected = useMemo(() => new Set(Object.keys(bindings)), [bindings]);
@@ -69,10 +75,16 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
             <Wifi size={14} className="text-xx-500 flex-shrink-0" strokeWidth={2} />
             Online — pending memos arrive while you're connected.
           </div>
-          <button onClick={() => setShareOpen(true)} className="btn-secondary w-full">
-            <Share2 size={16} strokeWidth={2} />
-            Share my contact
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setShareOpen(true)} className="btn-secondary">
+              <Share2 size={15} strokeWidth={2} />
+              Share contact
+            </button>
+            <button onClick={() => setAddOpen(true)} className="btn-secondary">
+              <UserPlus size={15} strokeWidth={2} />
+              Add cosigner
+            </button>
+          </div>
         </div>
       ) : status === 'connecting' ? (
         <div className="flex items-center gap-2 text-xs text-ink-300">
@@ -100,6 +112,7 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
 
       <GoOnlineSheet open={sheetOpen} onClose={() => setSheetOpen(false)} multisig={multisig} />
       <ShareContactSheet open={shareOpen} onClose={() => setShareOpen(false)} multisig={multisig} />
+      <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} multisig={multisig} />
     </div>
   );
 }
@@ -616,5 +629,139 @@ function ShareContactBlob({ blob }: { blob: string }) {
         Download as file
       </button>
     </div>
+  );
+}
+
+/**
+ * Add a cosigner's contact — paste or scan a signed binding they shared, verify
+ * its signature against a KNOWN signer of THIS multisig (authorization, not just
+ * a valid signature — see contactRegistry's note), then register it so it can
+ * receive fan-out memos and the row flips to Connected. A faked, tampered, or
+ * wrong-account contact is refused with a clear reason.
+ */
+function AddContactSheet({
+  open,
+  onClose,
+  multisig,
+}: {
+  open: boolean;
+  onClose: () => void;
+  multisig: Multisig;
+}) {
+  const addBinding = useCmixContactsStore((s) => s.addBinding);
+  const { accounts } = useAccountsStore();
+
+  const signerSet = useMemo(
+    () => new Set(multisig.signers.map((s) => s.address)),
+    [multisig.signers]
+  );
+  const mySet = useMemo(() => new Set(accounts.map((a) => a.address)), [accounts]);
+
+  const [text, setText] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [added, setAdded] = useState<string | null>(null);
+
+  const tryAdd = (input: string) => {
+    setError(null);
+    const binding = parseSignedBinding(input.trim());
+    if (!binding) {
+      setError("That doesn't look like a contact — paste the whole thing your cosigner shared.");
+      return;
+    }
+    if (mySet.has(binding.account)) {
+      setError("That's one of your own accounts.");
+      return;
+    }
+    if (!signerSet.has(binding.account)) {
+      setError("This contact isn't for a signer of this multisig, so it won't be added.");
+      return;
+    }
+    // addBinding re-verifies the signature against the claimed account.
+    if (!addBinding(binding)) {
+      setError("The signature didn't verify — the contact may be corrupted or tampered with.");
+      return;
+    }
+    setAdded(binding.account);
+    setText('');
+  };
+
+  const close = () => {
+    setText('');
+    setError(null);
+    setAdded(null);
+    setScannerOpen(false);
+    onClose();
+  };
+
+  return (
+    <>
+      <Sheet open={open} onClose={close} title="Add a cosigner's contact">
+        <div className="space-y-4">
+          {added ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-xx-500/5 border border-xx-500/20">
+                <Check size={18} className="text-xx-500 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-100">Contact added + verified</p>
+                  <AddressLabel address={added} className="text-xs" />
+                </div>
+              </div>
+              <button onClick={() => setAdded(null)} className="btn-secondary w-full">
+                Add another
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-ink-300 leading-relaxed">
+                Paste or scan a contact a cosigner shared. The wallet checks its
+                signature against that cosigner's address — a faked or tampered
+                contact is rejected.
+              </p>
+
+              <textarea
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  setError(null);
+                }}
+                className="input-base text-xs font-mono h-24 resize-none"
+                placeholder="Paste the cosigner's contact here…"
+                spellCheck={false}
+              />
+
+              {error && (
+                <p className="text-xs text-danger flex items-start gap-1">
+                  <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
+                  {error}
+                </p>
+              )}
+
+              <button
+                onClick={() => tryAdd(text)}
+                disabled={!text.trim()}
+                className="btn-primary w-full"
+              >
+                <UserPlus size={16} strokeWidth={2} />
+                Add contact
+              </button>
+              <button onClick={() => setScannerOpen(true)} className="btn-secondary w-full">
+                <QrCode size={16} strokeWidth={2} />
+                Scan QR instead
+              </button>
+            </>
+          )}
+        </div>
+      </Sheet>
+      {scannerOpen && (
+        <QrScanner
+          onScan={(result) => {
+            setScannerOpen(false);
+            tryAdd(result);
+          }}
+          onClose={() => setScannerOpen(false)}
+        />
+      )}
+    </>
   );
 }
