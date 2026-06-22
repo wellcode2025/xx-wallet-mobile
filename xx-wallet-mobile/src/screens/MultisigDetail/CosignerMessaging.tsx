@@ -13,13 +13,28 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { Radio, Loader2, Check, Circle, AlertTriangle, Wifi, ShieldCheck } from 'lucide-react';
+import {
+  Radio,
+  Loader2,
+  Check,
+  Circle,
+  AlertTriangle,
+  Wifi,
+  ShieldCheck,
+  Share2,
+  Download,
+  QrCode,
+  Clipboard,
+} from 'lucide-react';
+import QRCode from 'qrcode';
 import { Sheet, AddressIcon, AddressLabel } from '@/components/ui';
 import { useAccountsStore } from '@/store';
-import { isLocalAccount } from '@/keyring/store';
+import { isLocalAccount, xxKeyring } from '@/keyring/store';
+import { signContactBinding, serializeSignedBinding } from '@/cmix/contactBinding';
 import { useCmixOnlineStore, type OnlineStatus } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { CONNECT_PHASE_ORDER, CONNECT_PHASE_LABEL, CONNECT_STORY } from '@/cmix/phases';
+import { copyToClipboard } from '@/utils';
 import type { Multisig } from '@/store/multisigs';
 
 export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
@@ -27,6 +42,7 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
   const bindings = useCmixContactsStore((s) => s.bindings);
   const { accounts } = useAccountsStore();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Accounts with at least one registered contact are "connected".
   const connected = useMemo(() => new Set(Object.keys(bindings)), [bindings]);
@@ -48,9 +64,15 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
       </p>
 
       {status === 'online' ? (
-        <div className="flex items-center gap-2 text-xs text-ink-300">
-          <Wifi size={14} className="text-xx-500 flex-shrink-0" strokeWidth={2} />
-          Online — pending memos arrive while you're connected.
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2 text-xs text-ink-300">
+            <Wifi size={14} className="text-xx-500 flex-shrink-0" strokeWidth={2} />
+            Online — pending memos arrive while you're connected.
+          </div>
+          <button onClick={() => setShareOpen(true)} className="btn-secondary w-full">
+            <Share2 size={16} strokeWidth={2} />
+            Share my contact
+          </button>
         </div>
       ) : status === 'connecting' ? (
         <div className="flex items-center gap-2 text-xs text-ink-300">
@@ -77,6 +99,7 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
       </div>
 
       <GoOnlineSheet open={sheetOpen} onClose={() => setSheetOpen(false)} multisig={multisig} />
+      <ShareContactSheet open={shareOpen} onClose={() => setShareOpen(false)} multisig={multisig} />
     </div>
   );
 }
@@ -342,6 +365,256 @@ function ConnectProgress() {
         and can take a few minutes; after that it's quick. You can close this and
         it'll keep going in the background.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Share my messaging contact — sign this device's cMix contact with a signer
+ * account's key (binding the contact to that account; see contactBinding) and
+ * hand the signed blob to cosigners out-of-band, once. They verify it against
+ * the known signer address before adding it, so a contact can't be spoofed.
+ * Requires being online — the contact comes from the live e2e session.
+ */
+function ShareContactSheet({
+  open,
+  onClose,
+  multisig,
+}: {
+  open: boolean;
+  onClose: () => void;
+  multisig: Multisig;
+}) {
+  const { accounts, activeAddress } = useAccountsStore();
+  const handle = useCmixOnlineStore((s) => s.handle);
+
+  const eligible = useMemo(
+    () =>
+      accounts.filter(
+        (a) => isLocalAccount(a) && multisig.signers.some((s) => s.address === a.address)
+      ),
+    [accounts, multisig.signers]
+  );
+
+  const [account, setAccount] = useState(() => {
+    if (activeAddress && eligible.some((a) => a.address === activeAddress)) return activeAddress;
+    return eligible[0]?.address ?? '';
+  });
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [blob, setBlob] = useState<string | null>(null);
+
+  const handleCreate = async () => {
+    if (!handle || !account || !password || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const myContact = handle.myContact();
+      const pair = await xxKeyring.unlock(account, password);
+      try {
+        const binding = signContactBinding(pair, myContact);
+        setBlob(serializeSignedBinding(binding));
+        setPassword('');
+      } finally {
+        // The keyring contract: lock + evict the unlocked pair right after use.
+        pair.lock();
+        xxKeyring.removeFromKeyring(account);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Start fresh on close so a re-open re-prompts rather than showing a stale blob.
+  const close = () => {
+    setBlob(null);
+    setError(null);
+    setPassword('');
+    onClose();
+  };
+
+  return (
+    <Sheet open={open} onClose={close} title="Share your messaging contact">
+      <div className="space-y-4">
+        {!handle ? (
+          <p className="text-xs text-ink-300 leading-relaxed">
+            Go online first — your messaging contact comes from the live connection.
+          </p>
+        ) : blob ? (
+          <ShareContactBlob blob={blob} />
+        ) : eligible.length === 0 ? (
+          <p className="text-xs text-ink-300 leading-relaxed">
+            You need a signer account of this multisig in this wallet, with a
+            password, to sign your contact.
+          </p>
+        ) : (
+          <>
+            <p className="text-xs text-ink-300 leading-relaxed">
+              Sign your messaging contact with a signer account. Cosigners verify it
+              against that account's address before adding it — so a contact can't be
+              faked.
+            </p>
+
+            <div>
+              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
+                Sign as
+              </label>
+              {eligible.length === 1 ? (
+                <div className="flex items-center gap-2">
+                  <AddressIcon address={eligible[0].address} size={28} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink-100 truncate">{eligible[0].name}</p>
+                    <p className="font-mono text-xs text-ink-300 truncate">{eligible[0].address}</p>
+                  </div>
+                </div>
+              ) : (
+                <select
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  className="input-base text-sm"
+                >
+                  {eligible.map((a) => (
+                    <option key={a.address} value={a.address}>
+                      {a.name} — {a.address.slice(0, 8)}…{a.address.slice(-6)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
+                className="input-base"
+                placeholder="Account password"
+                autoComplete="current-password"
+                disabled={busy}
+              />
+            </div>
+
+            {error && (
+              <p className="text-xs text-danger flex items-center gap-1">
+                <AlertTriangle size={12} className="flex-shrink-0" />
+                {error}
+              </p>
+            )}
+
+            <button
+              onClick={handleCreate}
+              disabled={!account || !password || busy}
+              className="btn-primary w-full"
+            >
+              {busy && <Loader2 size={16} className="animate-spin" />}
+              Create my contact
+            </button>
+          </>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+/** The shareable view once the signed contact blob exists: copy / QR / download. */
+function ShareContactBlob({ blob }: { blob: string }) {
+  const [copied, setCopied] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState(false);
+
+  useEffect(() => {
+    if (!qrOpen) return;
+    let cancelled = false;
+    // Low error-correction for max capacity — the contact blob is larger than a
+    // typical QR payload; if it still overflows we fall back to copy/download.
+    QRCode.toDataURL(blob, { errorCorrectionLevel: 'L', margin: 2, width: 320 })
+      .then((url) => {
+        if (!cancelled) {
+          setQrUrl(url);
+          setQrError(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setQrUrl(null);
+          setQrError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [qrOpen, blob]);
+
+  const handleCopy = async () => {
+    const ok = await copyToClipboard(blob);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }
+  };
+
+  const handleDownload = () => {
+    const file = new Blob([blob], { type: 'application/json' });
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'xx-messaging-contact.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-xx-500/5 border border-xx-500/20">
+        <ShieldCheck size={18} className="text-xx-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
+        <p className="text-xs text-ink-200 leading-relaxed">
+          Send this to your cosigners over any channel you already trust — just
+          once. They add it, and from then on you coordinate privately over the
+          mixnet.
+        </p>
+      </div>
+
+      <button onClick={handleCopy} className="btn-primary w-full">
+        {copied ? <Check size={16} strokeWidth={2.5} /> : <Clipboard size={16} strokeWidth={2} />}
+        {copied ? 'Copied' : 'Copy contact'}
+      </button>
+
+      <button onClick={() => setQrOpen((o) => !o)} className="btn-secondary w-full">
+        <QrCode size={16} strokeWidth={2} />
+        {qrOpen ? 'Hide QR code' : 'Show QR code'}
+      </button>
+      {qrOpen && (
+        <div className="card flex flex-col items-center space-y-2 bg-white">
+          {qrUrl ? (
+            <img src={qrUrl} alt="Messaging contact QR code" className="w-full max-w-[280px] h-auto" />
+          ) : qrError ? (
+            <p className="text-xs text-ink-700 text-center px-2 py-6">
+              Contact is too large for a QR — use Copy or Download.
+            </p>
+          ) : (
+            <div className="w-[280px] h-[280px] flex items-center justify-center text-ink-300 text-xs">
+              Generating…
+            </div>
+          )}
+        </div>
+      )}
+
+      <button onClick={handleDownload} className="btn-secondary w-full">
+        <Download size={16} strokeWidth={2} />
+        Download as file
+      </button>
     </div>
   );
 }
