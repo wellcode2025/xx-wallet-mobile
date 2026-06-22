@@ -55,6 +55,9 @@ export interface MessagingOptions {
   session: CmixSessionOptions;
   /** Auth-channel callbacks (e.g. auto-accept a known cosigner, or prompt the user). */
   authCallbacks?: Partial<AuthCallbacks>;
+  /** Auto-confirm a channel Request iff this returns true for the requester's
+   *  contact (a known cosigner). Forwarded to the e2e session. */
+  autoConfirm?: (contact: Uint8Array) => boolean;
   /** Fired as each connect phase begins, so the UI can show real progress. */
   onPhase?: (phase: ConnectPhase) => void;
 }
@@ -84,7 +87,10 @@ export function isMessagingConnected(): boolean {
 async function build(opts: MessagingOptions): Promise<MessagingHandle> {
   const session = await getCmixSession({ ...opts.session, onPhase: opts.onPhase });
   opts.onPhase?.('finalizing');
-  const e2e = await createE2eSession(session.cmix, opts.authCallbacks);
+  const e2e = await createE2eSession(session.cmix, {
+    authCallbacks: opts.authCallbacks,
+    autoConfirm: opts.autoConfirm,
+  });
   return makeHandle(e2e);
 }
 

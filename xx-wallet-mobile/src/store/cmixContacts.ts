@@ -43,6 +43,9 @@ interface CmixContactsState {
   contactsForAccounts(accounts: string[]): Uint8Array[];
   /** Accounts with at least one registered device-contact. */
   knownAccounts(): string[];
+  /** Whether `contact` (raw cMix contact bytes) belongs to any registered
+   *  cosigner — used to auto-confirm only known partners' channel requests. */
+  isKnownContact(contact: Uint8Array): boolean;
 }
 
 export const useCmixContactsStore = create<CmixContactsState>()(
@@ -73,6 +76,16 @@ export const useCmixContactsStore = create<CmixContactsState>()(
       knownAccounts() {
         return registryKnownAccounts(deserializeRegistry(get().bindings));
       },
+
+      isKnownContact(contact) {
+        const reg = deserializeRegistry(get().bindings);
+        for (const bindings of Object.values(reg.byAccount)) {
+          for (const b of bindings) {
+            if (sameBytes(b.cMixContact, contact)) return true;
+          }
+        }
+        return false;
+      },
     }),
     {
       name: 'xx-wallet:cmix-contacts',
@@ -80,3 +93,9 @@ export const useCmixContactsStore = create<CmixContactsState>()(
     }
   )
 );
+
+function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}

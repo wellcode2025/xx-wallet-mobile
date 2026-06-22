@@ -61,29 +61,53 @@ export interface E2eSession {
   onMessage(senderId: Uint8Array, messageType: number, handler: (msg: ReceivedMessage) => void): Promise<void>;
 }
 
-const NO_OP_AUTH: AuthCallbacks = {
-  Request: () => {},
-  Confirm: () => {},
-  Reset: () => {},
-};
+/** Options for creating the e2e session. */
+export interface CreateE2eOptions {
+  /** Observe raw auth-channel handshake events (Request / Confirm / Reset). */
+  authCallbacks?: Partial<AuthCallbacks>;
+  /**
+   * Auto-confirm an incoming channel Request iff this returns true for the
+   * requester's contact bytes (e.g. a known cosigner already in the registry).
+   * Requests from anyone else are ignored — no channel forms, no exposure to
+   * strangers. The channel is otherwise lazy: a cosigner's Request typically
+   * arrives on their first send to us.
+   */
+  autoConfirm?: (contact: Uint8Array) => boolean;
+}
 
 /**
  * Create the e2e messaging session on top of a live, healthy cMix session. Logs
  * in with the persisted per-device reception identity, so the messaging identity
  * survives restarts. Intended to be called once per app lifetime.
- *
- * `authCallbacks` lets the caller react to handshake events (e.g. auto-confirm a
- * known cosigner, or surface an incoming connection request to the user). Any
- * omitted callback defaults to a no-op.
  */
 export async function createE2eSession(
   cmix: CMix,
-  authCallbacks: Partial<AuthCallbacks> = {}
+  opts: CreateE2eOptions = {}
 ): Promise<E2eSession> {
   const globals = getE2eGlobals();
   const identity = await ensureReceptionIdentity(cmix);
   const e2eParams = globals.GetDefaultE2EParams();
-  const e2e = globals.Login(cmix.GetID(), { ...NO_OP_AUTH, ...authCallbacks }, identity, e2eParams);
+
+  // The Request handler needs e2e.Confirm, but `e2e` doesn't exist until Login
+  // returns — capture it via a deferred ref the callback closes over.
+  let e2eRef: E2e | null = null;
+  const callbacks: AuthCallbacks = {
+    Request: (contact, receptionId, ephemeralId, roundId) => {
+      if (opts.autoConfirm?.(contact) && e2eRef) {
+        e2eRef.Confirm(contact).catch(() => {
+          /* confirm failed (offline/blip) — the partner can retry */
+        });
+      }
+      opts.authCallbacks?.Request?.(contact, receptionId, ephemeralId, roundId);
+    },
+    Confirm: (contact, receptionId, ephemeralId, roundId) =>
+      opts.authCallbacks?.Confirm?.(contact, receptionId, ephemeralId, roundId),
+    Reset: (contact, receptionId, ephemeralId, roundId) =>
+      opts.authCallbacks?.Reset?.(contact, receptionId, ephemeralId, roundId),
+  };
+
+  const e2e = globals.Login(cmix.GetID(), callbacks, identity, e2eParams);
+  e2eRef = e2e;
 
   return {
     e2e,

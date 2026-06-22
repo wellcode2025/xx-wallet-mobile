@@ -23,6 +23,7 @@ import { planSecretAction } from '@/cmix/secretPlan';
 import type { AuthCallbacks } from '@/cmix/e2eApi';
 import type { ConnectPhase } from '@/cmix/phases';
 import { useCmixSecretStore } from './cmixSecret';
+import { useCmixContactsStore } from './cmixContacts';
 
 export type OnlineStatus = 'offline' | 'connecting' | 'online' | 'error';
 
@@ -82,6 +83,7 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
       const handle = await connectMessaging({
         session: { storagePassword: secret },
         authCallbacks,
+        autoConfirm: (contact) => useCmixContactsStore.getState().isKnownContact(contact),
         onPhase: (phase) => set({ phase }),
       });
       set({ status: 'online', handle, error: null, phase: null });
