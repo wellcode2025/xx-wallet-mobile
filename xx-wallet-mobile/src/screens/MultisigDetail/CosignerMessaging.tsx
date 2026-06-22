@@ -11,14 +11,15 @@
  * this wallet with a password — a Ledger signer has no password to unlock the
  * device's encrypted messaging secret.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { Radio, Loader2, Check, Circle, AlertTriangle, Wifi } from 'lucide-react';
+import { Radio, Loader2, Check, Circle, AlertTriangle, Wifi, ShieldCheck } from 'lucide-react';
 import { Sheet, AddressIcon, AddressLabel } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 import { isLocalAccount } from '@/keyring/store';
 import { useCmixOnlineStore, type OnlineStatus } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
+import { CONNECT_PHASE_ORDER, CONNECT_PHASE_LABEL, CONNECT_STORY } from '@/cmix/phases';
 import type { Multisig } from '@/store/multisigs';
 
 export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
@@ -148,6 +149,7 @@ function GoOnlineSheet({
 }) {
   const { accounts, activeAddress } = useAccountsStore();
   const goOnline = useCmixOnlineStore((s) => s.goOnline);
+  const status = useCmixOnlineStore((s) => s.status);
 
   const eligible = useMemo(
     () =>
@@ -185,7 +187,9 @@ function GoOnlineSheet({
   return (
     <Sheet open={open} onClose={onClose} title="Go online for coordination">
       <div className="space-y-4">
-        {eligible.length === 0 ? (
+        {status === 'connecting' ? (
+          <ConnectProgress />
+        ) : eligible.length === 0 ? (
           <p className="text-xs text-ink-300 leading-relaxed">
             You need one of this multisig's signer accounts in this wallet, with a
             password (not a Ledger account), to bring messaging online.
@@ -262,5 +266,82 @@ function GoOnlineSheet({
         )}
       </div>
     </Sheet>
+  );
+}
+
+/**
+ * Go-online progress: a rotating "worth the wait" story (cMix value props) over
+ * a real phase checklist + elapsed timer, so the multi-minute first connect
+ * reads as progress rather than a stall. Phases come from the go-online store.
+ */
+function ConnectProgress() {
+  const phase = useCmixOnlineStore((s) => s.phase);
+  const [elapsed, setElapsed] = useState(0);
+  const [storyIdx, setStoryIdx] = useState(0);
+
+  useEffect(() => {
+    const tick = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const story = setInterval(
+      () => setStoryIdx((i) => (i + 1) % CONNECT_STORY.length),
+      6000
+    );
+    return () => {
+      clearInterval(tick);
+      clearInterval(story);
+    };
+  }, []);
+
+  const currentIdx = phase ? CONNECT_PHASE_ORDER.indexOf(phase) : 0;
+  const mm = Math.floor(elapsed / 60);
+  const ss = String(elapsed % 60).padStart(2, '0');
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col items-center text-center gap-3 pt-1">
+        <div className="w-12 h-12 rounded-2xl bg-xx-500/10 border border-xx-500/30 flex items-center justify-center flex-shrink-0">
+          <ShieldCheck size={24} className="text-xx-500" strokeWidth={1.75} />
+        </div>
+        <p className="text-sm text-ink-100 leading-relaxed min-h-[2.75rem]">
+          {CONNECT_STORY[storyIdx]}
+        </p>
+      </div>
+
+      <ul className="space-y-2.5">
+        {CONNECT_PHASE_ORDER.map((p, i) => {
+          const done = i < currentIdx;
+          const active = i === currentIdx;
+          return (
+            <li key={p} className="flex items-center gap-2.5 text-sm">
+              {done ? (
+                <Check size={16} className="text-xx-500 flex-shrink-0" strokeWidth={2.5} />
+              ) : active ? (
+                <Loader2
+                  size={16}
+                  className="text-xx-500 animate-spin flex-shrink-0"
+                  strokeWidth={2}
+                />
+              ) : (
+                <Circle size={14} className="text-ink-600 flex-shrink-0" strokeWidth={2} />
+              )}
+              <span className={active ? 'text-ink-100' : 'text-ink-300'}>
+                {CONNECT_PHASE_LABEL[p]}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex items-center justify-between text-xs text-ink-300">
+        <span className="numeric">
+          Elapsed {mm}:{ss}
+        </span>
+        <span>{phase === 'connecting' ? 'first connect is slow — normal' : 'working…'}</span>
+      </div>
+      <p className="text-xs text-ink-300 leading-relaxed">
+        Keep this open. The first connection registers your device with the mixnet
+        and can take a few minutes; after that it's quick. You can close this and
+        it'll keep going in the background.
+      </p>
+    </div>
   );
 }

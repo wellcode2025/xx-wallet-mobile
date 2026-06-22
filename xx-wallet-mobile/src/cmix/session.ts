@@ -20,6 +20,7 @@
  */
 import type { CMix, XXDKUtils } from 'xxdk-wasm';
 import { loadXXDK, type LoadXXDKOptions } from './load';
+import type { ConnectPhase } from './phases';
 
 /** Stable storage dir so the cMix state (and node keys) persist across launches. */
 const DEFAULT_STORAGE_DIR = 'xx-wallet-cmix';
@@ -51,6 +52,8 @@ export interface CmixSessionOptions {
   healthyTimeoutMs?: number;
   /** Forwarded to the lazy xxDK loader (e.g. a self-hosted base path, or a test stub). */
   load?: LoadXXDKOptions;
+  /** Fired as each connect phase begins, so the UI can show real progress. */
+  onPhase?: (phase: ConnectPhase) => void;
 }
 
 let sessionPromise: Promise<CmixSession> | null = null;
@@ -76,10 +79,12 @@ export function hasCmixSession(): boolean {
 }
 
 async function buildSession(opts: CmixSessionOptions): Promise<CmixSession> {
+  opts.onPhase?.('loading');
   const { utils, getDefaultNDF } = await loadXXDK(opts.load);
   const dir = opts.storageDir ?? DEFAULT_STORAGE_DIR;
   const params = buildCmixParams(utils.GetDefaultCMixParams());
 
+  opts.onPhase?.('opening');
   const cmix = await loadOrInitCmix(utils, getDefaultNDF, dir, opts.storagePassword, params);
 
   const health = new HealthTracker();
@@ -89,6 +94,7 @@ async function buildSession(opts: CmixSessionOptions): Promise<CmixSession> {
     // Health callbacks are best-effort; WaitForNetwork below is the real gate.
   }
 
+  opts.onPhase?.('connecting');
   cmix.StartNetworkFollower(FOLLOWER_POLL_MS);
   await cmix.WaitForNetwork(opts.healthyTimeoutMs ?? DEFAULT_HEALTHY_TIMEOUT_MS);
   health.set(true);

@@ -14,6 +14,7 @@
 import { getCmixSession, type CmixSessionOptions } from './session';
 import { createE2eSession, parseReceivedMessage, type E2eSession, type SendResult } from './e2e';
 import type { AuthCallbacks } from './e2eApi';
+import type { ConnectPhase } from './phases';
 import {
   buildAckMessage,
   buildProposedMessage,
@@ -54,6 +55,8 @@ export interface MessagingOptions {
   session: CmixSessionOptions;
   /** Auth-channel callbacks (e.g. auto-accept a known cosigner, or prompt the user). */
   authCallbacks?: Partial<AuthCallbacks>;
+  /** Fired as each connect phase begins, so the UI can show real progress. */
+  onPhase?: (phase: ConnectPhase) => void;
 }
 
 let handlePromise: Promise<MessagingHandle> | null = null;
@@ -79,7 +82,8 @@ export function isMessagingConnected(): boolean {
 }
 
 async function build(opts: MessagingOptions): Promise<MessagingHandle> {
-  const session = await getCmixSession(opts.session);
+  const session = await getCmixSession({ ...opts.session, onPhase: opts.onPhase });
+  opts.onPhase?.('finalizing');
   const e2e = await createE2eSession(session.cmix, opts.authCallbacks);
   return makeHandle(e2e);
 }

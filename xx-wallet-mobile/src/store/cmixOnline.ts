@@ -21,6 +21,7 @@ import { xxKeyring } from '@/keyring/store';
 import { connectMessaging, type MessagingHandle } from '@/cmix/messaging';
 import { planSecretAction } from '@/cmix/secretPlan';
 import type { AuthCallbacks } from '@/cmix/e2eApi';
+import type { ConnectPhase } from '@/cmix/phases';
 import { useCmixSecretStore } from './cmixSecret';
 
 export type OnlineStatus = 'offline' | 'connecting' | 'online' | 'error';
@@ -28,6 +29,9 @@ export type OnlineStatus = 'offline' | 'connecting' | 'online' | 'error';
 interface CmixOnlineState {
   status: OnlineStatus;
   error: string | null;
+  /** Current connect phase while status is 'connecting' (else null). Drives the
+   *  go-online progress checklist. */
+  phase: ConnectPhase | null;
   /** The connected messaging handle while online (null otherwise). */
   handle: MessagingHandle | null;
 
@@ -47,12 +51,13 @@ interface CmixOnlineState {
 export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
   status: 'offline',
   error: null,
+  phase: null,
   handle: null,
 
   async goOnline(account, password, authCallbacks) {
     const { status } = get();
     if (status === 'connecting' || status === 'online') return;
-    set({ status: 'connecting', error: null });
+    set({ status: 'connecting', error: null, phase: 'loading' });
     try {
       const secrets = useCmixSecretStore.getState();
       const action = planSecretAction(secrets.hasSecret(), secrets.isEnabledFor(account));
@@ -77,19 +82,21 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
       const handle = await connectMessaging({
         session: { storagePassword: secret },
         authCallbacks,
+        onPhase: (phase) => set({ phase }),
       });
-      set({ status: 'online', handle, error: null });
+      set({ status: 'online', handle, error: null, phase: null });
     } catch (err) {
       set({
         status: 'error',
         error: err instanceof Error ? err.message : String(err),
         handle: null,
+        phase: null,
       });
       throw err;
     }
   },
 
   reset() {
-    set({ status: 'offline', error: null, handle: null });
+    set({ status: 'offline', error: null, handle: null, phase: null });
   },
 }));
