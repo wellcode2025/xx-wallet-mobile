@@ -28,12 +28,15 @@ import { RefreshCw, X } from 'lucide-react';
  * persist the dismissal — missing updates is more user-impacting than
  * being slightly nudgy.
  *
- * Update polling: most browsers poll for SW updates on navigation or
- * after a long period of inactivity. Mobile browsers with a
- * backgrounded tab are unreliable. We schedule an hourly registration
- * .update() to keep the banner responsive without thrashing — the
- * check itself is a 304-headed HEAD-ish request to the SW URL, so
- * it's cheap when nothing has changed.
+ * Update polling: most browsers only poll for SW updates on navigation,
+ * which an installed PWA resumed from the background never does — so a
+ * deploy can sit unseen behind a stale bundle (and on mobile, background
+ * timers are throttled, so an interval alone is unreliable). We check on
+ * launch, on every return to the foreground (visibilitychange → visible),
+ * and hourly as a backstop. The foreground check is the workhorse on
+ * mobile: it's what makes a deploy surface as the banner on the next open
+ * instead of needing a manual force-quit. Each .update() is cheap (a
+ * conditional request to the SW URL) and benign when nothing changed.
  */
 export function UpdateBanner() {
   const {
@@ -42,17 +45,23 @@ export function UpdateBanner() {
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
-      // Hourly background check. .update() returns a promise that
-      // resolves whether a new SW was found or not — failures (offline,
-      // network blip) are benign because the next interval will retry.
-      setInterval(
-        () => {
-          registration.update().catch(() => {
-            /* swallow — retry on next tick */
-          });
-        },
-        60 * 60 * 1000
-      );
+      const check = () =>
+        registration.update().catch(() => {
+          /* swallow — offline/blip; the next trigger retries */
+        });
+      // Check right away on launch...
+      check();
+      // ...and every time the app returns to the foreground. This is the
+      // reliable trigger on mobile: a resumed PWA does no fresh navigation
+      // and background timers are throttled, so without this an installed
+      // PWA can keep serving a stale bundle until a manual force-quit. With
+      // it, a deploy surfaces as the update banner on the next open. The
+      // listener lives for the app's lifetime (onRegisteredSW fires once).
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check();
+      });
+      // Hourly backstop for long-lived foreground sessions.
+      setInterval(check, 60 * 60 * 1000);
     },
   });
 
