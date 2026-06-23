@@ -126,3 +126,115 @@ export function decodeCoordinationPayload(rawMessage: Uint8Array): CoordinationP
   const { payload } = parseReceivedMessage(rawMessage);
   return parseCoordinationMessage(payload);
 }
+
+// ── Fan-out: deliver a proposal memo to a multisig's cosigners ──────────────
+
+/** How long to wait for a freshly-requested auth channel to come up — the
+ *  cosigner's auto-confirm round-trips through the mixnet (~seconds when both
+ *  are online; never, if the cosigner is offline). */
+const CHANNEL_TIMEOUT_MS = 60_000;
+/** Poll cadence while waiting for a channel to establish. */
+const CHANNEL_POLL_MS = 3_000;
+
+/**
+ * A cosigner device we can deliver a memo to: the stored contact (to open a
+ * channel) plus its reception ID (to address sends). The ID is pre-extracted by
+ * the caller (via getIDFromContact, which needs the wasm) so this layer stays
+ * wasm-free and unit-testable.
+ */
+export interface CosignerTarget {
+  contact: Uint8Array;
+  id: Uint8Array;
+}
+
+/** Per-target outcome of a fan-out send. */
+export interface CosignerSendResult {
+  target: CosignerTarget;
+  /** True iff the memo was receipt-confirmed delivered. */
+  delivered: boolean;
+  /** SendE2E attempts it took, when a send was actually attempted. */
+  attempts?: number;
+  /** A human-readable reason when not delivered (handshake timeout, send error). */
+  error?: string;
+}
+
+export interface FanOutOptions {
+  /** How long to wait for a freshly-requested channel to establish. */
+  channelTimeoutMs?: number;
+  /** Poll cadence while waiting for the channel. */
+  channelPollMs?: number;
+  /** Injected sleep (tests pass a no-op). */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+/**
+ * Poll `predicate` until it's true or the budget runs out. Attempt-based (not
+ * wall-clock) so it's deterministic to test: checks once immediately, then up to
+ * `ceil(timeoutMs / intervalMs)` more times with `intervalMs` between. Pure over
+ * the injected `sleep`.
+ */
+export async function pollUntil(
+  predicate: () => boolean | Promise<boolean>,
+  timeoutMs: number,
+  intervalMs: number,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms))
+): Promise<boolean> {
+  const polls = Math.max(0, Math.ceil(timeoutMs / intervalMs));
+  if (await predicate()) return true;
+  for (let i = 0; i < polls; i++) {
+    await sleep(intervalMs);
+    if (await predicate()) return true;
+  }
+  return false;
+}
+
+/**
+ * Send a hash-gated proposal memo to every cosigner device IN PARALLEL.
+ *
+ * For each target: ensure an auth channel exists (lazy — request it, then wait
+ * for the cosigner's auto-confirm to round-trip), then sendProposal (which
+ * itself retries on non-delivery). Never throws — every target gets a
+ * CosignerSendResult, so the UI can show per-cosigner delivery state and let the
+ * user re-send only the ones that failed (e.g. a cosigner who was offline).
+ */
+export async function sendProposalToCosigners(
+  handle: MessagingHandle,
+  targets: CosignerTarget[],
+  pkg: BytesPackage,
+  opts: FanOutOptions = {}
+): Promise<CosignerSendResult[]> {
+  const channelTimeoutMs = opts.channelTimeoutMs ?? CHANNEL_TIMEOUT_MS;
+  const channelPollMs = opts.channelPollMs ?? CHANNEL_POLL_MS;
+
+  const sendOne = async (target: CosignerTarget): Promise<CosignerSendResult> => {
+    try {
+      if (!(await handle.isConnected(target.id))) {
+        await handle.connectToPartner(target.contact);
+        const up = await pollUntil(
+          () => handle.isConnected(target.id),
+          channelTimeoutMs,
+          channelPollMs,
+          opts.sleep
+        );
+        if (!up) {
+          return {
+            target,
+            delivered: false,
+            error: "Channel not established — the cosigner hasn't come online to confirm yet.",
+          };
+        }
+      }
+      const res = await handle.sendProposal(target.id, pkg);
+      return {
+        target,
+        delivered: res.delivered,
+        attempts: res.attempts,
+        error: res.delivered ? undefined : 'Sent but delivery was not confirmed.',
+      };
+    } catch (e) {
+      return { target, delivered: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
+
+  return Promise.all(targets.map(sendOne));
+}
