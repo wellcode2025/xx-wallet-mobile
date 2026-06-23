@@ -15,6 +15,7 @@ import {
   addBinding,
   contactsForAccount,
   contactsForAccounts,
+  isKnownContact,
   removeContact,
   knownAccounts,
 } from './contactRegistry';
@@ -102,6 +103,44 @@ describe('contactsForAccounts (fan-out)', () => {
 
   it('returns nothing for unknown accounts', () => {
     expect(contactsForAccounts(emptyRegistry(), [alice.address])).toHaveLength(0);
+  });
+});
+
+describe('isKnownContact (auto-confirm gate)', () => {
+  // Stand-in for canonical reception-ID equality: "same identity" iff the first
+  // byte matches, independent of length/trailing bytes — mirroring how a channel
+  // request's contact (with an ownership proof) differs in raw bytes from the
+  // stored GetContact() form yet resolves to the same reception ID.
+  const sameIdentity = (a: Uint8Array, b: Uint8Array) =>
+    a.length > 0 && b.length > 0 && a[0] === b[0];
+  // A raw byte comparator — what we used to (wrongly) match on.
+  const sameBytes = (a: Uint8Array, b: Uint8Array) =>
+    a.length === b.length && a.every((x, i) => x === b[i]);
+
+  it('returns false for an empty registry', () => {
+    expect(isKnownContact(emptyRegistry(), ALICE_PHONE, sameIdentity)).toBe(false);
+  });
+
+  it('matches a known cosigner even when raw bytes differ (request vs GetContact form)', () => {
+    const reg = withBindings(bind(alice, alice.address, ALICE_PHONE));
+    // Same identity (leading byte 1), different length + trailing bytes.
+    const requestForm = new Uint8Array([1, 9, 9, 9, 9, 9, 9]);
+    expect(isKnownContact(reg, requestForm, sameIdentity)).toBe(true);
+    // A raw byte-match would have missed it — which was the live failure.
+    expect(isKnownContact(reg, requestForm, sameBytes)).toBe(false);
+  });
+
+  it('does not match an unknown identity', () => {
+    const reg = withBindings(bind(alice, alice.address, ALICE_PHONE));
+    expect(isKnownContact(reg, new Uint8Array([9, 9, 9]), sameIdentity)).toBe(false);
+  });
+
+  it('matches against any registered account (fan-in across cosigners)', () => {
+    const reg = withBindings(
+      bind(alice, alice.address, ALICE_PHONE),
+      bind(bob, bob.address, BOB_PHONE)
+    );
+    expect(isKnownContact(reg, new Uint8Array([3, 0]), sameIdentity)).toBe(true); // Bob
   });
 });
 

@@ -92,6 +92,35 @@ export function knownAccounts(registry: ContactRegistry): string[] {
   return Object.keys(registry.byAccount);
 }
 
+/**
+ * Whether `contact` belongs to any registered account, comparing on cMix
+ * IDENTITY via the injected `sameIdentity` predicate.
+ *
+ * We deliberately do NOT raw-byte-compare: the same identity marshals to
+ * different bytes across forms (a channel request carries an ownership proof
+ * that GetContact() lacks), so a byte-match would reject a legitimate cosigner.
+ * The caller supplies `sameIdentity` — in production, equality of the reception
+ * IDs extracted with `getIDFromContact` — keeping this module free of any wasm
+ * dependency and trivially testable with a stub comparator.
+ *
+ * SECURITY: this answers "is the requester one of my known cosigners?" so we
+ * only auto-confirm channel requests from accounts already in the registry. The
+ * predicate should compare canonical identities; a loose predicate would widen
+ * who we auto-accept.
+ */
+export function isKnownContact(
+  registry: ContactRegistry,
+  contact: Uint8Array,
+  sameIdentity: (a: Uint8Array, b: Uint8Array) => boolean
+): boolean {
+  for (const bindings of Object.values(registry.byAccount)) {
+    for (const b of bindings) {
+      if (sameIdentity(b.cMixContact, contact)) return true;
+    }
+  }
+  return false;
+}
+
 function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;

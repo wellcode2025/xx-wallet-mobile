@@ -104,3 +104,26 @@ export function getE2eGlobals(): E2eGlobals {
 export function asE2eCmix(cmix: CMix): CMix & CMixE2eExtensions {
   return cmix as CMix & CMixE2eExtensions;
 }
+
+/**
+ * Extract the canonical reception ID (33-byte id.ID) from a marshalled cMix
+ * contact, via the xxDK `GetIDFromContact` global.
+ *
+ * The SAME identity marshals to DIFFERENT contact bytes depending on what's
+ * attached: an inbound auth-channel request carries an ownership proof (and the
+ * request's facts) that a plain `GetContact()` does not — verified live, the
+ * request form was 651 B vs 611 B for the same identity. The reception ID is
+ * invariant across those forms, so it's the right key for recognising a known
+ * partner. Resolved on demand (not via getE2eGlobals) so a build without this
+ * binding degrades to "can't identify" rather than breaking all of e2e. Throws
+ * if the wasm isn't initialised.
+ */
+export function getIDFromContact(contact: Uint8Array): Uint8Array {
+  const fn = (globalThis as unknown as Record<string, unknown>).GetIDFromContact;
+  if (typeof fn !== 'function') {
+    throw new Error(
+      'xxDK binding "GetIDFromContact" is not available on globalThis — the cMix wasm is not initialised.'
+    );
+  }
+  return (fn as (c: Uint8Array) => Uint8Array)(contact);
+}

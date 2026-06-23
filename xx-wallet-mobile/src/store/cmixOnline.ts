@@ -20,10 +20,41 @@ import { create } from 'zustand';
 import { xxKeyring } from '@/keyring/store';
 import { connectMessaging, type MessagingHandle } from '@/cmix/messaging';
 import { planSecretAction } from '@/cmix/secretPlan';
-import type { AuthCallbacks } from '@/cmix/e2eApi';
+import { getIDFromContact, type AuthCallbacks } from '@/cmix/e2eApi';
 import type { ConnectPhase } from '@/cmix/phases';
 import { useCmixSecretStore } from './cmixSecret';
 import { useCmixContactsStore } from './cmixContacts';
+
+/**
+ * Bring-up diagnostic: when an inbound channel request does NOT match a known
+ * cosigner, log byte heads of the incoming contact vs the stored ones. Lets us
+ * tell a facts/serialization delta (heads equal, lengths differ) from a genuinely
+ * unknown contact or an empty registry — without a slow live re-run. Flip off
+ * (or delete this + its use below) once two-device auto-confirm is verified.
+ */
+const DEBUG_AUTOCONFIRM = true;
+const byteHead = (b: Uint8Array, n = 12): string =>
+  Array.from(b.slice(0, n), (x) => x.toString(16).padStart(2, '0')).join('');
+
+/**
+ * Compare two marshalled contacts by canonical cMix identity (reception ID),
+ * which is invariant across marshalled forms — an inbound channel request
+ * carries an ownership proof that GetContact() does not, so raw bytes differ for
+ * the same identity (verified live: 651 B request vs 611 B GetContact()). Fails
+ * CLOSED: if an ID can't be extracted we return false, so we never auto-confirm
+ * a request we can't positively identify.
+ */
+const sameCmixIdentity = (a: Uint8Array, b: Uint8Array): boolean => {
+  try {
+    const ia = getIDFromContact(a);
+    const ib = getIDFromContact(b);
+    if (ia.length !== ib.length) return false;
+    for (let i = 0; i < ia.length; i++) if (ia[i] !== ib[i]) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export type OnlineStatus = 'offline' | 'connecting' | 'online' | 'error';
 
@@ -83,7 +114,22 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
       const handle = await connectMessaging({
         session: { storagePassword: secret },
         authCallbacks,
-        autoConfirm: (contact) => useCmixContactsStore.getState().isKnownContact(contact),
+        autoConfirm: (contact) => {
+          const contacts = useCmixContactsStore.getState();
+          const known = contacts.isKnownContact(contact, sameCmixIdentity);
+          if (DEBUG_AUTOCONFIRM && !known) {
+            const stored = contacts
+              .knownAccounts()
+              .flatMap((a) => contacts.contactsForAccount(a));
+            console.info('[cmix-auth] inbound channel request did NOT match a known cosigner', {
+              incomingLen: contact.length,
+              incomingHead: byteHead(contact),
+              storedCount: stored.length,
+              stored: stored.map((c) => ({ len: c.length, head: byteHead(c) })),
+            });
+          }
+          return known;
+        },
         onPhase: (phase) => set({ phase }),
       });
       set({ status: 'online', handle, error: null, phase: null });
