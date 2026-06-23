@@ -24,6 +24,16 @@ import { ensureReceptionIdentity } from './identity';
 const EMPTY_FACTS = new TextEncoder().encode('[]');
 /** How long to wait for a round-result receipt before reporting a timeout. */
 const RECEIPT_TIMEOUT_MS = 30_000;
+/**
+ * Max SendE2E attempts before giving up. cMix delivery is probabilistic — the
+ * e2e spike saw a receive leg time out on roughly half its runs before landing
+ * cleanly — so a receipt that never confirms warrants a resend. Memos are
+ * hash-gated and idempotent at the receiver, so a duplicate from a
+ * false-negative receipt is harmless.
+ */
+const MAX_SEND_ATTEMPTS = 3;
+/** Backoff between resend attempts. */
+const SEND_RETRY_BACKOFF_MS = 2_000;
 const LISTENER_NAME = 'xx-wallet-e2e';
 
 /** Result of a send, derived from the round-result receipt. */
@@ -32,6 +42,9 @@ export interface SendResult {
   delivered: boolean;
   /** True if the receipt monitoring timed out without a definitive result. */
   timedOut: boolean;
+  /** How many SendE2E attempts it took (1 = first-try). Set by the retrying
+   *  sender; undefined on a raw single receipt. */
+  attempts?: number;
 }
 
 /** A decoded incoming e2e message. */
@@ -129,9 +142,11 @@ export async function createE2eSession(
 }
 
 /**
- * SendE2E + verify the rounds actually completed (the receipt Haven skipped).
- * Resolves once WaitForRoundResult reports a result, so callers can retry on a
- * non-delivered result rather than assuming the message was sent.
+ * SendE2E + verify the rounds actually completed (the receipt Haven skipped),
+ * RESENDING on a non-delivery up to MAX_SEND_ATTEMPTS — cMix delivery is
+ * probabilistic, so one unconfirmed receipt isn't a real failure. Resolves with
+ * the final receipt (annotated with `attempts`) so callers can still surface a
+ * hard, all-attempts-failed result.
  */
 async function sendWithReceipt(
   cmix: CMix,
@@ -141,8 +156,37 @@ async function sendWithReceipt(
   payload: Uint8Array,
   e2eParams: Uint8Array
 ): Promise<SendResult> {
-  const report = await e2e.SendE2E(messageType, partnerId, payload, e2eParams);
-  return waitForRoundResult(cmix, report, RECEIPT_TIMEOUT_MS);
+  return withSendRetry(
+    async () => {
+      const report = await e2e.SendE2E(messageType, partnerId, payload, e2eParams);
+      return waitForRoundResult(cmix, report, RECEIPT_TIMEOUT_MS);
+    },
+    { maxAttempts: MAX_SEND_ATTEMPTS, backoffMs: SEND_RETRY_BACKOFF_MS }
+  );
+}
+
+/**
+ * Resend until a delivery receipt confirms the message landed, up to
+ * `maxAttempts`. cMix delivery is probabilistic, so a receipt reporting
+ * not-delivered (or a timeout) warrants a resend; a confirmed `delivered`
+ * returns immediately. Never throws for a non-delivery — returns the final
+ * receipt annotated with the attempt count and lets the caller decide what a
+ * still-undelivered memo means. Pure over the injected `sendOnce` (and `sleep`),
+ * so it's unit-testable without the mixnet.
+ */
+export async function withSendRetry(
+  sendOnce: (attempt: number) => Promise<SendResult>,
+  opts: { maxAttempts: number; backoffMs: number; sleep?: (ms: number) => Promise<void> }
+): Promise<SendResult> {
+  const sleep = opts.sleep ?? ((ms) => new Promise<void>((r) => setTimeout(r, ms)));
+  let last: SendResult = { delivered: false, timedOut: false, attempts: 0 };
+  for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
+    const result = await sendOnce(attempt);
+    last = { ...result, attempts: attempt };
+    if (result.delivered) return last;
+    if (attempt < opts.maxAttempts) await sleep(opts.backoffMs);
+  }
+  return last;
 }
 
 /** Wrap WaitForRoundResult (whose result arrives via a callback) in a promise. */
