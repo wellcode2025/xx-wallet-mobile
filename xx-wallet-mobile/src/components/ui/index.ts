@@ -10,5 +10,6 @@ export * from './SparkBarChart';
 export * from './StakingStatusBadge';
 export * from './TransactionItem';
 export * from './TxFooter';
+export * from './TxToastHost';
 export * from './UpdateBanner';
 export * from './WhatsNewSheet';

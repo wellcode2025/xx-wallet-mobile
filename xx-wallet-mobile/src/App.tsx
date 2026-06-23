@@ -19,7 +19,7 @@ import {
 } from '@/store';
 import { xxApi } from '@/api';
 import { AppLayout, OnboardingLayout } from '@/components/layout';
-import { IOSInstallBanner, UpdateBanner, WhatsNewSheet } from '@/components/ui';
+import { IOSInstallBanner, UpdateBanner, WhatsNewSheet, TxToastHost } from '@/components/ui';
 import { LockScreen, LockController } from '@/components/lock';
 import { Welcome, CreateWallet, ImportWallet } from '@/screens/Onboarding';
 import { Dashboard } from '@/screens/Dashboard';
@@ -236,6 +236,9 @@ export function App() {
       <WhatsNewSheet />
       <IOSInstallBanner />
       <LockController />
+      {/* App-wide tx toasts — track a transaction to finality even after the
+          user navigates away from the screen that submitted it. */}
+      <TxToastHost />
       <Routes>
         {/* Onboarding flow */}
         <Route element={<OnboardingLayout />}>

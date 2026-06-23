@@ -15,6 +15,7 @@ import type { ISubmittableResult } from '@polkadot/types/types';
 import type { KeyringPair } from '@polkadot/keyring/types';
 import { xxApi } from '../api';
 import { isLedgerAccount, xxKeyring } from '../keyring';
+import { useTxToastsStore } from '../store/txToasts';
 
 export type TxStatus =
   | 'idle'
@@ -33,6 +34,22 @@ export interface SubmitOptions {
    * hint while status is 'signing' (see isLedgerAddress helper).
    */
   password?: string;
+  /**
+   * Short human label for the app-wide tx toast, e.g. "Send 10 XX". When
+   * provided, a toast appears once the tx is broadcast and tracks it to
+   * finality — letting the screen navigate away. Omit to skip the toast
+   * (the call still tracks status locally as before).
+   */
+  label?: string;
+  /**
+   * Fired exactly once, the moment the transaction is broadcast — i.e. after
+   * the password has been validated (local) or the device has approved
+   * (Ledger), but before finality. This is the safe point to navigate away:
+   * the signature exists, the tx is on its way, and the toast will report the
+   * outcome. A wrong password / device rejection happens BEFORE this fires, so
+   * the screen stays put and surfaces the error inline.
+   */
+  onSigned?: () => void;
 }
 
 /**
@@ -65,6 +82,30 @@ export function useTx() {
     async (builder: TxBuilder, opts: SubmitOptions): Promise<string> => {
       reset();
       let pair: KeyringPair | null = null;
+
+      // App-wide toast plumbing (declared at submit scope so the catch/finally
+      // can settle it too). The toast is created at BROADCAST, not at submit
+      // time, so a pre-broadcast failure (wrong password, device rejection)
+      // leaves no toast and stays inline on the screen. Once broadcast,
+      // `onBroadcast` also fires opts.onSigned exactly once — the screen's cue
+      // that it's safe to navigate away.
+      let toastId: string | null = null;
+      let broadcastSignaled = false;
+      const onBroadcast = () => {
+        if (broadcastSignaled) return;
+        broadcastSignaled = true;
+        if (opts.label) toastId = useTxToastsStore.getState().add(opts.label);
+        opts.onSigned?.();
+      };
+      const succeedToast = () => {
+        if (toastId)
+          useTxToastsStore.getState().update(toastId, { status: 'success' });
+      };
+      const failToast = (msg: string) => {
+        if (toastId)
+          useTxToastsStore.getState().update(toastId, { status: 'error', detail: msg });
+      };
+
       try {
         setStatus('signing');
 
@@ -81,8 +122,10 @@ export function useTx() {
           if (s.isReady || s.isBroadcast) {
             // First sign-of-life after the signature exists — relevant
             // mostly for the Ledger path, where everything before this
-            // was the user reading the device screen.
+            // was the user reading the device screen. Safe point to let the
+            // screen leave; spins up the toast if a label was given.
             setStatus('broadcasting');
+            onBroadcast();
           }
           if (s.isInBlock) {
             setStatus('in-block');
@@ -90,11 +133,13 @@ export function useTx() {
           } else if (s.isFinalized) {
             setStatus('finalized');
             setBlockHash(s.asFinalized.toHex());
+            succeedToast();
             resolve(hash.toHex());
           } else if (s.isInvalid || s.isDropped || s.isUsurped) {
             const msg = `Transaction ${s.type.toLowerCase()}`;
             setError(new Error(msg));
             setStatus('error');
+            failToast(msg);
             reject(new Error(msg));
           }
           if (dispatchError) {
@@ -113,6 +158,7 @@ export function useTx() {
             }
             setError(new Error(msg));
             setStatus('error');
+            failToast(msg);
             reject(new Error(msg));
           }
         };
@@ -133,6 +179,7 @@ export function useTx() {
               .catch((err) => {
                 setError(err as Error);
                 setStatus('error');
+                failToast((err as Error).message);
                 reject(err as Error);
               });
           });
@@ -146,19 +193,24 @@ export function useTx() {
         // which requires an awaited key derivation step.
         pair = await xxKeyring.unlock(opts.address, opts.password);
 
+        // Password validated, signature about to go out — safe to leave the
+        // screen and let the toast carry it to finality.
         setStatus('broadcasting');
+        onBroadcast();
         return await new Promise<string>((resolve, reject) => {
           extrinsic
             .signAndSend(pair!, track(resolve, reject))
             .catch((err) => {
               setError(err as Error);
               setStatus('error');
+              failToast((err as Error).message);
               reject(err);
             });
         });
       } catch (err) {
         setError(err as Error);
         setStatus('error');
+        failToast((err as Error).message);
         throw err;
       } finally {
         // Lock the pair (re-encrypts the secret in @polkadot/keyring's

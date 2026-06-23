@@ -57,7 +57,7 @@ export function Send() {
   // says what's actually happening during 'signing'.
   const activeIsLedger = !!active && isLedgerAccount(active);
   const { balance } = useBalance(active?.address ?? null);
-  const { submit, status, txHash, error: txError, reset } = useTx();
+  const { submit, status, error: txError, reset } = useTx();
 
   // Send form state
   const [recipient, setRecipient] = useState(() => searchParams.get('to') ?? '');
@@ -227,7 +227,20 @@ export function Send() {
           }
           return api.tx.balances.transferKeepAlive(dest, value);
         },
-        { address: active.address, password }
+        {
+          address: active.address,
+          password,
+          label: `Send ${amount} ${XX_SYMBOL}`,
+          // The transfer is on its way the moment it's broadcast (password
+          // validated / Ledger approved). Leave the screen now — the app-wide
+          // toast follows it to finality (✓ or ✗ with the reason). A wrong
+          // password fails before this fires, so we stay put and show it inline.
+          onSigned: () => {
+            setConfirmOpen(false);
+            setPassword('');
+            navigate('/', { replace: true });
+          },
+        }
       );
     } catch (err) {
       const msg = (err as Error).message;
@@ -243,9 +256,11 @@ export function Send() {
     }
   };
 
+  // 'signing' is the only state the user sees on this screen now: the moment
+  // the tx is broadcast we navigate away (see onSigned) and the app-wide toast
+  // takes over for in-block → finalized.
   const isSubmitting =
     status === 'signing' || status === 'broadcasting' || status === 'in-block';
-  const isDone = status === 'finalized';
 
   // Human-readable status label. For a Ledger account, 'signing' means
   // the user is reading + approving on the device, not a local decrypt.
@@ -564,7 +579,7 @@ export function Send() {
 
       {/* Confirmation sheet */}
       <Sheet
-        open={confirmOpen && !isDone}
+        open={confirmOpen}
         onClose={() => {
           if (!isSubmitting) {
             setConfirmOpen(false);
@@ -650,46 +665,6 @@ export function Send() {
           >
             {isSubmitting && <Loader2 size={18} className="animate-spin" />}
             {submitLabel}
-          </button>
-        </div>
-      </Sheet>
-
-      {/* Success sheet */}
-      <Sheet
-        open={isDone}
-        onClose={() => {
-          reset();
-          setConfirmOpen(false);
-          navigate('/', { replace: true });
-        }}
-      >
-        <div className="flex flex-col items-center text-center py-6 space-y-4">
-          <div className="w-16 h-16 rounded-full bg-xx-500/10 border border-xx-500/40 flex items-center justify-center">
-            <Check size={32} className="text-xx-500" strokeWidth={2} />
-          </div>
-          <div>
-            <h2 className="font-display font-semibold text-xl">Transaction sent</h2>
-            <p className="text-sm text-ink-300 mt-1">
-              Finalized on the xx network.
-            </p>
-          </div>
-          {txHash && (
-            <div className="w-full">
-              <p className="text-xs text-ink-300 mb-1 uppercase tracking-wide">
-                Transaction hash
-              </p>
-              <AddressChip address={txHash} shortened className="w-full" />
-            </div>
-          )}
-          <button
-            onClick={() => {
-              reset();
-              setConfirmOpen(false);
-              navigate('/', { replace: true });
-            }}
-            className="btn-primary w-full mt-2"
-          >
-            Done
           </button>
         </div>
       </Sheet>
