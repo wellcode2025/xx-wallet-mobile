@@ -66,6 +66,10 @@ interface CmixOnlineState {
   phase: ConnectPhase | null;
   /** The connected messaging handle while online (null otherwise). */
   handle: MessagingHandle | null;
+  /** The raw device secret while online (in-memory only — this store isn't
+   *  persisted). Held so we can enroll another account without re-deriving it.
+   *  Null when offline. */
+  secret: Uint8Array | null;
 
   /**
    * Bring messaging online using an account + its password. Establishes the
@@ -74,6 +78,15 @@ interface CmixOnlineState {
    * account isn't enabled yet or the password is wrong.
    */
   goOnline(account: string, password: string, authCallbacks?: Partial<AuthCallbacks>): Promise<void>;
+
+  /**
+   * Enroll ANOTHER local account for messaging while online: wrap the in-hand
+   * device secret under that account's password so it can also bring messaging
+   * online. Verifies the password is genuinely the account's (so a typo can't
+   * lock the account out of its own messaging). No-op if already enrolled.
+   * Throws if offline or the password is wrong.
+   */
+  enableAccount(account: string, password: string): Promise<void>;
 
   /** Clear local online UI state (for retry after an error). Does NOT stop the
    *  mixnet follower — see the file header. */
@@ -85,6 +98,7 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
   error: null,
   phase: null,
   handle: null,
+  secret: null,
 
   async goOnline(account, password, authCallbacks) {
     const { status } = get();
@@ -132,19 +146,34 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
         },
         onPhase: (phase) => set({ phase }),
       });
-      set({ status: 'online', handle, error: null, phase: null });
+      set({ status: 'online', handle, error: null, phase: null, secret });
     } catch (err) {
       set({
         status: 'error',
         error: err instanceof Error ? err.message : String(err),
         handle: null,
         phase: null,
+        secret: null,
       });
       throw err;
     }
   },
 
+  async enableAccount(account, password) {
+    const { status, secret } = get();
+    if (status !== 'online' || !secret) {
+      throw new Error('Bring messaging online first, then enable another account.');
+    }
+    const secrets = useCmixSecretStore.getState();
+    if (secrets.isEnabledFor(account)) return; // already enrolled — no-op
+    // Verify the password is genuinely this account's, so we never wrap the
+    // secret under a typo (which would lock that account out of messaging).
+    const ok = await xxKeyring.verifyPassword(account, password);
+    if (!ok) throw new Error('Incorrect password for this account.');
+    await secrets.addAccount(account, password, secret);
+  },
+
   reset() {
-    set({ status: 'offline', error: null, handle: null, phase: null });
+    set({ status: 'offline', error: null, handle: null, phase: null, secret: null });
   },
 }));

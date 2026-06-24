@@ -27,11 +27,13 @@ import {
   Clipboard,
   UserPlus,
   ListOrdered,
+  Plus,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Sheet, AddressIcon, AddressLabel, QrScanner, Coachmark } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 import { isLocalAccount, xxKeyring } from '@/keyring/store';
+import { useCmixSecretStore } from '@/store/cmixSecret';
 import {
   signContactBinding,
   serializeSignedBinding,
@@ -50,6 +52,7 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [enableOpen, setEnableOpen] = useState(false);
 
   // Accounts with at least one registered contact are "connected".
   const connected = useMemo(() => new Set(Object.keys(bindings)), [bindings]);
@@ -146,9 +149,22 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
         ))}
       </div>
 
+      {/* Device-wide: enroll another of the user's accounts so it can also bring
+          messaging online. Only meaningful while online (the secret is in hand). */}
+      {status === 'online' && (
+        <button
+          onClick={() => setEnableOpen(true)}
+          className="flex items-center gap-1.5 text-xs text-ink-300 active:text-ink-100 pt-0.5"
+        >
+          <Plus size={13} strokeWidth={2.5} className="flex-shrink-0" />
+          Enable another of your accounts
+        </button>
+      )}
+
       <GoOnlineSheet open={sheetOpen} onClose={() => setSheetOpen(false)} multisig={multisig} />
       <ShareContactSheet open={shareOpen} onClose={() => setShareOpen(false)} multisig={multisig} />
       <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} multisig={multisig} />
+      <EnableAccountSheet open={enableOpen} onClose={() => setEnableOpen(false)} />
     </div>
   );
 }
@@ -334,6 +350,133 @@ function GoOnlineSheet({
               Being online means your device is present on the mixnet. Closing the
               app takes you offline.
             </p>
+          </>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+/**
+ * Enroll another of the user's local accounts for messaging while online. Wraps
+ * the in-hand device secret under the chosen account's password (verified first,
+ * so a typo can't lock it out) — so that account can also bring messaging online.
+ * Device-wide, not multisig-specific: it lists any password account that isn't
+ * already enabled.
+ */
+function EnableAccountSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { accounts } = useAccountsStore();
+  const enableAccount = useCmixOnlineStore((s) => s.enableAccount);
+  const wraps = useCmixSecretStore((s) => s.wraps);
+
+  const enrolled = useMemo(() => new Set(Object.keys(wraps)), [wraps]);
+  const eligible = useMemo(
+    () => accounts.filter((a) => isLocalAccount(a) && !enrolled.has(a.address)),
+    [accounts, enrolled]
+  );
+
+  const [account, setAccount] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  // Keep the picker pointed at a still-eligible account.
+  useEffect(() => {
+    if (account && eligible.some((a) => a.address === account)) return;
+    setAccount(eligible[0]?.address ?? '');
+  }, [eligible, account]);
+
+  const canSubmit = Boolean(account) && Boolean(password) && !busy;
+
+  const handleEnable = async () => {
+    if (!canSubmit) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await enableAccount(account, password);
+      setPassword('');
+      setDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Enable another account">
+      <div className="space-y-4">
+        <p className="text-xs text-ink-300 leading-relaxed">
+          Let another of your accounts bring messaging online on this device. Its
+          password wraps the same messaging identity, so you stay reachable as the
+          same contact whichever account you use.
+        </p>
+
+        {eligible.length === 0 ? (
+          <p className="text-xs text-ink-300 leading-relaxed">
+            All your password accounts are already enabled for messaging.
+          </p>
+        ) : (
+          <>
+            {done && (
+              <div className="flex items-start gap-2 text-xs text-xx-500">
+                <Check size={14} strokeWidth={2.5} className="flex-shrink-0 mt-0.5" />
+                Enabled — that account can now go online for coordination.
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
+                Account
+              </label>
+              <select
+                value={account}
+                onChange={(e) => {
+                  setAccount(e.target.value);
+                  setError(null);
+                  setDone(false);
+                }}
+                className="input-base text-sm"
+              >
+                {eligible.map((a) => (
+                  <option key={a.address} value={a.address}>
+                    {a.name} — {a.address.slice(0, 8)}…{a.address.slice(-6)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                  setDone(false);
+                }}
+                className="input-base"
+                placeholder="Account password"
+                autoComplete="current-password"
+                disabled={busy}
+              />
+            </div>
+
+            {error && (
+              <p className="text-xs text-danger flex items-center gap-1">
+                <AlertTriangle size={12} className="flex-shrink-0" />
+                {error}
+              </p>
+            )}
+
+            <button onClick={handleEnable} disabled={!canSubmit} className="btn-primary w-full">
+              {busy && <Loader2 size={16} className="animate-spin" />}
+              Enable for messaging
+            </button>
           </>
         )}
       </div>
