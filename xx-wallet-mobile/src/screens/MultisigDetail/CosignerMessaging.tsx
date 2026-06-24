@@ -26,9 +26,10 @@ import {
   QrCode,
   Clipboard,
   UserPlus,
+  ListOrdered,
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { Sheet, AddressIcon, AddressLabel, QrScanner } from '@/components/ui';
+import { Sheet, AddressIcon, AddressLabel, QrScanner, Coachmark } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 import { isLocalAccount, xxKeyring } from '@/keyring/store';
 import {
@@ -55,6 +56,17 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
   // The user's own signer addresses are "You" — never shown as a contact.
   const mine = useMemo(() => new Set(accounts.map((a) => a.address)), [accounts]);
 
+  // Setup progress: the other cosigners (not me) and whether each is connected
+  // (their contact is registered on this device). "Ready" = online and every
+  // cosigner connected, i.e. you can actually send proposals over cMix.
+  const otherSigners = useMemo(
+    () => multisig.signers.filter((s) => !mine.has(s.address)),
+    [multisig.signers, mine]
+  );
+  const allConnected =
+    otherSigners.length > 0 && otherSigners.every((s) => connected.has(s.address));
+  const ready = status === 'online' && allConnected;
+
   return (
     <div className="card space-y-3">
       <div className="flex items-center justify-between">
@@ -68,6 +80,18 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
         Coordinate this multisig privately over the xx mixnet — propose, request,
         and approve without a group chat. Off by default.
       </p>
+
+      <Coachmark
+        hintId="cmix-coordination-intro"
+        title="How coordination works"
+        icon={<ListOrdered size={13} className="text-xx-500 flex-shrink-0" strokeWidth={2.25} />}
+      >
+        <ol className="list-decimal pl-4 space-y-1">
+          <li>Go online to join the mixnet.</li>
+          <li>Share your contact and add each cosigner's — both ways, so you can reach each other.</li>
+          <li>Propose a spend, then tap "Send over cMix" on its Share screen.</li>
+        </ol>
+      </Coachmark>
 
       {status === 'online' ? (
         <div className="space-y-2.5">
@@ -85,6 +109,18 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
               Add cosigner
             </button>
           </div>
+          {ready ? (
+            <div className="flex items-start gap-2 text-xs text-xx-500">
+              <Check size={14} strokeWidth={2.5} className="flex-shrink-0 mt-0.5" />
+              All cosigners connected — propose a spend and send it over cMix from
+              the Share screen.
+            </div>
+          ) : (
+            <p className="text-xs text-ink-300 leading-relaxed">
+              Share your contact and add each cosigner below. Once you're connected
+              both ways, you can send proposals over cMix.
+            </p>
+          )}
         </div>
       ) : status === 'connecting' ? (
         <div className="flex items-center gap-2 text-xs text-ink-300">

@@ -94,11 +94,19 @@ interface SettingsState {
    * itself is unaffected — that's how the wallet works at all.
    */
   indexerEnabled: boolean;
+  /**
+   * IDs of one-time hint / coachmark callouts the user has dismissed, so they
+   * stay hidden across sessions. Lets dense flows explain themselves once and
+   * then get out of the way (the "turn it off when you know how" behaviour).
+   */
+  dismissedHints: string[];
 
   setEndpoint(endpoint: string): void;
   setIndexerEnabled(enabled: boolean): void;
   setCustomEndpoint(endpoint: string): void;
   toggleHideBalances(): void;
+  /** Permanently dismiss a one-time hint / coachmark by id. */
+  dismissHint(id: string): void;
   setStaleThresholdDays(days: number): void;
   setAutoNominateLevers(partial: Partial<QualityLevers>): void;
   resetAutoNominateLevers(): void;
@@ -124,6 +132,7 @@ export const useSettingsStore = create<SettingsState>()(
       autoNominateLevers: { ...DEFAULT_LEVERS },
       appLock: { ...DEFAULT_APP_LOCK },
       indexerEnabled: true,
+      dismissedHints: [],
 
       setEndpoint(endpoint: string) {
         set({ endpoint });
@@ -139,6 +148,14 @@ export const useSettingsStore = create<SettingsState>()(
 
       toggleHideBalances() {
         set((s) => ({ hideBalances: !s.hideBalances }));
+      },
+
+      dismissHint(id: string) {
+        set((s) =>
+          s.dismissedHints.includes(id)
+            ? s
+            : { dismissedHints: [...s.dismissedHints, id] }
+        );
       },
 
       setStaleThresholdDays(days: number) {

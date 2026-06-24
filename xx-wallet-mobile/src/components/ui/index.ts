@@ -1,6 +1,7 @@
 export * from './AddressChip';
 export * from './AddressIcon';
 export * from './AddressLabel';
+export * from './Coachmark';
 export * from './ConnectionBadge';
 export * from './IOSInstallBanner';
 export * from './LoadingIndicator';
