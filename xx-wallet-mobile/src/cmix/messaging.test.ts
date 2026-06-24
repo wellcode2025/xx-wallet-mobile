@@ -156,6 +156,8 @@ describe('sendProposalToCosigners', () => {
       sendProposal: async () => delivered,
       sendAck: async () => delivered,
       onCoordination: async () => {},
+      sendMemo: async () => delivered,
+      onMemo: async () => {},
       ...over,
     };
   }

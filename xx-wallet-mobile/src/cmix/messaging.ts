@@ -22,6 +22,7 @@ import {
   type CoordinationParseResult,
 } from './coordinationMessage';
 import type { BytesPackage } from '../utils/bytesPackage';
+import { CHAT_MESSAGE_TYPE, buildChatMemo, parseChatMemo, type ChatMemo } from './chatMessage';
 
 /** e2e message type used for multisig coordination memos (app-defined). */
 export const COORDINATION_MESSAGE_TYPE = 2;
@@ -48,6 +49,10 @@ export interface MessagingHandle {
   ): Promise<SendResult>;
   /** Register a handler for incoming coordination messages from a sender. */
   onCoordination(senderId: Uint8Array, handler: (result: CoordinationParseResult) => void): Promise<void>;
+  /** Send a free-text chat memo to a partner (1:1 messaging). */
+  sendMemo(partnerId: Uint8Array, memo: ChatMemo): Promise<SendResult>;
+  /** Register a handler for incoming chat memos from a sender (invalid memos dropped). */
+  onMemo(senderId: Uint8Array, handler: (memo: ChatMemo) => void): Promise<void>;
 }
 
 export interface MessagingOptions {
@@ -113,6 +118,13 @@ function makeHandle(e2e: E2eSession): MessagingHandle {
       e2e.onMessage(senderId, COORDINATION_MESSAGE_TYPE, (msg) =>
         handler(parseCoordinationMessage(msg.payload))
       ),
+    sendMemo: (partnerId, memo) =>
+      e2e.send(partnerId, CHAT_MESSAGE_TYPE, buildChatMemo(memo)),
+    onMemo: (senderId, handler) =>
+      e2e.onMessage(senderId, CHAT_MESSAGE_TYPE, (msg) => {
+        const memo = parseChatMemo(msg.payload);
+        if (memo) handler(memo);
+      }),
   };
 }
 
