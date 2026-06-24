@@ -21,6 +21,7 @@ import { xxKeyring } from '@/keyring/store';
 import { connectMessaging, type MessagingHandle } from '@/cmix/messaging';
 import { planSecretAction } from '@/cmix/secretPlan';
 import { getIDFromContact, type AuthCallbacks } from '@/cmix/e2eApi';
+import { wrapWithDeviceKey, unwrapWithDeviceKey, clearDeviceKey } from '@/cmix/deviceKey';
 import type { ConnectPhase } from '@/cmix/phases';
 import { useCmixSecretStore } from './cmixSecret';
 import { useCmixContactsStore } from './cmixContacts';
@@ -56,6 +57,31 @@ const sameCmixIdentity = (a: Uint8Array, b: Uint8Array): boolean => {
   }
 };
 
+/**
+ * Build the auto-confirm callback for connectMessaging: confirm an incoming
+ * channel request iff its contact matches a known cosigner (by reception ID),
+ * with a bring-up diagnostic on a non-match. Shared by both go-online paths
+ * (password and device-key).
+ */
+function makeAutoConfirm(): (contact: Uint8Array) => boolean {
+  return (contact) => {
+    const contacts = useCmixContactsStore.getState();
+    const known = contacts.isKnownContact(contact, sameCmixIdentity);
+    if (DEBUG_AUTOCONFIRM && !known) {
+      const stored = contacts
+        .knownAccounts()
+        .flatMap((a) => contacts.contactsForAccount(a));
+      console.info('[cmix-auth] inbound channel request did NOT match a known cosigner', {
+        incomingLen: contact.length,
+        incomingHead: byteHead(contact),
+        storedCount: stored.length,
+        stored: stored.map((c) => ({ len: c.length, head: byteHead(c) })),
+      });
+    }
+    return known;
+  };
+}
+
 export type OnlineStatus = 'offline' | 'connecting' | 'online' | 'error';
 
 interface CmixOnlineState {
@@ -78,6 +104,23 @@ interface CmixOnlineState {
    * account isn't enabled yet or the password is wrong.
    */
   goOnline(account: string, password: string, authCallbacks?: Partial<AuthCallbacks>): Promise<void>;
+
+  /**
+   * Bring messaging online WITHOUT a password, using the device-key-wrapped
+   * secret saved by "stay enabled on this device". Throws if stay-enabled isn't
+   * set up (or the device key is gone) — callers fall back to the password flow.
+   */
+  goOnlineWithDeviceKey(): Promise<void>;
+
+  /**
+   * Turn ON "stay enabled on this device": wrap the in-hand device secret under
+   * the device-bound key so future sessions can go online without the password.
+   * Requires being online (the secret must be in hand).
+   */
+  enableStayOnline(): Promise<void>;
+
+  /** Turn OFF "stay enabled": forget the device-wrapped secret + device key. */
+  disableStayOnline(): Promise<void>;
 
   /**
    * Enroll ANOTHER local account for messaging while online: wrap the in-hand
@@ -128,22 +171,7 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
       const handle = await connectMessaging({
         session: { storagePassword: secret },
         authCallbacks,
-        autoConfirm: (contact) => {
-          const contacts = useCmixContactsStore.getState();
-          const known = contacts.isKnownContact(contact, sameCmixIdentity);
-          if (DEBUG_AUTOCONFIRM && !known) {
-            const stored = contacts
-              .knownAccounts()
-              .flatMap((a) => contacts.contactsForAccount(a));
-            console.info('[cmix-auth] inbound channel request did NOT match a known cosigner', {
-              incomingLen: contact.length,
-              incomingHead: byteHead(contact),
-              storedCount: stored.length,
-              stored: stored.map((c) => ({ len: c.length, head: byteHead(c) })),
-            });
-          }
-          return known;
-        },
+        autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
       set({ status: 'online', handle, error: null, phase: null, secret });
@@ -156,6 +184,50 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
         secret: null,
       });
       throw err;
+    }
+  },
+
+  async goOnlineWithDeviceKey() {
+    const { status } = get();
+    if (status === 'connecting' || status === 'online') return;
+    const blob = useCmixSecretStore.getState().deviceWrap;
+    if (!blob) throw new Error('Stay-enabled is not set up on this device.');
+    set({ status: 'connecting', error: null, phase: 'loading' });
+    try {
+      const secret = await unwrapWithDeviceKey(blob);
+      const handle = await connectMessaging({
+        session: { storagePassword: secret },
+        autoConfirm: makeAutoConfirm(),
+        onPhase: (phase) => set({ phase }),
+      });
+      set({ status: 'online', handle, error: null, phase: null, secret });
+    } catch (err) {
+      set({
+        status: 'error',
+        error: err instanceof Error ? err.message : String(err),
+        handle: null,
+        phase: null,
+        secret: null,
+      });
+      throw err;
+    }
+  },
+
+  async enableStayOnline() {
+    const { status, secret } = get();
+    if (status !== 'online' || !secret) {
+      throw new Error('Bring messaging online first, then turn on stay-enabled.');
+    }
+    const blob = await wrapWithDeviceKey(secret);
+    useCmixSecretStore.getState().setDeviceWrap(blob);
+  },
+
+  async disableStayOnline() {
+    useCmixSecretStore.getState().setDeviceWrap(null);
+    try {
+      await clearDeviceKey();
+    } catch {
+      /* best effort — the wrap is already forgotten, which is what matters */
     }
   },
 

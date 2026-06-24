@@ -28,6 +28,7 @@ import {
   UserPlus,
   ListOrdered,
   Plus,
+  KeyRound,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Sheet, AddressIcon, AddressLabel, QrScanner, Coachmark } from '@/components/ui';
@@ -69,6 +70,43 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
   const allConnected =
     otherSigners.length > 0 && otherSigners.every((s) => connected.has(s.address));
   const ready = status === 'online' && allConnected;
+
+  // "Stay enabled on this device": a device-key-wrapped secret lets go-online
+  // skip the password. Its presence IS the toggle state.
+  const deviceWrap = useCmixSecretStore((s) => s.deviceWrap);
+  const goOnlineWithDeviceKey = useCmixOnlineStore((s) => s.goOnlineWithDeviceKey);
+  const enableStayOnline = useCmixOnlineStore((s) => s.enableStayOnline);
+  const disableStayOnline = useCmixOnlineStore((s) => s.disableStayOnline);
+  const stayEnabled = deviceWrap !== null;
+  const [stayBusy, setStayBusy] = useState(false);
+  const [stayError, setStayError] = useState<string | null>(null);
+
+  // Offline tap: if stay-enabled is set up, reconnect with no password; on any
+  // failure (e.g. the device key was cleared) fall back to the password sheet.
+  const handleGoOnlineTap = async () => {
+    if (stayEnabled) {
+      try {
+        await goOnlineWithDeviceKey();
+        return;
+      } catch {
+        /* device key gone / unavailable — fall through to the password flow */
+      }
+    }
+    setSheetOpen(true);
+  };
+
+  const handleToggleStay = async () => {
+    setStayBusy(true);
+    setStayError(null);
+    try {
+      if (stayEnabled) await disableStayOnline();
+      else await enableStayOnline();
+    } catch (e) {
+      setStayError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setStayBusy(false);
+    }
+  };
 
   return (
     <div className="card space-y-3">
@@ -131,9 +169,9 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
           Connecting to the mixnet — this can take a minute the first time.
         </div>
       ) : (
-        <button onClick={() => setSheetOpen(true)} className="btn-secondary w-full">
+        <button onClick={handleGoOnlineTap} className="btn-secondary w-full">
           <Radio size={16} strokeWidth={2} />
-          Go online for coordination
+          {stayEnabled ? 'Go online' : 'Go online for coordination'}
         </button>
       )}
 
@@ -149,16 +187,39 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
         ))}
       </div>
 
-      {/* Device-wide: enroll another of the user's accounts so it can also bring
-          messaging online. Only meaningful while online (the secret is in hand). */}
+      {/* Device-wide messaging controls — only meaningful while online (the
+          secret is in hand): the convenience "stay enabled" toggle and enrolling
+          another of the user's accounts. */}
       {status === 'online' && (
-        <button
-          onClick={() => setEnableOpen(true)}
-          className="flex items-center gap-1.5 text-xs text-ink-300 active:text-ink-100 pt-0.5"
-        >
-          <Plus size={13} strokeWidth={2.5} className="flex-shrink-0" />
-          Enable another of your accounts
-        </button>
+        <div className="space-y-2 pt-2 border-t border-ink-800/60">
+          <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
+            <span className="flex items-center gap-1.5 text-xs text-ink-200">
+              <KeyRound size={13} className="text-ink-300 flex-shrink-0" strokeWidth={2} />
+              Stay enabled on this device
+            </span>
+            <input
+              type="checkbox"
+              checked={stayEnabled}
+              onChange={handleToggleStay}
+              disabled={stayBusy}
+              className="w-4 h-4 accent-xx-500 flex-shrink-0"
+            />
+          </label>
+          <p className="text-xs text-ink-300 leading-snug">
+            {stayEnabled
+              ? "You can go online here without your password. Your app lock still gates access if it's on."
+              : "Reconnect without re-entering your password next time. Best paired with the app lock for device security."}
+          </p>
+          {stayError && <p className="text-xs text-danger leading-snug">{stayError}</p>}
+
+          <button
+            onClick={() => setEnableOpen(true)}
+            className="flex items-center gap-1.5 text-xs text-ink-300 active:text-ink-100"
+          >
+            <Plus size={13} strokeWidth={2.5} className="flex-shrink-0" />
+            Enable another of your accounts
+          </button>
+        </div>
       )}
 
       <GoOnlineSheet open={sheetOpen} onClose={() => setSheetOpen(false)} multisig={multisig} />

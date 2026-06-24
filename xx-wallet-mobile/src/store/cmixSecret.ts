@@ -26,6 +26,10 @@ import { generateStorageSecret, unwrapSecret, wrapSecret } from '@/cmix/storageS
 interface CmixSecretState {
   /** account SS58 → base64 wrapped device secret. All entries wrap the same secret. */
   wraps: Record<string, string>;
+  /** The SAME device secret wrapped under the device-bound key (base64), when
+   *  "stay enabled on this device" is on; null when off. Ciphertext, so safe to
+   *  persist. The key itself lives non-extractable in IndexedDB (see deviceKey). */
+  deviceWrap: string | null;
 
   /** Whether a device secret has been established (any account is enabled). */
   hasSecret(): boolean;
@@ -50,7 +54,11 @@ interface CmixSecretState {
   /** Drop one account's wrap — it can no longer bring messaging online. */
   disableFor(account: string): void;
 
-  /** Forget all wraps. The next establish() will mint a new device secret. */
+  /** Set or clear the device-key-wrapped secret (the "stay enabled" state). */
+  setDeviceWrap(blob: string | null): void;
+
+  /** Forget all wraps (per-account AND device). The next establish() will mint
+   *  a new device secret. */
   reset(): void;
 }
 
@@ -58,6 +66,7 @@ export const useCmixSecretStore = create<CmixSecretState>()(
   persist(
     (set, get) => ({
       wraps: {},
+      deviceWrap: null,
 
       hasSecret() {
         return Object.keys(get().wraps).length > 0;
@@ -100,8 +109,12 @@ export const useCmixSecretStore = create<CmixSecretState>()(
         set({ wraps: next });
       },
 
+      setDeviceWrap(blob) {
+        set({ deviceWrap: blob });
+      },
+
       reset() {
-        set({ wraps: {} });
+        set({ wraps: {}, deviceWrap: null });
       },
     }),
     {
