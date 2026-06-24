@@ -27,6 +27,7 @@ import { deserializeRegistry } from '@/cmix/registrySerde';
 import { knownAccounts, contactsForAccount } from '@/cmix/contactRegistry';
 import { getIDFromContact } from '@/cmix/e2eApi';
 import { incomingProposalFrom, type MessagingHandle } from '@/cmix/messaging';
+import { emitEvent } from './registry';
 
 function idHex(id: Uint8Array): string {
   let s = '';
@@ -71,14 +72,29 @@ export function useCmixReceive() {
           .onCoordination(id, (result) => {
             const inc = incomingProposalFrom(result);
             if (!inc) return; // ack or invalid — nothing to cache
-            // Only cache for multisigs we actually know.
-            if (!useMultisigsStore.getState().getMultisig(inc.multisigAddress)) return;
+            // Only act on multisigs we actually know.
+            const ms = useMultisigsStore.getState().getMultisig(inc.multisigAddress);
+            if (!ms) return;
             putBytes({
               multisigAddress: inc.multisigAddress,
               callHash: inc.callHash,
               callBytes: inc.callBytes,
               source: 'received',
               receivedAt: Date.now(),
+            });
+            // Alert right away instead of waiting for the on-chain poll. Same
+            // deterministic id as the chain path (useMultisigNotifications), so
+            // whichever fires first wins and the user never gets a double alert.
+            emitEvent({
+              id: `multisig.proposal.received:${inc.multisigAddress}:${inc.callHash}`,
+              timestamp: Date.now(),
+              kind: 'multisig.proposal.received',
+              multisigAddress: inc.multisigAddress,
+              callHash: inc.callHash,
+              depositor: inc.proposedBy,
+              approvalsCount: 1, // proposer's own signature; chain path refines if it wins
+              threshold: ms.threshold,
+              multisigLocalName: ms.localName,
             });
           })
           .catch(() => {

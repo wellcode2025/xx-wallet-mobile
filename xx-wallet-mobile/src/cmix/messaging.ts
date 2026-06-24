@@ -139,12 +139,19 @@ export interface IncomingProposal {
   callHash: string;
   /** 0x hex call data, already hash-verified by parseCoordinationMessage. */
   callBytes: string;
+  /** Who proposed it (from the verified package) — for the alert's display. */
+  proposedBy: string;
 }
 
 export function incomingProposalFrom(result: CoordinationParseResult): IncomingProposal | null {
   if (!result.ok || result.message.action !== 'proposed') return null;
   const m = result.message;
-  return { multisigAddress: m.multisigAddress, callHash: m.callHash, callBytes: m.package.callData };
+  return {
+    multisigAddress: m.multisigAddress,
+    callHash: m.callHash,
+    callBytes: m.package.callData,
+    proposedBy: m.package.proposedBy,
+  };
 }
 
 // ── Fan-out: deliver a proposal memo to a multisig's cosigners ──────────────

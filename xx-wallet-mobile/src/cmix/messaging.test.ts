@@ -96,6 +96,7 @@ describe('incomingProposalFrom', () => {
     expect(inc?.multisigAddress).toBe(validPkg.multisigAddress);
     expect(inc?.callHash).toBe(validPkg.callHash);
     expect(inc?.callBytes).toBe(validPkg.callData);
+    expect(inc?.proposedBy).toBe(validPkg.proposedBy);
   });
 
   it('returns null for an ack (nothing to cache)', () => {
