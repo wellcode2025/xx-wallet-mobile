@@ -45,6 +45,7 @@ import {
   serializeBytesPackage,
   type DecodedCall,
 } from '@/utils';
+import { CmixSend } from './CmixSend';
 
 export function MultisigShare() {
   const { address, callHash } = useParams<{
@@ -443,6 +444,10 @@ function ShareView({
             )}
           </div>
         )}
+
+        {/* Send directly over cMix — only lights up when messaging is online and
+            the cosigners have registered contacts; otherwise a compact hint. */}
+        {!isTwoDevice && <CmixSend multisig={multisig} bytesPackage={bytesPackage} />}
 
         {/* Done */}
         <button
