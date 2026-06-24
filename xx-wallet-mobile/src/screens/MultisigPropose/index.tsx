@@ -34,7 +34,6 @@ import BigNumber from 'bignumber.js';
 import { BN } from '@polkadot/util';
 import { TopBar } from '@/components/layout';
 import {
-  AddressChip,
   AddressIcon,
   AddressLabel,
   QrScanner,
@@ -94,7 +93,6 @@ function ProposeView({ address }: { address: string }) {
     submit,
     status: txStatus,
     error: txError,
-    txHash,
     reset: resetTx,
   } = useTx();
 
@@ -184,12 +182,6 @@ function ProposeView({ address }: { address: string }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
-
-  // Cache the call hash + bytes at submit time so we can route to the
-  // share screen with them in hand. Computed once at builder construction.
-  const [submittedCallHash, setSubmittedCallHash] = useState<string | null>(
-    null
-  );
 
   const recipientValid = isValidXxAddress(recipient.trim());
 
@@ -349,11 +341,12 @@ function ProposeView({ address }: { address: string }) {
     (!senderBelowED || allowReaping) &&
     (!exchangeAckNeeded || exchangeAck);
 
+  // 'signing' is the only state the user sees here now: at broadcast we
+  // navigate away (see onSigned) and the app-wide toast tracks the rest.
   const isSubmitting =
     txStatus === 'signing' ||
     txStatus === 'broadcasting' ||
     txStatus === 'in-block';
-  const isDone = txStatus === 'finalized';
 
   // Threshold=1 multisigs execute immediately on a single signature
   // (chain uses `as_multi_threshold_1` instead of the propose/approve
@@ -394,98 +387,94 @@ function ProposeView({ address }: { address: string }) {
   const handleOpenConfirm = () => {
     resetTx();
     setPasswordError(null);
-    setSubmittedCallHash(null);
     setConfirmOpen(true);
   };
 
   const handleConfirm = async () => {
     if (!signerAddress || !parsedAmount || !api) return;
     setPasswordError(null);
+
+    // Build the inner call + hash UP FRONT (with the connected api) so we can
+    // cache the bytes and know where to navigate the moment the proposal is
+    // broadcast. The useTx builder runs in its own scope, so a setState there
+    // wouldn't be visible to the onSigned closure in time.
+    //
+    // Inner extrinsic depends on whether the user opted into reaping the
+    // multisig: default transferKeepAlive (chain refuses below ED), else the
+    // allow-death variant. Runtime fallback: newer runtimes call it
+    // `transferAllowDeath`; xx (as of 2026-05) keeps the legacy `transfer`.
+    const dest = recipient.trim();
+    const value = parsedAmount.toFixed(0);
+    let innerExt;
+    if (allowReaping) {
+      const allowDeath =
+        api.tx.balances.transferAllowDeath ?? api.tx.balances.transfer;
+      if (!allowDeath) {
+        setPasswordError(
+          'This chain exposes neither balances.transferAllowDeath nor ' +
+            'balances.transfer — cannot drain the multisig.'
+        );
+        return;
+      }
+      innerExt = allowDeath(dest, value);
+    } else {
+      innerExt = api.tx.balances.transferKeepAlive(dest, value);
+    }
+    const innerCall = innerExt.method;
+    const callHash = innerCall.hash.toHex();
+
+    // Cache bytes locally BEFORE broadcast so the share screen has them.
+    putBytes({
+      multisigAddress: address,
+      callHash,
+      callBytes: innerCall.toHex(),
+      source: 'self-proposed',
+      receivedAt: Date.now(),
+    });
+
+    // Other signatories: every signer EXCEPT the chosen signatory, sorted
+    // SS58 — based on the user-picked signer, not activeAddress.
+    const otherSignatories = multisig.signers
+      .map((s) => s.address)
+      .filter((a) => a !== signerAddress)
+      .sort();
+
+    // Threshold 1 executes immediately (no propose/approve cycle) → back to
+    // the multisig detail. Threshold ≥ 2 records the first signature → hand
+    // off to the share screen (which waits for the proposal to land on chain).
+    const destination = isImmediate
+      ? `/multisig/${address}`
+      : `/multisig/${address}/share/${callHash}`;
+
     try {
       await submit(
-        (api) => {
-          // Build the inner call we want the multisig to execute. The
-          // exact extrinsic depends on whether the user has consciously
-          // opted into reaping the multisig:
-          //   - default → transferKeepAlive (chain refuses if it would
-          //     leave the multisig below the existential deposit)
-          //   - allowReaping ack'd → allow-death variant (chain permits
-          //     it, multisig account record gets removed afterward)
-          //
-          // Runtime fallback: newer Substrate runtimes expose this as
-          // `transferAllowDeath`; older ones (xx network as of 2026-05)
-          // keep the legacy name `transfer` with identical semantics.
-          // Prefer the new name; fall back to the old.
-          const dest = recipient.trim();
-          const value = parsedAmount.toFixed(0);
-          let innerExt;
-          if (allowReaping) {
-            const allowDeath =
-              api.tx.balances.transferAllowDeath ??
-              api.tx.balances.transfer;
-            if (!allowDeath) {
-              throw new Error(
-                'This chain exposes neither balances.transferAllowDeath ' +
-                  'nor balances.transfer — cannot drain the multisig.'
-              );
-            }
-            innerExt = allowDeath(dest, value);
-          } else {
-            innerExt = api.tx.balances.transferKeepAlive(dest, value);
-          }
-          const innerCall = innerExt.method;
-          const callBytesHex = innerCall.toHex();
-          const callHash = innerCall.hash.toHex();
-
-          // Cache bytes locally BEFORE submission so the share screen
-          // has them even if the user navigates away mid-broadcast and
-          // comes back. The cache write is idempotent — putting the same
-          // hash twice is fine. (For threshold=1 we cache anyway, in
-          // case the user wants the JSON for record-keeping; the call
-          // executes immediately so there's no pending entry to share
-          // with cosigners.)
-          putBytes({
-            multisigAddress: address,
-            callHash,
-            callBytes: callBytesHex,
-            source: 'self-proposed',
-            receivedAt: Date.now(),
-          });
-          setSubmittedCallHash(callHash);
-
-          // Other signatories: every signer EXCEPT the chosen signatory,
-          // sorted SS58. We exclude based on the user-picked signer
-          // (NOT activeAddress), per the multisig signer-picker rule.
-          const otherSignatories = multisig.signers
-            .map((s) => s.address)
-            .filter((a) => a !== signerAddress)
-            .sort();
-
-          // Pick the right extrinsic based on threshold:
-          //   - threshold = 1 → as_multi_threshold_1 (executes immediately,
-          //     no propose/approve cycle; chain refuses as_multi here with
-          //     "MinimumThreshold: Threshold must be 2 or greater").
-          //   - threshold ≥ 2 → as_multi as the first signature, with
-          //     maybeTimepoint=null. Subsequent approvers fill in the
-          //     timepoint from chain state.
-          if (multisig.threshold === 1) {
-            return api.tx.multisig.asMultiThreshold1(
-              otherSignatories,
-              innerCall
-            );
-          }
-          return api.tx.multisig.asMulti(
-            multisig.threshold,
-            otherSignatories,
-            null,
-            innerCall,
-            STATIC_INNER_CALL_WEIGHT
-          );
-        },
-        { address: signerAddress, password }
+        (txApi) =>
+          multisig.threshold === 1
+            ? txApi.tx.multisig.asMultiThreshold1(otherSignatories, innerCall)
+            : txApi.tx.multisig.asMulti(
+                multisig.threshold,
+                otherSignatories,
+                null,
+                innerCall,
+                STATIC_INNER_CALL_WEIGHT
+              ),
+        {
+          address: signerAddress,
+          password,
+          label: isImmediate
+            ? `Execute from ${multisig.localName}`
+            : `Propose to ${multisig.localName}`,
+          // Broadcast = the signature is out and on its way. Leave the screen;
+          // the app-wide toast tracks finality and the next screen waits for
+          // the proposal to appear on chain. A wrong password fails before
+          // this fires, so we stay put and show it inline.
+          onSigned: () => {
+            setConfirmOpen(false);
+            setPassword('');
+            navigate(destination, { replace: true });
+          },
+        }
       );
-      // On finalized, isDone flips and the success sheet renders. The
-      // user dismisses it which navigates to the share screen.
     } catch (err) {
       const msg = (err as Error).message ?? '';
       if (
@@ -504,27 +493,6 @@ function ProposeView({ address }: { address: string }) {
     setPassword('');
     setPasswordError(null);
     resetTx();
-  };
-
-  const closeSuccess = () => {
-    resetTx();
-    setConfirmOpen(false);
-    // For threshold=1, the call executed immediately — there are no
-    // cosigners to share with, so skip the share screen and just go
-    // back to the multisig detail (where the user will see the
-    // resulting transfer in the activity timeline once the indexer
-    // catches up).
-    if (isImmediate) {
-      navigate(`/multisig/${address}`, { replace: true });
-      return;
-    }
-    if (submittedCallHash) {
-      navigate(`/multisig/${address}/share/${submittedCallHash}`, {
-        replace: true,
-      });
-    } else {
-      navigate(`/multisig/${address}`, { replace: true });
-    }
   };
 
   if (!hasEligibleSigner) {
@@ -1053,7 +1021,7 @@ function ProposeView({ address }: { address: string }) {
       {/* Confirmation sheet — captures password and submits asMulti
           (or asMultiThreshold1 for threshold=1 multisigs). */}
       <Sheet
-        open={confirmOpen && !isDone}
+        open={confirmOpen}
         onClose={closeConfirm}
         title={
           isImmediate
@@ -1142,48 +1110,6 @@ function ProposeView({ address }: { address: string }) {
           >
             {isSubmitting && <Loader2 size={16} className="animate-spin" />}
             {submitLabel}
-          </button>
-        </div>
-      </Sheet>
-
-      {/* Success sheet — for threshold ≥ 2 it leads to the share screen;
-          for threshold = 1 it goes straight back to the multisig detail
-          (no cosigners to share with). */}
-      <Sheet open={isDone} onClose={closeSuccess}>
-        <div className="flex flex-col items-center text-center py-6 space-y-4">
-          <div className="w-16 h-16 rounded-full bg-xx-500/10 border border-xx-500/40 flex items-center justify-center">
-            <Check size={32} className="text-xx-500" strokeWidth={2} />
-          </div>
-          <div>
-            <h2 className="font-display font-semibold text-xl">
-              {isImmediate
-                ? 'Transfer executed'
-                : isTwoDevice
-                  ? 'Spend started'
-                  : 'Proposal submitted'}
-            </h2>
-            <p className="text-sm text-ink-300 mt-1 leading-relaxed">
-              {isImmediate
-                ? 'The transfer has executed on chain. The funds have moved out of the multisig.'
-                : isTwoDevice
-                  ? 'Your first approval is on chain. Next: open this on your second device to approve and release the funds.'
-                  : 'Your signature is on chain. Next: share the call data with your cosigners so they can approve.'}
-            </p>
-          </div>
-          {txHash && (
-            <div className="w-full">
-              <p className="text-xs text-ink-300 mb-1 uppercase tracking-wide">
-                Transaction hash
-              </p>
-              <AddressChip address={txHash} shortened className="w-full" />
-            </div>
-          )}
-          <button onClick={closeSuccess} className="btn-primary w-full mt-2">
-            {isImmediate
-              ? 'Done'
-              : isTwoDevice
-                ? 'Send to second device'
-                : 'Share with cosigners'}
           </button>
         </div>
       </Sheet>
