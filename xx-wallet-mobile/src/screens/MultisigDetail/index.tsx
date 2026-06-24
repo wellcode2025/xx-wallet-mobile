@@ -74,7 +74,7 @@ export function MultisigDetail() {
 function MultisigView({ address }: { address: string }) {
   const navigate = useNavigate();
   const multisig = useMultisigsStore((s) => s.getMultisig(address))!;
-  const { activeAddress } = useAccountsStore();
+  const { accounts, activeAddress } = useAccountsStore();
   const { balance } = useBalance(address);
   const { activity, isLoading: activityLoading, error: activityError, total } =
     useMultisigActivity(address);
@@ -119,13 +119,16 @@ function MultisigView({ address }: { address: string }) {
     navigate('/', { replace: true });
   };
 
-  // The user can only propose at this multisig if they're a signer of it.
-  // Defensive check — for a multisig that's been imported, this should
-  // always be true (the import flow won't let you create one you're not in)
-  // but we re-check here in case a future import path forgets to enforce it.
-  const userIsSigner = activeAddress
-    ? multisig.signers.some((s) => s.address === activeAddress)
-    : false;
+  // Whether the user holds ANY account that's a signer of this multisig — not
+  // just the active one. The propose + approve screens each select an eligible
+  // signer regardless of which account is active (and show a "Signed by"
+  // picker), so gating these entry points on activeAddress would hide Propose /
+  // Cosigner messaging from someone who has a signer account but simply hasn't
+  // switched to it. Check across all accounts so the actions appear whenever the
+  // user can actually perform them.
+  const userIsSigner = multisig.signers.some((s) =>
+    accounts.some((a) => a.address === s.address)
+  );
 
   return (
     <>
