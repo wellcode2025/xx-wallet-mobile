@@ -446,8 +446,13 @@ function ShareView({
         )}
 
         {/* Send directly over cMix — only lights up when messaging is online and
-            the cosigners have registered contacts; otherwise a compact hint. */}
-        {!isTwoDevice && <CmixSend multisig={multisig} bytesPackage={bytesPackage} />}
+            the recipient(s) have registered contacts; otherwise a compact hint.
+            Copy reframes for a two-device protected account. */}
+        <CmixSend
+          multisig={multisig}
+          bytesPackage={bytesPackage}
+          isTwoDevice={isTwoDevice}
+        />
 
         {/* Done */}
         <button

@@ -40,9 +40,13 @@ interface CosignerRow {
 export function CmixSend({
   multisig,
   bytesPackage,
+  isTwoDevice = false,
 }: {
   multisig: Multisig;
   bytesPackage: BytesPackage | null;
+  /** Reframes the copy for a two-device protected account (recipient is "your
+   *  second device" rather than "cosigners"). */
+  isTwoDevice?: boolean;
 }) {
   const status = useCmixOnlineStore((s) => s.status);
   const handle = useCmixOnlineStore((s) => s.handle);
@@ -75,18 +79,19 @@ export function CmixSend({
   if (!online) {
     return (
       <Hint icon={<Radio size={14} strokeWidth={2} />}>
-        Want to skip the file? Bring messaging online from{' '}
+        Want to skip the {isTwoDevice ? 'QR' : 'file'}? Bring messaging online from{' '}
         <Link to={detailLink} className="text-xx-500 underline-offset-2 hover:underline">
           Cosigner messaging
         </Link>{' '}
-        and send this straight over cMix.
+        and send this {isTwoDevice ? 'straight to your second device' : 'straight'} over cMix.
       </Hint>
     );
   }
   if (cosigners.length === 0) {
     return (
       <Hint icon={<UserPlus size={14} strokeWidth={2} />}>
-        To send this over cMix, add your cosigners' contacts in{' '}
+        To send this over cMix, add{' '}
+        {isTwoDevice ? "your second device's contact" : "your cosigners' contacts"} in{' '}
         <Link to={detailLink} className="text-xx-500 underline-offset-2 hover:underline">
           Cosigner messaging
         </Link>{' '}
@@ -145,7 +150,9 @@ export function CmixSend({
       ? 'All sent'
       : anyResult
         ? `Resend (${notDelivered.length})`
-        : `Send to ${cosigners.length} cosigner${cosigners.length !== 1 ? 's' : ''}`;
+        : isTwoDevice
+          ? 'Send to your second device'
+          : `Send to ${cosigners.length} cosigner${cosigners.length !== 1 ? 's' : ''}`;
 
   return (
     <div className="card space-y-3 border border-xx-500/30">
@@ -158,8 +165,10 @@ export function CmixSend({
         </div>
       </div>
       <p className="text-xs text-ink-300 leading-relaxed">
-        Deliver this proposal to your cosigners privately over the mixnet — no file
-        to pass around. They get the same hash-verified call data either way.
+        Deliver this{' '}
+        {isTwoDevice ? 'to your second device' : 'proposal to your cosigners'} privately over
+        the mixnet — no {isTwoDevice ? 'QR to scan' : 'file to pass around'}.{' '}
+        {isTwoDevice ? 'It gets' : 'They get'} the same hash-verified call data.
       </p>
 
       <div className="space-y-2">
