@@ -33,7 +33,7 @@ import { useCmixContactsStore } from './cmixContacts';
  * unknown contact or an empty registry — without a slow live re-run. Flip off
  * (or delete this + its use below) once two-device auto-confirm is verified.
  */
-const DEBUG_AUTOCONFIRM = true;
+const DEBUG_AUTOCONFIRM = false;
 const byteHead = (b: Uint8Array, n = 12): string =>
   Array.from(b.slice(0, n), (x) => x.toString(16).padStart(2, '0')).join('');
 
