@@ -8,10 +8,11 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { hexToU8a } from '@polkadot/util';
 import { blake2AsHex, cryptoWaitReady } from '@polkadot/util-crypto';
 import { buildBytesPackage, type BytesPackage } from '../utils/bytesPackage';
-import { buildAckMessage, buildProposedMessage } from './coordinationMessage';
+import { buildAckMessage, buildProposedMessage, parseCoordinationMessage } from './coordinationMessage';
 import type { SendResult } from './e2e';
 import {
   decodeCoordinationPayload,
+  incomingProposalFrom,
   pollUntil,
   sendProposalToCosigners,
   type CosignerTarget,
@@ -85,6 +86,25 @@ describe('decodeCoordinationPayload', () => {
     });
     const wrapped = wrapAsE2eMessage(new TextEncoder().encode(tampered));
     expect(decodeCoordinationPayload(wrapped).ok).toBe(false);
+  });
+});
+
+describe('incomingProposalFrom', () => {
+  it('extracts the cacheable call data from a verified proposal', () => {
+    const inc = incomingProposalFrom(parseCoordinationMessage(buildProposedMessage(validPkg)));
+    expect(inc).not.toBeNull();
+    expect(inc?.multisigAddress).toBe(validPkg.multisigAddress);
+    expect(inc?.callHash).toBe(validPkg.callHash);
+    expect(inc?.callBytes).toBe(validPkg.callData);
+  });
+
+  it('returns null for an ack (nothing to cache)', () => {
+    const ack = parseCoordinationMessage(buildAckMessage('approved', ADDR_MULTISIG, '0x' + 'ab'.repeat(32)));
+    expect(incomingProposalFrom(ack)).toBeNull();
+  });
+
+  it('returns null for a parse failure', () => {
+    expect(incomingProposalFrom({ ok: false, reason: 'nope' })).toBeNull();
   });
 });
 

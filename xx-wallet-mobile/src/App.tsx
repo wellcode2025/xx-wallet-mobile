@@ -67,6 +67,7 @@ import { TwoDeviceApproval } from '@/screens/TwoDeviceApproval';
 import {
   inlineSink,
   registerSink,
+  useCmixReceive,
   useGovernanceNotifications,
   useMultisigNotifications,
   useSlashNotifications,
@@ -114,6 +115,9 @@ function RequireAccount() {
   useMultisigNotifications();
   useSlashNotifications();
   useGovernanceNotifications();
+  // Pre-load call data from cosigner memos received over cMix (so the approval
+  // screen is ready without a file import). No-op until messaging is online.
+  useCmixReceive();
   if (accounts.length === 0) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
   }

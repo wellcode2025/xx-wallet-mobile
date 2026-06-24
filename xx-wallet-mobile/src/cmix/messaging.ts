@@ -127,6 +127,26 @@ export function decodeCoordinationPayload(rawMessage: Uint8Array): CoordinationP
   return parseCoordinationMessage(payload);
 }
 
+/**
+ * The cacheable essence of an incoming 'proposed' memo — enough to drop into the
+ * pending-bytes cache so the approval flow already has the (hash-verified) call
+ * data. Returns null for acks and for parse failures (only a verified proposal
+ * yields a result). Pure: the caller adds source + timestamp and decides whether
+ * the multisig is one it actually knows.
+ */
+export interface IncomingProposal {
+  multisigAddress: string;
+  callHash: string;
+  /** 0x hex call data, already hash-verified by parseCoordinationMessage. */
+  callBytes: string;
+}
+
+export function incomingProposalFrom(result: CoordinationParseResult): IncomingProposal | null {
+  if (!result.ok || result.message.action !== 'proposed') return null;
+  const m = result.message;
+  return { multisigAddress: m.multisigAddress, callHash: m.callHash, callBytes: m.package.callData };
+}
+
 // ── Fan-out: deliver a proposal memo to a multisig's cosigners ──────────────
 
 /** How long to wait for a freshly-requested auth channel to come up — the
