@@ -6,9 +6,9 @@
  * cosigners you've added). History is local + ephemeral by design: cMix keeps no
  * server-side log, so what you see here lives only on this device.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageSquare, ChevronRight } from 'lucide-react';
+import { MessageSquare, ChevronRight, Share2, UserPlus } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
@@ -16,11 +16,14 @@ import { useCmixContactsStore } from '@/store/cmixContacts';
 import { useCmixChatStore } from '@/store/cmixChat';
 import { deserializeRegistry } from '@/cmix/registrySerde';
 import { knownAccounts } from '@/cmix/contactRegistry';
+import { ShareMyContactSheet, AddContactSheet } from './Contacts';
 
 export function Memos() {
   const status = useCmixOnlineStore((s) => s.status);
   const bindings = useCmixContactsStore((s) => s.bindings);
   const conversations = useCmixChatStore((s) => s.conversations);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   // Rows = anyone you have a contact for (can start a chat) ∪ anyone you already
   // have a conversation with — most-recent first.
@@ -45,6 +48,17 @@ export function Memos() {
             (from a multisig's Cosigner messaging section) to send or receive.
           </p>
         )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={() => setShareOpen(true)} className="btn-secondary">
+            <Share2 size={15} strokeWidth={2} />
+            Share my contact
+          </button>
+          <button onClick={() => setAddOpen(true)} className="btn-secondary">
+            <UserPlus size={15} strokeWidth={2} />
+            Add a contact
+          </button>
+        </div>
 
         {rows.length === 0 ? (
           <div className="card flex flex-col items-center text-center space-y-3 py-8">
@@ -84,6 +98,9 @@ export function Memos() {
           </ul>
         )}
       </div>
+
+      <ShareMyContactSheet open={shareOpen} onClose={() => setShareOpen(false)} />
+      <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} />
     </>
   );
 }
