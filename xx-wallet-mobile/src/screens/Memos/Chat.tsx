@@ -1,0 +1,216 @@
+/**
+ * Chat — the 1:1 conversation view for the Memos tab.
+ *
+ * History comes from the local conversation store (cMix keeps nothing
+ * server-side). Sending fans the memo out to every device (cMix contact) of the
+ * partner ACCOUNT and marks it delivered if any device confirms a receipt; an
+ * undelivered send can be retried. Sending needs messaging online; reading
+ * history does not.
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
+import clsx from 'clsx';
+import { Send, Loader2, Check, AlertTriangle } from 'lucide-react';
+import { TopBar } from '@/components/layout';
+import { AddressIcon, AddressLabel } from '@/components/ui';
+import { useCmixOnlineStore } from '@/store/cmixOnline';
+import { useCmixContactsStore } from '@/store/cmixContacts';
+import { useCmixChatStore, type ChatMessage } from '@/store/cmixChat';
+import { deserializeRegistry } from '@/cmix/registrySerde';
+import { contactsForAccount } from '@/cmix/contactRegistry';
+import { getIDFromContact } from '@/cmix/e2eApi';
+import { newChatMemo } from '@/cmix/chatMessage';
+import { sendMemoTo } from '@/cmix/messaging';
+import { isValidXxAddress, shortenAddress } from '@/utils';
+
+/** Stable empty array so the store selector doesn't return a fresh ref each render. */
+const NO_MESSAGES: ChatMessage[] = [];
+
+export function Chat() {
+  const { account } = useParams<{ account: string }>();
+  if (!account || !isValidXxAddress(account)) {
+    return <Navigate to="/memos" replace />;
+  }
+  return <ChatView account={account} />;
+}
+
+function ChatView({ account }: { account: string }) {
+  const status = useCmixOnlineStore((s) => s.status);
+  const handle = useCmixOnlineStore((s) => s.handle);
+  const bindings = useCmixContactsStore((s) => s.bindings);
+  const conv = useCmixChatStore((s) => s.conversations[account]);
+  const messages = conv ?? NO_MESSAGES;
+  const append = useCmixChatStore((s) => s.append);
+  const markDelivered = useCmixChatStore((s) => s.markDelivered);
+
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState<Set<string>>(new Set());
+  const online = status === 'online';
+
+  // Whether the partner's contact is on this device (else we can't fan out).
+  const hasContact = useMemo(
+    () => contactsForAccount(deserializeRegistry(bindings), account).length > 0,
+    [bindings, account]
+  );
+
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages.length]);
+
+  const setSendingFlag = (id: string, on: boolean) =>
+    setSending((s) => {
+      const next = new Set(s);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  // Fan a memo out to all of the partner's devices; delivered if any confirms.
+  const deliver = async (id: string, text: string, sentAt: number) => {
+    if (!handle) {
+      markDelivered(account, id, false);
+      return;
+    }
+    setSendingFlag(id, true);
+    try {
+      const contacts = contactsForAccount(deserializeRegistry(bindings), account);
+      if (contacts.length === 0) {
+        markDelivered(account, id, false);
+        return;
+      }
+      const targets = contacts.map((c) => ({ contact: c, id: getIDFromContact(c) }));
+      const results = await Promise.all(
+        targets.map((t) => sendMemoTo(handle, t, { kind: 'chat.memo', v: 1, id, text, sentAt }))
+      );
+      markDelivered(account, id, results.some((r) => r.delivered));
+    } catch {
+      markDelivered(account, id, false);
+    } finally {
+      setSendingFlag(id, false);
+    }
+  };
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text || !online || !handle || !hasContact) return;
+    const memo = newChatMemo(text);
+    append(account, { id: memo.id, direction: 'out', text, sentAt: memo.sentAt, at: Date.now() });
+    setDraft('');
+    await deliver(memo.id, memo.text, memo.sentAt);
+  };
+
+  return (
+    <>
+      <TopBar title={shortenAddress(account)} showBack />
+      <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-md mx-auto">
+        {/* Who you're talking to (identity-resolved). */}
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-ink-800 flex-shrink-0">
+          <AddressIcon address={account} size={24} />
+          <AddressLabel address={account} className="text-sm" />
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+          {messages.length === 0 ? (
+            <p className="text-xs text-ink-300 text-center py-8">
+              No messages yet. Anything you send is end-to-end encrypted over the
+              mixnet and kept only on your devices.
+            </p>
+          ) : (
+            messages.map((m) => (
+              <Bubble
+                key={m.id}
+                message={m}
+                sending={sending.has(m.id)}
+                onRetry={() => deliver(m.id, m.text, m.sentAt)}
+              />
+            ))
+          )}
+          <div ref={endRef} />
+        </div>
+
+        {/* Compose */}
+        <div
+          className="px-3 pt-2 border-t border-ink-800 flex-shrink-0"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 68px)' }}
+        >
+          {!online ? (
+            <p className="text-xs text-ink-300 leading-snug px-1 py-1.5">
+              Go online (from a multisig's Cosigner messaging section) to send.
+            </p>
+          ) : !hasContact ? (
+            <p className="text-xs text-ink-300 leading-snug px-1 py-1.5">
+              You don't have this contact on this device, so you can't message them
+              here.
+            </p>
+          ) : (
+            <div className="flex items-end gap-2">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    void send();
+                  }
+                }}
+                rows={1}
+                placeholder="Message"
+                className="input-base flex-1 resize-none min-h-[40px] max-h-28 py-2 text-sm"
+              />
+              <button
+                onClick={() => void send()}
+                disabled={!draft.trim()}
+                className="btn-primary flex-shrink-0 h-10 w-10 p-0 rounded-full"
+                aria-label="Send"
+              >
+                <Send size={16} strokeWidth={2} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Bubble({
+  message,
+  sending,
+  onRetry,
+}: {
+  message: ChatMessage;
+  sending: boolean;
+  onRetry: () => void;
+}) {
+  const out = message.direction === 'out';
+  return (
+    <div className={clsx('flex', out ? 'justify-end' : 'justify-start')}>
+      <div
+        className={clsx(
+          'max-w-[80%] rounded-2xl px-3 py-2',
+          out ? 'bg-xx-500/15 border border-xx-500/30' : 'bg-ink-800 border border-ink-700/50'
+        )}
+      >
+        <p className="text-sm text-ink-100 whitespace-pre-wrap break-words">{message.text}</p>
+        {out && (
+          <div className="flex justify-end mt-0.5">
+            {sending ? (
+              <Loader2 size={11} className="text-ink-300 animate-spin" strokeWidth={2} />
+            ) : message.delivered ? (
+              <Check size={11} className="text-xx-500" strokeWidth={2.5} />
+            ) : (
+              <button
+                onClick={onRetry}
+                className="inline-flex items-center gap-1 text-xs text-danger active:text-danger/80"
+              >
+                <AlertTriangle size={11} strokeWidth={2} /> Retry
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
