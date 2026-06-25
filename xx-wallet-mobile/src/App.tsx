@@ -68,6 +68,7 @@ import {
   inlineSink,
   registerSink,
   useCmixReceive,
+  useCmixChatReceive,
   useGovernanceNotifications,
   useMultisigNotifications,
   useSlashNotifications,
@@ -118,6 +119,8 @@ function RequireAccount() {
   // Pre-load call data from cosigner memos received over cMix (so the approval
   // screen is ready without a file import). No-op until messaging is online.
   useCmixReceive();
+  // Store incoming 1:1 chat memos into the local conversation log.
+  useCmixChatReceive();
   if (accounts.length === 0) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
   }

@@ -228,6 +228,23 @@ export async function pollUntil(
 }
 
 /**
+ * Ensure an auth channel to a target exists: if not already connected, request
+ * one and wait (poll) for the partner's auto-confirm to round-trip. Returns
+ * whether the channel came up. Shared by the proposal fan-out and 1:1 chat.
+ */
+async function ensureChannel(
+  handle: MessagingHandle,
+  target: CosignerTarget,
+  timeoutMs: number,
+  pollMs: number,
+  sleep?: (ms: number) => Promise<void>
+): Promise<boolean> {
+  if (await handle.isConnected(target.id)) return true;
+  await handle.connectToPartner(target.contact);
+  return pollUntil(() => handle.isConnected(target.id), timeoutMs, pollMs, sleep);
+}
+
+/**
  * Send a hash-gated proposal memo to every cosigner device IN PARALLEL.
  *
  * For each target: ensure an auth channel exists (lazy — request it, then wait
@@ -247,21 +264,13 @@ export async function sendProposalToCosigners(
 
   const sendOne = async (target: CosignerTarget): Promise<CosignerSendResult> => {
     try {
-      if (!(await handle.isConnected(target.id))) {
-        await handle.connectToPartner(target.contact);
-        const up = await pollUntil(
-          () => handle.isConnected(target.id),
-          channelTimeoutMs,
-          channelPollMs,
-          opts.sleep
-        );
-        if (!up) {
-          return {
-            target,
-            delivered: false,
-            error: "Channel not established — the cosigner hasn't come online to confirm yet.",
-          };
-        }
+      const up = await ensureChannel(handle, target, channelTimeoutMs, channelPollMs, opts.sleep);
+      if (!up) {
+        return {
+          target,
+          delivered: false,
+          error: "Channel not established — the cosigner hasn't come online to confirm yet.",
+        };
       }
       const res = await handle.sendProposal(target.id, pkg);
       return {
@@ -276,4 +285,42 @@ export async function sendProposalToCosigners(
   };
 
   return Promise.all(targets.map(sendOne));
+}
+
+/** Outcome of sending a single 1:1 chat memo. */
+export interface MemoSendResult {
+  /** True iff the memo was receipt-confirmed delivered. */
+  delivered: boolean;
+  attempts?: number;
+  /** A human-readable reason when not delivered. */
+  error?: string;
+}
+
+/**
+ * Send a single 1:1 chat memo to a partner: ensure the channel, then sendMemo
+ * (which retries on non-delivery). Never throws — returns a MemoSendResult the
+ * chat UI uses to mark the message delivered / failed and offer a re-send.
+ */
+export async function sendMemoTo(
+  handle: MessagingHandle,
+  target: CosignerTarget,
+  memo: ChatMemo,
+  opts: FanOutOptions = {}
+): Promise<MemoSendResult> {
+  const channelTimeoutMs = opts.channelTimeoutMs ?? CHANNEL_TIMEOUT_MS;
+  const channelPollMs = opts.channelPollMs ?? CHANNEL_POLL_MS;
+  try {
+    const up = await ensureChannel(handle, target, channelTimeoutMs, channelPollMs, opts.sleep);
+    if (!up) {
+      return { delivered: false, error: "Channel not established — they haven't come online yet." };
+    }
+    const res = await handle.sendMemo(target.id, memo);
+    return {
+      delivered: res.delivered,
+      attempts: res.attempts,
+      error: res.delivered ? undefined : 'Sent but delivery was not confirmed.',
+    };
+  } catch (e) {
+    return { delivered: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }

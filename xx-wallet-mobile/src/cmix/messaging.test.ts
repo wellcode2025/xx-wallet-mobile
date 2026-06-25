@@ -14,10 +14,12 @@ import {
   decodeCoordinationPayload,
   incomingProposalFrom,
   pollUntil,
+  sendMemoTo,
   sendProposalToCosigners,
   type CosignerTarget,
   type MessagingHandle,
 } from './messaging';
+import type { ChatMemo } from './chatMessage';
 
 const noSleep = () => Promise.resolve();
 
@@ -244,5 +246,53 @@ describe('sendProposalToCosigners', () => {
     );
     expect(results).toHaveLength(3);
     expect(results.map((r) => r.delivered)).toEqual([true, false, true]);
+  });
+});
+
+describe('sendMemoTo', () => {
+  const target: CosignerTarget = { contact: new Uint8Array([7]), id: new Uint8Array([7, 7]) };
+  const memo: ChatMemo = { kind: 'chat.memo', v: 1, id: 'm1', text: 'hi', sentAt: 1 };
+  const ok: SendResult = { delivered: true, timedOut: false, attempts: 1 };
+  const mk = (over: Partial<MessagingHandle> = {}): MessagingHandle => ({
+    myContact: () => new Uint8Array(),
+    myReceptionId: () => new Uint8Array(),
+    connectToPartner: async () => {},
+    acceptPartner: async () => {},
+    isConnected: async () => true,
+    sendProposal: async () => ok,
+    sendAck: async () => ok,
+    onCoordination: async () => {},
+    sendMemo: async () => ok,
+    onMemo: async () => {},
+    ...over,
+  });
+
+  it('sends to an already-connected partner', async () => {
+    const r = await sendMemoTo(mk({ isConnected: async () => true }), target, memo, { sleep: noSleep });
+    expect(r.delivered).toBe(true);
+  });
+
+  it('reports a channel-timeout without sending', async () => {
+    let sent = 0;
+    const handle = mk({
+      isConnected: async () => false,
+      sendMemo: async () => {
+        sent++;
+        return ok;
+      },
+    });
+    const r = await sendMemoTo(handle, target, memo, {
+      channelTimeoutMs: 100,
+      channelPollMs: 50,
+      sleep: noSleep,
+    });
+    expect(r.delivered).toBe(false);
+    expect(sent).toBe(0);
+  });
+
+  it('surfaces a non-delivered send', async () => {
+    const handle = mk({ sendMemo: async () => ({ delivered: false, timedOut: true }) });
+    const r = await sendMemoTo(handle, target, memo, { sleep: noSleep });
+    expect(r.delivered).toBe(false);
   });
 });
