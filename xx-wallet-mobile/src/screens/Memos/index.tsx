@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageSquare, ChevronRight, Share2, UserPlus, KeyRound } from 'lucide-react';
+import { MessageSquare, ChevronRight, Share2, UserPlus, KeyRound, Radio, Loader2 } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
@@ -19,16 +19,34 @@ import { deserializeRegistry } from '@/cmix/registrySerde';
 import { knownAccounts } from '@/cmix/contactRegistry';
 import { ShareMyContactSheet, AddContactSheet } from './Contacts';
 import { ExportIdentitySheet, ImportIdentitySheet } from './Identity';
+import { GoOnlineSheet } from './GoOnline';
 
 export function Memos() {
   const status = useCmixOnlineStore((s) => s.status);
+  const goOnlineWithDeviceKey = useCmixOnlineStore((s) => s.goOnlineWithDeviceKey);
   const bindings = useCmixContactsStore((s) => s.bindings);
   const conversations = useCmixChatStore((s) => s.conversations);
   const notSetUp = useCmixSecretStore((s) => s.wrap === null);
+  const stayEnabled = useCmixSecretStore((s) => s.deviceWrap !== null);
   const [shareOpen, setShareOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [goOnlineOpen, setGoOnlineOpen] = useState(false);
+
+  // Tapping "Go online": if "stay enabled" is set up, reconnect with no
+  // passphrase; on any failure (device key gone) fall back to the passphrase sheet.
+  const handleGoOnlineTap = async () => {
+    if (stayEnabled) {
+      try {
+        await goOnlineWithDeviceKey();
+        return;
+      } catch {
+        /* device key unavailable — fall through to the passphrase sheet */
+      }
+    }
+    setGoOnlineOpen(true);
+  };
 
   // Rows = anyone you have a contact for (can start a chat) ∪ anyone you already
   // have a conversation with — most-recent first.
@@ -47,12 +65,17 @@ export function Memos() {
     <>
       <TopBar title="Memos" showSettings />
       <div className="px-5 py-4 max-w-md mx-auto space-y-3 pb-24">
-        {status !== 'online' && (
-          <p className="text-xs text-ink-300 leading-relaxed px-1">
-            Messaging is offline — you can read your history, but bring it online
-            (from a multisig's Cosigner messaging section) to send or receive.
-          </p>
-        )}
+        {status === 'connecting' ? (
+          <div className="flex items-center gap-2 text-xs text-ink-300 px-1">
+            <Loader2 size={14} className="animate-spin flex-shrink-0" strokeWidth={2} />
+            Connecting to the mixnet — this can take a minute the first time.
+          </div>
+        ) : status !== 'online' ? (
+          <button onClick={handleGoOnlineTap} className="btn-secondary w-full">
+            <Radio size={16} strokeWidth={2} />
+            {stayEnabled ? 'Go online' : 'Go online for messaging'}
+          </button>
+        ) : null}
 
         {notSetUp && status !== 'connecting' && (
           <button
@@ -94,8 +117,8 @@ export function Memos() {
               <p className="font-display font-medium text-lg text-ink-100">No conversations yet</p>
               <p className="text-sm text-ink-300 leading-relaxed">
                 Private 1:1 messaging over the xx mixnet — no servers, no group chat,
-                history only on this device. Add a contact from a multisig's Cosigner
-                messaging section to start one.
+                history only on this device. Go online, then add a contact to start a
+                conversation.
               </p>
             </div>
           </div>
@@ -124,6 +147,14 @@ export function Memos() {
         )}
       </div>
 
+      <GoOnlineSheet
+        open={goOnlineOpen}
+        onClose={() => setGoOnlineOpen(false)}
+        onRestore={() => {
+          setGoOnlineOpen(false);
+          setImportOpen(true);
+        }}
+      />
       <ShareMyContactSheet open={shareOpen} onClose={() => setShareOpen(false)} />
       <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} />
       <ExportIdentitySheet open={exportOpen} onClose={() => setExportOpen(false)} />
