@@ -40,9 +40,16 @@ interface CmixSecretState {
    *  "stay enabled on this device" is on; null when off. Ciphertext, so safe to
    *  persist. The key itself lives non-extractable in IndexedDB (see deviceKey). */
   deviceWrap: string | null;
+  /** Wallet accounts that have a messaging identity on this device (i.e. you've
+   *  gone online or shared a contact as them). On go-online each one's identity
+   *  is logged in so it can receive — see the messaging layer + receive hook. */
+  identityAccounts: string[];
 
   /** Whether a device secret has been established (a passphrase is set). */
   hasSecret(): boolean;
+
+  /** Record that `account` now has a messaging identity (idempotent). */
+  addIdentityAccount(account: string): void;
 
   /** First-time setup: generate a device secret, wrap it under the messaging
    *  passphrase, persist, and return the raw secret. Throws if a secret already
@@ -77,9 +84,16 @@ export const useCmixSecretStore = create<CmixSecretState>()(
     (set, get) => ({
       wrap: null,
       deviceWrap: null,
+      identityAccounts: [],
 
       hasSecret() {
         return get().wrap !== null;
+      },
+
+      addIdentityAccount(account) {
+        if (!get().identityAccounts.includes(account)) {
+          set({ identityAccounts: [...get().identityAccounts, account] });
+        }
       },
 
       async establish(passphrase) {
@@ -112,7 +126,7 @@ export const useCmixSecretStore = create<CmixSecretState>()(
       },
 
       reset() {
-        set({ wrap: null, deviceWrap: null });
+        set({ wrap: null, deviceWrap: null, identityAccounts: [] });
       },
     }),
     {

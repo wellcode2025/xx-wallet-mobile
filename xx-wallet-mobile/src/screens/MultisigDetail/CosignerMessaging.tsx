@@ -324,6 +324,10 @@ function ShareContactSheet({
     setBusy(true);
     setError(null);
     try {
+      // NOTE: still uses the primary identity (the convenience method). The
+      // cosigner/coordination flow moves to per-signer-account identities as one
+      // unit in a later slice (send + receive together); migrating only the share
+      // here would leave proposals arriving on an identity nothing listens on.
       const myContact = handle.myContact();
       const pair = await xxKeyring.unlock(account, password);
       try {

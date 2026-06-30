@@ -13,6 +13,7 @@ import clsx from 'clsx';
 import { Send, Loader2, Check, CheckCheck, AlertTriangle } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
+import { useAccountsStore } from '@/store';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { useCmixChatStore, type ChatMessage } from '@/store/cmixChat';
@@ -42,6 +43,14 @@ function ChatView({ account }: { account: string }) {
   const messages = conv ?? NO_MESSAGES;
   const append = useCmixChatStore((s) => s.append);
   const markSent = useCmixChatStore((s) => s.markSent);
+  const setPartnerAccount = useCmixChatStore((s) => s.setPartnerAccount);
+  const storedMyAccount = useCmixChatStore((s) => s.partnerAccounts[account]);
+  const activeAddress = useAccountsStore((s) => s.activeAddress);
+
+  // Which of MY accounts I'm this partner as: the recorded one, else my active
+  // account (the default for a fresh conversation). Its identity is what I send
+  // from, so the partner sees + replies to the same identity they added.
+  const myAccount = storedMyAccount ?? activeAddress ?? '';
 
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState<Set<string>>(new Set());
@@ -71,14 +80,18 @@ function ChatView({ account }: { account: string }) {
   // "delivered" (handled in useCmixChatReceive). Leaving it un-sent (no handle,
   // no contact, send error) makes the bubble offer Retry once the spinner clears.
   const deliver = async (id: string, text: string, sentAt: number) => {
-    if (!handle) return;
+    if (!handle || !myAccount) return;
     const contacts = contactsForAccount(deserializeRegistry(bindings), account);
     if (contacts.length === 0) return;
     setSendingFlag(id, true);
     try {
+      // Lock in which of my accounts I talk to this partner as, then send from
+      // THAT account's identity (so the partner sees the identity they added).
+      setPartnerAccount(account, myAccount);
+      const am = await handle.forAccount(myAccount);
       const targets = contacts.map((c) => ({ contact: c, id: getIDFromContact(c) }));
       const results = await Promise.all(
-        targets.map((t) => sendMemoTo(handle, t, { kind: 'chat.memo', v: 1, id, text, sentAt }))
+        targets.map((t) => sendMemoTo(am, t, { kind: 'chat.memo', v: 1, id, text, sentAt }))
       );
       if (results.some((r) => r.delivered)) markSent(account, id);
     } catch {
@@ -90,7 +103,7 @@ function ChatView({ account }: { account: string }) {
 
   const send = async () => {
     const text = draft.trim();
-    if (!text || !online || !handle || !hasContact) return;
+    if (!text || !online || !handle || !hasContact || !myAccount) return;
     const memo = newChatMemo(text);
     append(account, { id: memo.id, direction: 'out', text, sentAt: memo.sentAt, at: Date.now() });
     setDraft('');
@@ -101,10 +114,18 @@ function ChatView({ account }: { account: string }) {
     <>
       <TopBar title={shortenAddress(account)} showBack />
       <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-md mx-auto">
-        {/* Who you're talking to (identity-resolved). */}
+        {/* Who you're talking to + which of YOUR accounts you're messaging as. */}
         <div className="flex items-center gap-2 px-4 py-2 border-b border-ink-800 flex-shrink-0">
           <AddressIcon address={account} size={24} />
-          <AddressLabel address={account} className="text-sm" />
+          <div className="min-w-0 flex-1">
+            <AddressLabel address={account} className="text-sm" />
+            {myAccount && (
+              <div className="flex items-center gap-1 text-xs text-ink-300">
+                <span className="flex-shrink-0">Messaging as</span>
+                <AddressLabel address={myAccount} className="text-xs text-ink-300 truncate" />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Messages */}

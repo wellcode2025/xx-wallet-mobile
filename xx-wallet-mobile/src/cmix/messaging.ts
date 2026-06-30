@@ -36,7 +36,13 @@ import {
 /** e2e message type used for multisig coordination memos (app-defined). */
 export const COORDINATION_MESSAGE_TYPE = 2;
 
-export interface MessagingHandle {
+/**
+ * Messaging operations for ONE of the user's accounts (one cMix identity). All
+ * the send/receive/share methods are scoped to that account's identity — its
+ * contact, its reception ID, its channels. The user has one of these per account
+ * they message as; the parent MessagingHandle hands them out.
+ */
+export interface AccountMessaging {
   /** Our shareable cMix contact — give to a partner so they can connect. */
   myContact(): Uint8Array;
   /** Our reception ID — partners address messages to this. */
@@ -72,18 +78,36 @@ export interface MessagingHandle {
   onMemoAck(senderId: Uint8Array, handler: (ack: ChatAck) => void): Promise<void>;
 }
 
+/**
+ * The device's messaging service: one cMix client hosting one identity PER
+ * account. `forAccount` lazily logs in (and memoizes) an account's identity and
+ * returns its AccountMessaging. The bare AccountMessaging methods it also exposes
+ * are a transitional convenience that operate on the PRIMARY account (the active
+ * one) — callers are being migrated to `forAccount` so every send/receive is
+ * explicit about which account it's as.
+ */
+export interface MessagingHandle extends AccountMessaging {
+  /** Messaging scoped to one of the user's accounts (lazily logs its identity in). */
+  forAccount(account: string): Promise<AccountMessaging>;
+  /** Accounts whose identity is currently logged in this session. */
+  loadedAccounts(): string[];
+}
+
 export interface MessagingOptions {
   /** cMix session options (storage password, etc.) — supplied by the caller. */
   session: CmixSessionOptions;
+  /** The account whose identity is logged in eagerly + backs the primary-account
+   *  convenience methods (typically the active account). */
+  primaryAccount: string;
   /** Auth-channel callbacks (e.g. auto-accept a known cosigner, or prompt the user). */
   authCallbacks?: Partial<AuthCallbacks>;
   /** Auto-confirm a channel Request iff this returns true for the requester's
-   *  contact (a known cosigner). Forwarded to the e2e session. */
+   *  contact (a known cosigner). Forwarded to each account's e2e session. */
   autoConfirm?: (contact: Uint8Array) => boolean;
   /** Fired as each connect phase begins, so the UI can show real progress. */
   onPhase?: (phase: ConnectPhase) => void;
-  /** Restore: adopt these decrypted-backup identity bytes instead of
-   *  loading/minting (forwarded to the e2e session). */
+  /** Restore: adopt these decrypted-backup identity bytes as the PRIMARY
+   *  account's identity instead of loading/minting it. */
   importIdentity?: Uint8Array;
 }
 
@@ -112,15 +136,36 @@ export function isMessagingConnected(): boolean {
 async function build(opts: MessagingOptions): Promise<MessagingHandle> {
   const session = await getCmixSession({ ...opts.session, onPhase: opts.onPhase });
   opts.onPhase?.('finalizing');
-  const e2e = await createE2eSession(session.cmix, {
-    authCallbacks: opts.authCallbacks,
-    autoConfirm: opts.autoConfirm,
-    importIdentity: opts.importIdentity,
-  });
-  return makeHandle(e2e);
+
+  // One identity per account, lazily logged in + memoized on the single client
+  // (one cMix follower hosts them all — proven in the multi-identity spike).
+  const loaded = new Map<string, Promise<AccountMessaging>>();
+  const create = (account: string): Promise<AccountMessaging> => {
+    let p = loaded.get(account);
+    if (!p) {
+      // A restore's imported identity applies to the primary account only.
+      const importIdentity = account === opts.primaryAccount ? opts.importIdentity : undefined;
+      p = createE2eSession(session.cmix, account, {
+        authCallbacks: opts.authCallbacks,
+        autoConfirm: opts.autoConfirm,
+        importIdentity,
+      }).then(makeAccountMessaging);
+      loaded.set(account, p);
+    }
+    return p;
+  };
+
+  // Eagerly bring up the primary account so the convenience methods are ready.
+  const primary = await create(opts.primaryAccount);
+
+  return {
+    ...primary,
+    forAccount: create,
+    loadedAccounts: () => [...loaded.keys()],
+  };
 }
 
-function makeHandle(e2e: E2eSession): MessagingHandle {
+function makeAccountMessaging(e2e: E2eSession): AccountMessaging {
   return {
     myContact: () => e2e.contact(),
     myReceptionId: () => e2e.receptionId(),
@@ -262,7 +307,7 @@ export async function pollUntil(
  * whether the channel came up. Shared by the proposal fan-out and 1:1 chat.
  */
 async function ensureChannel(
-  handle: MessagingHandle,
+  handle: AccountMessaging,
   target: CosignerTarget,
   timeoutMs: number,
   pollMs: number,
@@ -283,7 +328,7 @@ async function ensureChannel(
  * user re-send only the ones that failed (e.g. a cosigner who was offline).
  */
 export async function sendProposalToCosigners(
-  handle: MessagingHandle,
+  handle: AccountMessaging,
   targets: CosignerTarget[],
   pkg: BytesPackage,
   opts: FanOutOptions = {}
@@ -331,7 +376,7 @@ export interface MemoSendResult {
  * chat UI uses to mark the message delivered / failed and offer a re-send.
  */
 export async function sendMemoTo(
-  handle: MessagingHandle,
+  handle: AccountMessaging,
   target: CosignerTarget,
   memo: ChatMemo,
   opts: FanOutOptions = {}

@@ -31,6 +31,7 @@ import {
 } from '@/cmix/contactBinding';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
+import { useCmixSecretStore } from '@/store/cmixSecret';
 import { copyToClipboard } from '@/utils';
 
 /** Share your own messaging contact: sign your cMix contact with one of your
@@ -56,7 +57,12 @@ export function ShareMyContactSheet({ open, onClose }: { open: boolean; onClose:
     setBusy(true);
     setError(null);
     try {
-      const myContact = handle.myContact();
+      // Share THIS account's own identity (per-account) — so the binding says
+      // "account X owns identity X", and X is now a messaging identity that the
+      // receive hook listens on.
+      const am = await handle.forAccount(account);
+      const myContact = am.myContact();
+      useCmixSecretStore.getState().addIdentityAccount(account);
       const pair = await xxKeyring.unlock(account, password);
       try {
         setBlob(serializeSignedBinding(signContactBinding(pair, myContact)));

@@ -99,17 +99,18 @@ export interface CreateE2eOptions {
 }
 
 /**
- * Create the e2e messaging session on top of a live, healthy cMix session. Logs
- * in with the persisted reception identity (or, on restore, the imported one),
- * so the messaging identity survives restarts. Intended to be called once per
- * app lifetime.
+ * Create the e2e messaging session for ONE account on top of a live, healthy
+ * cMix session. Logs in with that account's persisted reception identity (or, on
+ * restore, the imported one), so it survives restarts. One cMix client can host
+ * several of these at once (one per account) — see the messaging layer.
  */
 export async function createE2eSession(
   cmix: CMix,
+  account: string,
   opts: CreateE2eOptions = {}
 ): Promise<E2eSession> {
   const globals = getE2eGlobals();
-  const identity = await ensureReceptionIdentity(cmix, opts.importIdentity);
+  const identity = await ensureReceptionIdentity(cmix, account, opts.importIdentity);
   const e2eParams = globals.GetDefaultE2EParams();
 
   // The Request handler needs e2e.Confirm, but `e2e` doesn't exist until Login

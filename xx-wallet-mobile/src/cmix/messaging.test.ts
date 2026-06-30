@@ -17,7 +17,7 @@ import {
   sendMemoTo,
   sendProposalToCosigners,
   type CosignerTarget,
-  type MessagingHandle,
+  type AccountMessaging,
 } from './messaging';
 import type { ChatMemo } from './chatMessage';
 
@@ -148,7 +148,7 @@ describe('sendProposalToCosigners', () => {
   });
   const delivered: SendResult = { delivered: true, timedOut: false, attempts: 1 };
 
-  function mockHandle(over: Partial<MessagingHandle> = {}): MessagingHandle {
+  function mockHandle(over: Partial<AccountMessaging> = {}): AccountMessaging {
     return {
       myContact: () => new Uint8Array(),
       myReceptionId: () => new Uint8Array(),
@@ -256,7 +256,7 @@ describe('sendMemoTo', () => {
   const target: CosignerTarget = { contact: new Uint8Array([7]), id: new Uint8Array([7, 7]) };
   const memo: ChatMemo = { kind: 'chat.memo', v: 1, id: 'm1', text: 'hi', sentAt: 1 };
   const ok: SendResult = { delivered: true, timedOut: false, attempts: 1 };
-  const mk = (over: Partial<MessagingHandle> = {}): MessagingHandle => ({
+  const mk = (over: Partial<AccountMessaging> = {}): AccountMessaging => ({
     myContact: () => new Uint8Array(),
     myReceptionId: () => new Uint8Array(),
     exportIdentity: () => new Uint8Array(),

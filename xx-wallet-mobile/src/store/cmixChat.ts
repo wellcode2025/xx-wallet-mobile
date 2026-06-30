@@ -40,10 +40,20 @@ export interface ChatMessage {
 interface CmixChatState {
   /** partner account (SS58) → messages, in store order (oldest first). */
   conversations: Record<string, ChatMessage[]>;
+  /** Which of MY accounts I message a partner AS (partner SS58 → my account
+   *  SS58). Each partner is reached from ONE of my per-account identities; this
+   *  records which, so a send uses the same identity they added — and so the UI
+   *  can show "messaging as X". */
+  partnerAccounts: Record<string, string>;
 
   /** Append a message to a conversation. Dedups by id (idempotent on a repeat,
    *  e.g. a retried inbound memo) — returns false if it was already present. */
   append(account: string, msg: ChatMessage): boolean;
+  /** The account I message `partner` as, if recorded. */
+  partnerAccount(partner: string): string | undefined;
+  /** Record which of my accounts I message `partner` as (idempotent — keeps the
+   *  first unless `force`, so an inbound message doesn't override my choice). */
+  setPartnerAccount(partner: string, myAccount: string, force?: boolean): void;
   /** Mark an outgoing message as having entered the mixnet (round-confirmed). */
   markSent(account: string, id: string): void;
   /** Mark an outgoing message delivered (recipient acked) by id. */
@@ -62,6 +72,16 @@ export const useCmixChatStore = create<CmixChatState>()(
   persist(
     (set, get) => ({
       conversations: {},
+      partnerAccounts: {},
+
+      partnerAccount(partner) {
+        return get().partnerAccounts[partner];
+      },
+
+      setPartnerAccount(partner, myAccount, force = false) {
+        if (!force && get().partnerAccounts[partner]) return;
+        set({ partnerAccounts: { ...get().partnerAccounts, [partner]: myAccount } });
+      },
 
       append(account, msg) {
         const existing = get().conversations[account] ?? [];

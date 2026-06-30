@@ -25,6 +25,19 @@ import { wrapWithDeviceKey, unwrapWithDeviceKey, clearDeviceKey } from '@/cmix/d
 import type { ConnectPhase } from '@/cmix/phases';
 import { useCmixSecretStore } from './cmixSecret';
 import { useCmixContactsStore } from './cmixContacts';
+import { useAccountsStore } from './accounts';
+
+/**
+ * The account whose identity is logged in eagerly + backs the convenience
+ * messaging methods — the active account, or the first if none is active.
+ * Per-account messaging means every session needs at least one account.
+ */
+function primaryMessagingAccount(): string {
+  const { activeAddress, accounts } = useAccountsStore.getState();
+  const primary = activeAddress ?? accounts[0]?.address;
+  if (!primary) throw new Error('Add an account before going online for messaging.');
+  return primary;
+}
 
 /**
  * Bring-up diagnostic: when an inbound channel request does NOT match a known
@@ -160,11 +173,13 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
 
       const handle = await connectMessaging({
         session: { storagePassword: secret },
+        primaryAccount: primaryMessagingAccount(),
         authCallbacks,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
       set({ status: 'online', handle, error: null, phase: null, secret });
+      useCmixSecretStore.getState().addIdentityAccount(primaryMessagingAccount());
     } catch (err) {
       set({
         status: 'error',
@@ -187,10 +202,12 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
       const secret = await unwrapWithDeviceKey(blob);
       const handle = await connectMessaging({
         session: { storagePassword: secret },
+        primaryAccount: primaryMessagingAccount(),
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
       set({ status: 'online', handle, error: null, phase: null, secret });
+      useCmixSecretStore.getState().addIdentityAccount(primaryMessagingAccount());
     } catch (err) {
       set({
         status: 'error',
@@ -216,11 +233,13 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
         : await secrets.establish(passphrase);
       const handle = await connectMessaging({
         session: { storagePassword: secret },
+        primaryAccount: primaryMessagingAccount(),
         importIdentity: identity,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
       set({ status: 'online', handle, error: null, phase: null, secret });
+      useCmixSecretStore.getState().addIdentityAccount(primaryMessagingAccount());
     } catch (err) {
       set({
         status: 'error',
