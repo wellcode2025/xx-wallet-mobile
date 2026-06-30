@@ -2,11 +2,13 @@
  * Encrypted storage for the per-device cMix EKV secret.
  *
  * The cMix session encrypts the messaging identity + node-registration keys at
- * rest with a 32-byte storage secret. We keep that secret wrapped under a wallet
- * account's password, reusing the SAME scheme the keystore uses (scrypt N=131072
- * + xsalsa20-poly1305), so the messaging identity is protected as strongly as
- * the account itself. Going online unlocks the account anyway (to sign the
- * contact binding), so unwrapping here adds no separate password step.
+ * rest with a 32-byte storage secret. We keep that secret wrapped under the
+ * user's DEDICATED MESSAGING PASSPHRASE (separate from any wallet-account
+ * password — see cmixSecret / cmixOnline), reusing the SAME scheme the keystore
+ * uses (scrypt N=131072 + xsalsa20-poly1305), so the messaging identity is
+ * protected as strongly as a wallet account. The same wrap also encrypts the
+ * portable identity export (identityExport), so a backup is only as exposed as
+ * the passphrase guarding it.
  *
  * This is an independent, parallel implementation of the keystore's wrap format.
  * It deliberately does NOT import keyring/store.ts internals (a hard-rule file);

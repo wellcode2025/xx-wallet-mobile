@@ -6,16 +6,10 @@ import { planSecretAction } from './secretPlan';
 
 describe('planSecretAction', () => {
   it('establishes when no device secret exists yet', () => {
-    expect(planSecretAction(false, false)).toBe('establish');
-    // hasSecret=false dominates even if the enabled flag is somehow set.
-    expect(planSecretAction(false, true)).toBe('establish');
+    expect(planSecretAction(false)).toBe('establish');
   });
 
-  it('unlocks when this account already wraps the secret', () => {
-    expect(planSecretAction(true, true)).toBe('unlock');
-  });
-
-  it('needs an enabled account when a secret exists but this one is not enabled', () => {
-    expect(planSecretAction(true, false)).toBe('needs-online-account');
+  it('unlocks when a device secret is already set', () => {
+    expect(planSecretAction(true)).toBe('unlock');
   });
 });

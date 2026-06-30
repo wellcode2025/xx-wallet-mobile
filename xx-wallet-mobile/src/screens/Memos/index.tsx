@@ -8,22 +8,27 @@
  */
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageSquare, ChevronRight, Share2, UserPlus } from 'lucide-react';
+import { MessageSquare, ChevronRight, Share2, UserPlus, KeyRound } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { useCmixChatStore } from '@/store/cmixChat';
+import { useCmixSecretStore } from '@/store/cmixSecret';
 import { deserializeRegistry } from '@/cmix/registrySerde';
 import { knownAccounts } from '@/cmix/contactRegistry';
 import { ShareMyContactSheet, AddContactSheet } from './Contacts';
+import { ExportIdentitySheet, ImportIdentitySheet } from './Identity';
 
 export function Memos() {
   const status = useCmixOnlineStore((s) => s.status);
   const bindings = useCmixContactsStore((s) => s.bindings);
   const conversations = useCmixChatStore((s) => s.conversations);
+  const notSetUp = useCmixSecretStore((s) => s.wrap === null);
   const [shareOpen, setShareOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Rows = anyone you have a contact for (can start a chat) ∪ anyone you already
   // have a conversation with — most-recent first.
@@ -49,6 +54,16 @@ export function Memos() {
           </p>
         )}
 
+        {notSetUp && status !== 'connecting' && (
+          <button
+            onClick={() => setImportOpen(true)}
+            className="w-full flex items-center justify-center gap-1.5 text-xs text-ink-300 active:text-ink-100 py-1"
+          >
+            <KeyRound size={13} strokeWidth={2} className="flex-shrink-0" />
+            Moving from another device? Restore a backup
+          </button>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <button onClick={() => setShareOpen(true)} className="btn-secondary">
             <Share2 size={15} strokeWidth={2} />
@@ -59,6 +74,16 @@ export function Memos() {
             Add a contact
           </button>
         </div>
+
+        {status === 'online' && (
+          <button
+            onClick={() => setExportOpen(true)}
+            className="w-full flex items-center justify-center gap-1.5 text-xs text-ink-300 active:text-ink-100 py-1"
+          >
+            <KeyRound size={13} strokeWidth={2} className="flex-shrink-0" />
+            Back up / move this messaging identity
+          </button>
+        )}
 
         {rows.length === 0 ? (
           <div className="card flex flex-col items-center text-center space-y-3 py-8">
@@ -101,6 +126,8 @@ export function Memos() {
 
       <ShareMyContactSheet open={shareOpen} onClose={() => setShareOpen(false)} />
       <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} />
+      <ExportIdentitySheet open={exportOpen} onClose={() => setExportOpen(false)} />
+      <ImportIdentitySheet open={importOpen} onClose={() => setImportOpen(false)} />
     </>
   );
 }

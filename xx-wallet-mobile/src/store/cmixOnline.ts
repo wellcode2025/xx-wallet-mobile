@@ -2,14 +2,15 @@
  * cMix "go online" state.
  *
  * Bringing messaging online is an explicit, opt-in action (default OFF): the
- * user picks an account and enters its password, which we use to obtain the
- * device cMix secret (establish on first use, else unwrap) and then connect the
- * cMix + e2e session. Status drives the UI ("connecting to the mixnet…").
+ * user enters their dedicated MESSAGING PASSPHRASE (separate from any wallet
+ * account password), which we use to obtain the device cMix secret (establish on
+ * first use, else unwrap) and then connect the cMix + e2e session. Status drives
+ * the UI ("connecting to the mixnet…").
  *
- * Multi-account note: every enabled account wraps the SAME device secret, so it
- * doesn't matter which account brings messaging online — the resulting session
- * (a process-wide singleton) is identical. Going online with a second enabled
- * account just unlocks the same secret.
+ * The messaging identity is one-per-device and decoupled from wallet accounts:
+ * the passphrase protects it, and it can be exported + restored onto another
+ * device (see identityExport). Account-signed contact bindings still prove which
+ * account a contact belongs to — that's orthogonal to going online.
  *
  * Teardown: a fresh app session starts offline, and the cMix follower stops when
  * the page unloads. An in-app "go offline" that stops the follower mid-session
@@ -17,7 +18,6 @@
  * (e.g. to retry after an error) and does NOT claim to leave the mixnet.
  */
 import { create } from 'zustand';
-import { xxKeyring } from '@/keyring/store';
 import { connectMessaging, type MessagingHandle } from '@/cmix/messaging';
 import { planSecretAction } from '@/cmix/secretPlan';
 import { getIDFromContact, type AuthCallbacks } from '@/cmix/e2eApi';
@@ -98,12 +98,11 @@ interface CmixOnlineState {
   secret: Uint8Array | null;
 
   /**
-   * Bring messaging online using an account + its password. Establishes the
-   * device secret on first use (verifying the password is genuinely the
-   * account's), otherwise unwraps it. Throws (and sets status 'error') if the
-   * account isn't enabled yet or the password is wrong.
+   * Bring messaging online using the dedicated messaging passphrase. Establishes
+   * the device secret on first use, otherwise unwraps it. Throws (and sets status
+   * 'error') if the passphrase is wrong or shorter than the minimum.
    */
-  goOnline(account: string, password: string, authCallbacks?: Partial<AuthCallbacks>): Promise<void>;
+  goOnline(passphrase: string, authCallbacks?: Partial<AuthCallbacks>): Promise<void>;
 
   /**
    * Bring messaging online WITHOUT a password, using the device-key-wrapped
@@ -111,6 +110,15 @@ interface CmixOnlineState {
    * set up (or the device key is gone) — callers fall back to the password flow.
    */
   goOnlineWithDeviceKey(): Promise<void>;
+
+  /**
+   * Restore a backed-up messaging identity (already-decrypted bytes) and bring
+   * it online: establish a fresh storage secret under the passphrase, then
+   * connect with the imported identity injected — so this device becomes the
+   * SAME messaging party as the backup's origin. Throws (status 'error') on a
+   * connect failure.
+   */
+  goOnlineWithImport(passphrase: string, identity: Uint8Array): Promise<void>;
 
   /**
    * Turn ON "stay enabled on this device": wrap the in-hand device secret under
@@ -121,15 +129,6 @@ interface CmixOnlineState {
 
   /** Turn OFF "stay enabled": forget the device-wrapped secret + device key. */
   disableStayOnline(): Promise<void>;
-
-  /**
-   * Enroll ANOTHER local account for messaging while online: wrap the in-hand
-   * device secret under that account's password so it can also bring messaging
-   * online. Verifies the password is genuinely the account's (so a typo can't
-   * lock the account out of its own messaging). No-op if already enrolled.
-   * Throws if offline or the password is wrong.
-   */
-  enableAccount(account: string, password: string): Promise<void>;
 
   /** Clear local online UI state (for retry after an error). Does NOT stop the
    *  mixnet follower — see the file header. */
@@ -143,30 +142,21 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
   handle: null,
   secret: null,
 
-  async goOnline(account, password, authCallbacks) {
+  async goOnline(passphrase, authCallbacks) {
     const { status } = get();
     if (status === 'connecting' || status === 'online') return;
     set({ status: 'connecting', error: null, phase: 'loading' });
     try {
       const secrets = useCmixSecretStore.getState();
-      const action = planSecretAction(secrets.hasSecret(), secrets.isEnabledFor(account));
+      const action = planSecretAction(secrets.hasSecret());
 
-      let secret: Uint8Array;
-      if (action === 'establish') {
-        // First-ever: confirm the password really is this account's, so the
-        // messaging secret is tied to the account password (not a typo that
-        // would lock the user out of their own messaging later).
-        const ok = await xxKeyring.verifyPassword(account, password);
-        if (!ok) throw new Error('Incorrect password for this account.');
-        secret = await secrets.establish(account, password);
-      } else if (action === 'unlock') {
-        // unwrapSecret throws on a wrong password, so this doubles as the check.
-        secret = await secrets.unlock(account, password);
-      } else {
-        throw new Error(
-          'This account is not enabled for messaging yet. Go online with an enabled account, then add this one.'
-        );
-      }
+      // establish (first-ever) mints + wraps a fresh secret under the passphrase;
+      // unlock unwraps it (and throws on a wrong passphrase, so it doubles as the
+      // check). No account is involved — the passphrase is the only gate.
+      const secret =
+        action === 'establish'
+          ? await secrets.establish(passphrase)
+          : await secrets.unlock(passphrase);
 
       const handle = await connectMessaging({
         session: { storagePassword: secret },
@@ -213,6 +203,36 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
     }
   },
 
+  async goOnlineWithImport(passphrase, identity) {
+    const { status } = get();
+    if (status === 'connecting' || status === 'online') return;
+    set({ status: 'connecting', error: null, phase: 'loading' });
+    try {
+      const secrets = useCmixSecretStore.getState();
+      // Fresh device → mint a local storage secret; already-set-up device →
+      // unlock the existing one (the imported identity overwrites the stored one).
+      const secret = secrets.hasSecret()
+        ? await secrets.unlock(passphrase)
+        : await secrets.establish(passphrase);
+      const handle = await connectMessaging({
+        session: { storagePassword: secret },
+        importIdentity: identity,
+        autoConfirm: makeAutoConfirm(),
+        onPhase: (phase) => set({ phase }),
+      });
+      set({ status: 'online', handle, error: null, phase: null, secret });
+    } catch (err) {
+      set({
+        status: 'error',
+        error: err instanceof Error ? err.message : String(err),
+        handle: null,
+        phase: null,
+        secret: null,
+      });
+      throw err;
+    }
+  },
+
   async enableStayOnline() {
     const { status, secret } = get();
     if (status !== 'online' || !secret) {
@@ -229,20 +249,6 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
     } catch {
       /* best effort — the wrap is already forgotten, which is what matters */
     }
-  },
-
-  async enableAccount(account, password) {
-    const { status, secret } = get();
-    if (status !== 'online' || !secret) {
-      throw new Error('Bring messaging online first, then enable another account.');
-    }
-    const secrets = useCmixSecretStore.getState();
-    if (secrets.isEnabledFor(account)) return; // already enrolled — no-op
-    // Verify the password is genuinely this account's, so we never wrap the
-    // secret under a typo (which would lock that account out of messaging).
-    const ok = await xxKeyring.verifyPassword(account, password);
-    if (!ok) throw new Error('Incorrect password for this account.');
-    await secrets.addAccount(account, password, secret);
   },
 
   reset() {

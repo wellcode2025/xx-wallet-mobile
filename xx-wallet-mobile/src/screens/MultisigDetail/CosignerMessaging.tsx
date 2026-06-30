@@ -27,14 +27,13 @@ import {
   Clipboard,
   UserPlus,
   ListOrdered,
-  Plus,
   KeyRound,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Sheet, AddressIcon, AddressLabel, QrScanner, Coachmark } from '@/components/ui';
 import { useAccountsStore } from '@/store';
 import { isLocalAccount, xxKeyring } from '@/keyring/store';
-import { useCmixSecretStore } from '@/store/cmixSecret';
+import { useCmixSecretStore, MIN_PASSPHRASE_LEN } from '@/store/cmixSecret';
 import {
   signContactBinding,
   serializeSignedBinding,
@@ -44,6 +43,7 @@ import { useCmixOnlineStore, type OnlineStatus } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { CONNECT_PHASE_ORDER, CONNECT_PHASE_LABEL, CONNECT_STORY } from '@/cmix/phases';
 import { copyToClipboard } from '@/utils';
+import { ImportIdentitySheet } from '@/screens/Memos/Identity';
 import type { Multisig } from '@/store/multisigs';
 
 export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
@@ -53,7 +53,7 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [enableOpen, setEnableOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Accounts with at least one registered contact are "connected".
   const connected = useMemo(() => new Set(Object.keys(bindings)), [bindings]);
@@ -187,9 +187,8 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
         ))}
       </div>
 
-      {/* Device-wide messaging controls — only meaningful while online (the
-          secret is in hand): the convenience "stay enabled" toggle and enrolling
-          another of the user's accounts. */}
+      {/* "Stay enabled on this device" — only meaningful while online (the secret
+          is in hand): a device-key wrap lets a future session skip the passphrase. */}
       {status === 'online' && (
         <div className="space-y-2 pt-2 border-t border-ink-800/60">
           <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
@@ -207,25 +206,24 @@ export function CosignerMessaging({ multisig }: { multisig: Multisig }) {
           </label>
           <p className="text-xs text-ink-300 leading-snug">
             {stayEnabled
-              ? "You can go online here without your password. Your app lock still gates access if it's on."
-              : "Reconnect without re-entering your password next time. Best paired with the app lock for device security."}
+              ? "You can go online here without your messaging passphrase. Your app lock still gates access if it's on."
+              : "Reconnect without re-entering your messaging passphrase next time. Best paired with the app lock for device security."}
           </p>
           {stayError && <p className="text-xs text-danger leading-snug">{stayError}</p>}
-
-          <button
-            onClick={() => setEnableOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-ink-300 active:text-ink-100"
-          >
-            <Plus size={13} strokeWidth={2.5} className="flex-shrink-0" />
-            Enable another of your accounts
-          </button>
         </div>
       )}
 
-      <GoOnlineSheet open={sheetOpen} onClose={() => setSheetOpen(false)} multisig={multisig} />
+      <GoOnlineSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onRestore={() => {
+          setSheetOpen(false);
+          setImportOpen(true);
+        }}
+      />
       <ShareContactSheet open={shareOpen} onClose={() => setShareOpen(false)} multisig={multisig} />
       <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} multisig={multisig} />
-      <EnableAccountSheet open={enableOpen} onClose={() => setEnableOpen(false)} />
+      <ImportIdentitySheet open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
@@ -282,49 +280,50 @@ function CosignerStatusRow({
 }
 
 /**
- * Unlock a signer account to bring messaging online. The password is used to
- * establish (first time) or unwrap the device's encrypted cMix secret, then
- * connect the session — see the go-online store. Mirrors the propose-confirm
- * sheet's account + password shape.
+ * Bring messaging online with the dedicated messaging passphrase. First time on a
+ * device, the user CHOOSES a passphrase (typed twice) — it's separate from any
+ * wallet password and protects the device's messaging identity. Later, the same
+ * passphrase unlocks it. Account-independent: going online no longer depends on
+ * which accounts are in the wallet.
  */
 function GoOnlineSheet({
   open,
   onClose,
-  multisig,
+  onRestore,
 }: {
   open: boolean;
   onClose: () => void;
-  multisig: Multisig;
+  onRestore: () => void;
 }) {
-  const { accounts, activeAddress } = useAccountsStore();
   const goOnline = useCmixOnlineStore((s) => s.goOnline);
   const status = useCmixOnlineStore((s) => s.status);
+  const isFirstTime = useCmixSecretStore((s) => s.wrap === null);
 
-  const eligible = useMemo(
-    () =>
-      accounts.filter(
-        (a) => isLocalAccount(a) && multisig.signers.some((s) => s.address === a.address)
-      ),
-    [accounts, multisig.signers]
-  );
-
-  const [account, setAccount] = useState(() => {
-    if (activeAddress && eligible.some((a) => a.address === activeAddress)) return activeAddress;
-    return eligible[0]?.address ?? '';
-  });
-  const [password, setPassword] = useState('');
+  const [passphrase, setPassphrase] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = Boolean(account) && Boolean(password) && !busy;
+  const tooShort = passphrase.length > 0 && passphrase.length < MIN_PASSPHRASE_LEN;
+  const mismatch = isFirstTime && confirm.length > 0 && passphrase !== confirm;
+  const canSubmit =
+    Boolean(passphrase) &&
+    !busy &&
+    (!isFirstTime || (passphrase.length >= MIN_PASSPHRASE_LEN && passphrase === confirm));
+
+  const reset = () => {
+    setPassphrase('');
+    setConfirm('');
+    setError(null);
+  };
 
   const handleGoOnline = async () => {
     if (!canSubmit) return;
     setBusy(true);
     setError(null);
     try {
-      await goOnline(account, password);
-      setPassword('');
+      await goOnline(passphrase);
+      reset();
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -333,69 +332,79 @@ function GoOnlineSheet({
     }
   };
 
+  const close = () => {
+    reset();
+    onClose();
+  };
+
   return (
-    <Sheet open={open} onClose={onClose} title="Go online for coordination">
+    <Sheet open={open} onClose={close} title={isFirstTime ? 'Set up messaging' : 'Go online'}>
       <div className="space-y-4">
         {status === 'connecting' ? (
           <ConnectProgress />
-        ) : eligible.length === 0 ? (
-          <p className="text-xs text-ink-300 leading-relaxed">
-            You need one of this multisig's signer accounts in this wallet, with a
-            password (not a Ledger account), to bring messaging online.
-          </p>
         ) : (
           <>
-            <p className="text-xs text-ink-300 leading-relaxed">
-              Unlock a signer account to connect to the mixnet. This encrypts your
-              messaging identity on this device under that account's password. The
-              first connection can take a minute.
-            </p>
+            {isFirstTime ? (
+              <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-xx-500/5 border border-xx-500/20">
+                <KeyRound size={16} className="text-xx-500 flex-shrink-0 mt-0.5" strokeWidth={2} />
+                <p className="text-xs text-ink-200 leading-relaxed">
+                  Choose a <span className="text-ink-100 font-medium">messaging passphrase</span>.
+                  This is <span className="text-ink-100 font-medium">not</span> your wallet password
+                  — it protects your messaging identity and lets you move it to another device. Keep
+                  it safe: if you forget it, you'll set messaging up again as a new identity.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-ink-300 leading-relaxed">
+                Enter your messaging passphrase to connect to the mixnet. The first connection of a
+                session can take a minute.
+              </p>
+            )}
 
             <div>
               <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Account
-              </label>
-              {eligible.length === 1 ? (
-                <div className="flex items-center gap-2">
-                  <AddressIcon address={eligible[0].address} size={28} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink-100 truncate">{eligible[0].name}</p>
-                    <p className="font-mono text-xs text-ink-300 truncate">{eligible[0].address}</p>
-                  </div>
-                </div>
-              ) : (
-                <select
-                  value={account}
-                  onChange={(e) => setAccount(e.target.value)}
-                  className="input-base text-sm"
-                >
-                  {eligible.map((a) => (
-                    <option key={a.address} value={a.address}>
-                      {a.name} — {a.address.slice(0, 8)}…{a.address.slice(-6)}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Password
+                {isFirstTime ? 'New messaging passphrase' : 'Messaging passphrase'}
               </label>
               <input
                 type="password"
-                value={password}
+                value={passphrase}
                 onChange={(e) => {
-                  setPassword(e.target.value);
+                  setPassphrase(e.target.value);
                   setError(null);
                 }}
                 className="input-base"
-                placeholder="Account password"
-                autoComplete="current-password"
+                placeholder={isFirstTime ? `At least ${MIN_PASSPHRASE_LEN} characters` : 'Messaging passphrase'}
+                autoComplete={isFirstTime ? 'new-password' : 'current-password'}
                 disabled={busy}
               />
             </div>
 
+            {isFirstTime && (
+              <div>
+                <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
+                  Confirm passphrase
+                </label>
+                <input
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => {
+                    setConfirm(e.target.value);
+                    setError(null);
+                  }}
+                  className="input-base"
+                  placeholder="Re-enter passphrase"
+                  autoComplete="new-password"
+                  disabled={busy}
+                />
+              </div>
+            )}
+
+            {tooShort && (
+              <p className="text-xs text-ink-300">
+                Use at least {MIN_PASSPHRASE_LEN} characters.
+              </p>
+            )}
+            {mismatch && <p className="text-xs text-danger">Passphrases don't match.</p>}
             {error && (
               <p className="text-xs text-danger flex items-center gap-1">
                 <AlertTriangle size={12} className="flex-shrink-0" />
@@ -405,139 +414,26 @@ function GoOnlineSheet({
 
             <button onClick={handleGoOnline} disabled={!canSubmit} className="btn-primary w-full">
               {busy && <Loader2 size={16} className="animate-spin" />}
-              Go online
+              {isFirstTime ? 'Set passphrase & go online' : 'Go online'}
             </button>
+
+            {isFirstTime && (
+              <button
+                onClick={() => {
+                  reset();
+                  onRestore();
+                }}
+                className="w-full text-center text-xs text-ink-300 active:text-ink-100"
+              >
+                Already set up on another device?{' '}
+                <span className="text-xx-500">Restore a backup</span>
+              </button>
+            )}
+
             <p className="text-xs text-ink-300 leading-snug px-1">
               Being online means your device is present on the mixnet. Closing the
               app takes you offline.
             </p>
-          </>
-        )}
-      </div>
-    </Sheet>
-  );
-}
-
-/**
- * Enroll another of the user's local accounts for messaging while online. Wraps
- * the in-hand device secret under the chosen account's password (verified first,
- * so a typo can't lock it out) — so that account can also bring messaging online.
- * Device-wide, not multisig-specific: it lists any password account that isn't
- * already enabled.
- */
-function EnableAccountSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { accounts } = useAccountsStore();
-  const enableAccount = useCmixOnlineStore((s) => s.enableAccount);
-  const wraps = useCmixSecretStore((s) => s.wraps);
-
-  const enrolled = useMemo(() => new Set(Object.keys(wraps)), [wraps]);
-  const eligible = useMemo(
-    () => accounts.filter((a) => isLocalAccount(a) && !enrolled.has(a.address)),
-    [accounts, enrolled]
-  );
-
-  const [account, setAccount] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
-
-  // Keep the picker pointed at a still-eligible account.
-  useEffect(() => {
-    if (account && eligible.some((a) => a.address === account)) return;
-    setAccount(eligible[0]?.address ?? '');
-  }, [eligible, account]);
-
-  const canSubmit = Boolean(account) && Boolean(password) && !busy;
-
-  const handleEnable = async () => {
-    if (!canSubmit) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await enableAccount(account, password);
-      setPassword('');
-      setDone(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Sheet open={open} onClose={onClose} title="Enable another account">
-      <div className="space-y-4">
-        <p className="text-xs text-ink-300 leading-relaxed">
-          Let another of your accounts bring messaging online on this device. Its
-          password wraps the same messaging identity, so you stay reachable as the
-          same contact whichever account you use.
-        </p>
-
-        {eligible.length === 0 ? (
-          <p className="text-xs text-ink-300 leading-relaxed">
-            All your password accounts are already enabled for messaging.
-          </p>
-        ) : (
-          <>
-            {done && (
-              <div className="flex items-start gap-2 text-xs text-xx-500">
-                <Check size={14} strokeWidth={2.5} className="flex-shrink-0 mt-0.5" />
-                Enabled — that account can now go online for coordination.
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Account
-              </label>
-              <select
-                value={account}
-                onChange={(e) => {
-                  setAccount(e.target.value);
-                  setError(null);
-                  setDone(false);
-                }}
-                className="input-base text-sm"
-              >
-                {eligible.map((a) => (
-                  <option key={a.address} value={a.address}>
-                    {a.name} — {a.address.slice(0, 8)}…{a.address.slice(-6)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError(null);
-                  setDone(false);
-                }}
-                className="input-base"
-                placeholder="Account password"
-                autoComplete="current-password"
-                disabled={busy}
-              />
-            </div>
-
-            {error && (
-              <p className="text-xs text-danger flex items-center gap-1">
-                <AlertTriangle size={12} className="flex-shrink-0" />
-                {error}
-              </p>
-            )}
-
-            <button onClick={handleEnable} disabled={!canSubmit} className="btn-primary w-full">
-              {busy && <Loader2 size={16} className="animate-spin" />}
-              Enable for messaging
-            </button>
           </>
         )}
       </div>

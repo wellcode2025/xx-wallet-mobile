@@ -22,8 +22,18 @@ import type { CMix, XXDKUtils } from 'xxdk-wasm';
 import { loadXXDK, type LoadXXDKOptions } from './load';
 import type { ConnectPhase } from './phases';
 
-/** Stable storage dir so the cMix state (and node keys) persist across launches. */
-const DEFAULT_STORAGE_DIR = 'xx-wallet-cmix';
+/**
+ * Stable storage dir so the cMix state (and node keys) persist across launches.
+ *
+ * `-id2` marks the dedicated-messaging-passphrase model: the EKV here is
+ * encrypted by a secret wrapped under the messaging passphrase, not a wallet
+ * account password (the pre-passphrase model used 'xx-wallet-cmix'). A fresh dir
+ * means establishing the new model always opens a clean store, with no in-place
+ * re-encryption of the old account-password EKV — any pre-existing 'xx-wallet-cmix'
+ * state is simply left orphaned (harmless; a one-time cold reconnect for anyone
+ * who had enrolled before).
+ */
+const DEFAULT_STORAGE_DIR = 'xx-wallet-cmix-id2';
 /** StartNetworkFollower's internal poll timeout (the spike-proven value). */
 const FOLLOWER_POLL_MS = 5000;
 /** Default ceiling for the follower to reach healthy (mobile cold start can be long). */

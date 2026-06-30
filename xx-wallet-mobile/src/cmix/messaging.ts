@@ -32,6 +32,9 @@ export interface MessagingHandle {
   myContact(): Uint8Array;
   /** Our reception ID — partners address messages to this. */
   myReceptionId(): Uint8Array;
+  /** Our marshalled reception identity, for an encrypted backup/export (NEVER
+   *  shared raw — it's the private credential, gated behind the passphrase). */
+  exportIdentity(): Uint8Array;
   /** Request an authenticated channel with a partner (the one-time handshake). */
   connectToPartner(partnerContact: Uint8Array): Promise<void>;
   /** Accept a partner's incoming channel request. */
@@ -65,6 +68,9 @@ export interface MessagingOptions {
   autoConfirm?: (contact: Uint8Array) => boolean;
   /** Fired as each connect phase begins, so the UI can show real progress. */
   onPhase?: (phase: ConnectPhase) => void;
+  /** Restore: adopt these decrypted-backup identity bytes instead of
+   *  loading/minting (forwarded to the e2e session). */
+  importIdentity?: Uint8Array;
 }
 
 let handlePromise: Promise<MessagingHandle> | null = null;
@@ -95,6 +101,7 @@ async function build(opts: MessagingOptions): Promise<MessagingHandle> {
   const e2e = await createE2eSession(session.cmix, {
     authCallbacks: opts.authCallbacks,
     autoConfirm: opts.autoConfirm,
+    importIdentity: opts.importIdentity,
   });
   return makeHandle(e2e);
 }
@@ -103,6 +110,7 @@ function makeHandle(e2e: E2eSession): MessagingHandle {
   return {
     myContact: () => e2e.contact(),
     myReceptionId: () => e2e.receptionId(),
+    exportIdentity: () => e2e.identityBytes(),
     connectToPartner: async (partnerContact) => {
       await e2e.requestChannel(partnerContact);
     },

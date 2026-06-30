@@ -62,6 +62,10 @@ export interface E2eSession {
   contact(): Uint8Array;
   /** Our reception ID — a partner sends to this. */
   receptionId(): Uint8Array;
+  /** Our marshalled reception identity — the portable credential to back up /
+   *  export (the bytes Login was given). Safe only behind the messaging
+   *  passphrase; never share it raw. */
+  identityBytes(): Uint8Array;
   /** Request an authenticated channel with a partner (the one-time handshake). */
   requestChannel(partnerContact: Uint8Array, facts?: Uint8Array): Promise<number>;
   /** Confirm a partner's incoming channel request. */
@@ -86,19 +90,26 @@ export interface CreateE2eOptions {
    * arrives on their first send to us.
    */
   autoConfirm?: (contact: Uint8Array) => boolean;
+  /**
+   * Restore: marshalled reception identity bytes (from a decrypted backup) to
+   * adopt as THIS device's identity instead of loading/minting one. Makes the
+   * device the same messaging party as the backup's origin.
+   */
+  importIdentity?: Uint8Array;
 }
 
 /**
  * Create the e2e messaging session on top of a live, healthy cMix session. Logs
- * in with the persisted per-device reception identity, so the messaging identity
- * survives restarts. Intended to be called once per app lifetime.
+ * in with the persisted reception identity (or, on restore, the imported one),
+ * so the messaging identity survives restarts. Intended to be called once per
+ * app lifetime.
  */
 export async function createE2eSession(
   cmix: CMix,
   opts: CreateE2eOptions = {}
 ): Promise<E2eSession> {
   const globals = getE2eGlobals();
-  const identity = await ensureReceptionIdentity(cmix);
+  const identity = await ensureReceptionIdentity(cmix, opts.importIdentity);
   const e2eParams = globals.GetDefaultE2EParams();
 
   // The Request handler needs e2e.Confirm, but `e2e` doesn't exist until Login
@@ -126,6 +137,7 @@ export async function createE2eSession(
     e2e,
     contact: () => e2e.GetContact(),
     receptionId: () => e2e.GetReceptionID(),
+    identityBytes: () => identity,
     requestChannel: (partnerContact, facts = EMPTY_FACTS) => e2e.Request(partnerContact, facts),
     confirmChannel: (partnerContact) => e2e.Confirm(partnerContact),
     hasChannel: (partnerId) => e2e.HasAuthenticatedChannel(partnerId),

@@ -152,6 +152,7 @@ describe('sendProposalToCosigners', () => {
     return {
       myContact: () => new Uint8Array(),
       myReceptionId: () => new Uint8Array(),
+      exportIdentity: () => new Uint8Array(),
       connectToPartner: async () => {},
       acceptPartner: async () => {},
       isConnected: async () => true,
@@ -256,6 +257,7 @@ describe('sendMemoTo', () => {
   const mk = (over: Partial<MessagingHandle> = {}): MessagingHandle => ({
     myContact: () => new Uint8Array(),
     myReceptionId: () => new Uint8Array(),
+    exportIdentity: () => new Uint8Array(),
     connectToPartner: async () => {},
     acceptPartner: async () => {},
     isConnected: async () => true,
