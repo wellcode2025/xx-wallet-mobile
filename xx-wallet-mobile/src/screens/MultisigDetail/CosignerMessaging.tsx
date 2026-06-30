@@ -324,11 +324,12 @@ function ShareContactSheet({
     setBusy(true);
     setError(null);
     try {
-      // NOTE: still uses the primary identity (the convenience method). The
-      // cosigner/coordination flow moves to per-signer-account identities as one
-      // unit in a later slice (send + receive together); migrating only the share
-      // here would leave proposals arriving on an identity nothing listens on.
-      const myContact = handle.myContact();
+      // Share THIS signer account's own identity (per-account), and register it so
+      // its inbox is listened on. The coordination send + receive now ride the
+      // same per-signer-account identity, so this is consistent end-to-end.
+      const am = await handle.forAccount(account);
+      const myContact = am.myContact();
+      useCmixSecretStore.getState().addIdentityAccount(account);
       const pair = await xxKeyring.unlock(account, password);
       try {
         const binding = signContactBinding(pair, myContact);

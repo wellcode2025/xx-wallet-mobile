@@ -23,6 +23,7 @@ import { useAccountsStore } from '@/store';
 import type { Multisig } from '@/store';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
+import { useCmixSecretStore } from '@/store/cmixSecret';
 import { deserializeRegistry } from '@/cmix/registrySerde';
 import { contactsForAccount as registryContactsForAccount } from '@/cmix/contactRegistry';
 import { getIDFromContact } from '@/cmix/e2eApi';
@@ -54,6 +55,15 @@ export function CmixSend({
   const bindings = useCmixContactsStore((s) => s.bindings);
 
   const mine = useMemo(() => new Set(accounts.map((a) => a.address)), [accounts]);
+  const identityAccounts = useCmixSecretStore((s) => s.identityAccounts);
+
+  // The account I act as in this multisig (a signer that's mine) — I send the
+  // proposal FROM its identity, so cosigners see the signer they added. Prefer
+  // one I've already shared a contact as; else the first of my signers.
+  const mySigner = useMemo(() => {
+    const signers = multisig.signers.filter((s) => mine.has(s.address)).map((s) => s.address);
+    return signers.find((a) => identityAccounts.includes(a)) ?? signers[0];
+  }, [multisig.signers, mine, identityAccounts]);
 
   // Cosigners (signers that aren't me) with at least one registered device-contact.
   // Derived straight from `bindings` so it recomputes when the registry changes.
@@ -103,16 +113,20 @@ export function CmixSend({
   const notDelivered = cosigners.filter((c) => rowState[c.address]?.state !== 'delivered');
   const anyResult = cosigners.some((c) => rowState[c.address]);
   const allDelivered = notDelivered.length === 0;
-  const canSend = !!handle && !!bytesPackage && !busy && !allDelivered;
+  const canSend = !!handle && !!bytesPackage && !!mySigner && !busy && !allDelivered;
 
   const send = async (rows: CosignerRow[]) => {
-    if (!handle || !bytesPackage || rows.length === 0) return;
+    if (!handle || !bytesPackage || !mySigner || rows.length === 0) return;
     setBusy(true);
     setRowState((prev) => {
       const next = { ...prev };
       for (const r of rows) next[r.address] = { state: 'pending' };
       return next;
     });
+    // Send from MY signer account's identity, and register it so its inbox is
+    // listened on for cosigner replies/acks.
+    const am = await handle.forAccount(mySigner);
+    useCmixSecretStore.getState().addIdentityAccount(mySigner);
     await Promise.all(
       rows.map(async (row) => {
         try {
@@ -120,7 +134,7 @@ export function CmixSend({
             contact,
             id: getIDFromContact(contact),
           }));
-          const results = await sendProposalToCosigners(handle, targets, bytesPackage);
+          const results = await sendProposalToCosigners(am, targets, bytesPackage);
           // A cosigner is reached if ANY of their devices got it.
           const delivered = results.some((r) => r.delivered);
           const reason = delivered

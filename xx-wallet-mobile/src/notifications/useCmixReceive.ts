@@ -22,6 +22,7 @@
 import { useEffect, useRef } from 'react';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
+import { useCmixSecretStore } from '@/store/cmixSecret';
 import { usePendingBytesStore, useMultisigsStore } from '@/store';
 import { deserializeRegistry } from '@/cmix/registrySerde';
 import { knownAccounts, contactsForAccount } from '@/cmix/contactRegistry';
@@ -40,9 +41,10 @@ export function useCmixReceive() {
   const handle = useCmixOnlineStore((s) => s.handle);
   const bindings = useCmixContactsStore((s) => s.bindings);
   const putBytes = usePendingBytesStore((s) => s.putBytes);
+  const myAccounts = useCmixSecretStore((s) => s.identityAccounts);
 
-  // Track which cosigner IDs we've registered a listener for, per handle —
-  // a new messaging session (new handle) resets and re-registers.
+  // Track which (my account, cosigner id) pairs we've registered a listener for,
+  // per handle — a new messaging session (new handle) resets and re-registers.
   const reg = useRef<{ handle: MessagingHandle | null; ids: Set<string> }>({
     handle: null,
     ids: new Set(),
@@ -55,52 +57,66 @@ export function useCmixReceive() {
     }
     const registered = reg.current.ids;
     const registry = deserializeRegistry(bindings);
+    const cosignerAccounts = knownAccounts(registry);
 
-    for (const account of knownAccounts(registry)) {
-      for (const contact of contactsForAccount(registry, account)) {
-        let id: Uint8Array;
-        try {
-          id = getIDFromContact(contact);
-        } catch {
-          continue; // wasm hiccup / malformed contact — skip, try again next run
-        }
-        const key = idHex(id);
-        if (registered.has(key)) continue;
-        registered.add(key);
+    // A cosigner sends a proposal to whichever of MY signer-account identities I
+    // shared with them, so listen on every one of my identities (one per signer
+    // account). Mirrors the per-account chat receive.
+    for (const myAccount of myAccounts) {
+      handle
+        .forAccount(myAccount)
+        .then((am) => {
+          for (const account of cosignerAccounts) {
+            for (const contact of contactsForAccount(registry, account)) {
+              let id: Uint8Array;
+              try {
+                id = getIDFromContact(contact);
+              } catch {
+                continue; // wasm hiccup / malformed contact — skip, try again next run
+              }
+              const regKey = `${myAccount}|${idHex(id)}`;
+              if (registered.has(regKey)) continue;
+              registered.add(regKey);
 
-        handle
-          .onCoordination(id, (result) => {
-            const inc = incomingProposalFrom(result);
-            if (!inc) return; // ack or invalid — nothing to cache
-            // Only act on multisigs we actually know.
-            const ms = useMultisigsStore.getState().getMultisig(inc.multisigAddress);
-            if (!ms) return;
-            putBytes({
-              multisigAddress: inc.multisigAddress,
-              callHash: inc.callHash,
-              callBytes: inc.callBytes,
-              source: 'received',
-              receivedAt: Date.now(),
-            });
-            // Alert right away instead of waiting for the on-chain poll. Same
-            // deterministic id as the chain path (useMultisigNotifications), so
-            // whichever fires first wins and the user never gets a double alert.
-            emitEvent({
-              id: `multisig.proposal.received:${inc.multisigAddress}:${inc.callHash}`,
-              timestamp: Date.now(),
-              kind: 'multisig.proposal.received',
-              multisigAddress: inc.multisigAddress,
-              callHash: inc.callHash,
-              depositor: inc.proposedBy,
-              approvalsCount: 1, // proposer's own signature; chain path refines if it wins
-              threshold: ms.threshold,
-              multisigLocalName: ms.localName,
-            });
-          })
-          .catch(() => {
-            registered.delete(key); // registration failed — allow a retry
-          });
-      }
+              am
+                .onCoordination(id, (result) => {
+                  const inc = incomingProposalFrom(result);
+                  if (!inc) return; // ack or invalid — nothing to cache
+                  // Only act on multisigs we actually know.
+                  const ms = useMultisigsStore.getState().getMultisig(inc.multisigAddress);
+                  if (!ms) return;
+                  putBytes({
+                    multisigAddress: inc.multisigAddress,
+                    callHash: inc.callHash,
+                    callBytes: inc.callBytes,
+                    source: 'received',
+                    receivedAt: Date.now(),
+                  });
+                  // Alert right away instead of waiting for the on-chain poll.
+                  // Same deterministic id as the chain path
+                  // (useMultisigNotifications), so whichever fires first wins and
+                  // the user never gets a double alert.
+                  emitEvent({
+                    id: `multisig.proposal.received:${inc.multisigAddress}:${inc.callHash}`,
+                    timestamp: Date.now(),
+                    kind: 'multisig.proposal.received',
+                    multisigAddress: inc.multisigAddress,
+                    callHash: inc.callHash,
+                    depositor: inc.proposedBy,
+                    approvalsCount: 1, // proposer's own signature; chain refines if it wins
+                    threshold: ms.threshold,
+                    multisigLocalName: ms.localName,
+                  });
+                })
+                .catch(() => {
+                  registered.delete(regKey); // registration failed — allow a retry
+                });
+            }
+          }
+        })
+        .catch(() => {
+          /* couldn't log in this account's identity — skip it this pass */
+        });
     }
-  }, [status, handle, bindings, putBytes]);
+  }, [status, handle, bindings, putBytes, myAccounts]);
 }
