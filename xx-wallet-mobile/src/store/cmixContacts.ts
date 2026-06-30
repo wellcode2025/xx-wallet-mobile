@@ -38,6 +38,8 @@ interface CmixContactsState {
   addBinding(binding: SignedContactBinding): boolean;
   /** Remove one device-contact for an account (revoke a lost/retired device). */
   removeContact(account: string, contact: Uint8Array): void;
+  /** Forget ALL of an account's device-contacts (remove the whole partner). */
+  forgetAccount(account: string): void;
   /** cMix contacts bound to a single account (one per device). */
   contactsForAccount(account: string): Uint8Array[];
   /** Union of device-contacts across accounts — a multisig's fan-out target. */
@@ -65,6 +67,12 @@ export const useCmixContactsStore = create<CmixContactsState>()(
       removeContact(account, contact) {
         const next = registryRemoveContact(deserializeRegistry(get().bindings), account, contact);
         set({ bindings: serializeRegistry(next) });
+      },
+
+      forgetAccount(account) {
+        const next = { ...get().bindings };
+        delete next[account];
+        set({ bindings: next });
       },
 
       contactsForAccount(account) {

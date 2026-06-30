@@ -130,9 +130,11 @@ export const useCmixChatStore = create<CmixChatState>()(
       },
 
       clearConversation(account) {
-        const next = { ...get().conversations };
-        delete next[account];
-        set({ conversations: next });
+        const conversations = { ...get().conversations };
+        delete conversations[account];
+        const partnerAccounts = { ...get().partnerAccounts };
+        delete partnerAccounts[account];
+        set({ conversations, partnerAccounts });
       },
     }),
     {

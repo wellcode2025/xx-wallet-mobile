@@ -8,9 +8,9 @@
  */
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageSquare, ChevronRight, Share2, UserPlus, KeyRound, Radio, Loader2 } from 'lucide-react';
+import { MessageSquare, ChevronRight, Share2, UserPlus, KeyRound, Radio, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { TopBar } from '@/components/layout';
-import { AddressIcon, AddressLabel } from '@/components/ui';
+import { AddressIcon, AddressLabel, Sheet } from '@/components/ui';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { useCmixChatStore } from '@/store/cmixChat';
@@ -26,10 +26,13 @@ export function Memos() {
   const goOnlineWithDeviceKey = useCmixOnlineStore((s) => s.goOnlineWithDeviceKey);
   const bindings = useCmixContactsStore((s) => s.bindings);
   const conversations = useCmixChatStore((s) => s.conversations);
+  const clearConversation = useCmixChatStore((s) => s.clearConversation);
+  const forgetAccount = useCmixContactsStore((s) => s.forgetAccount);
   const notSetUp = useCmixSecretStore((s) => s.wrap === null);
   const stayEnabled = useCmixSecretStore((s) => s.deviceWrap !== null);
   const [shareOpen, setShareOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [goOnlineOpen, setGoOnlineOpen] = useState(false);
@@ -125,10 +128,10 @@ export function Memos() {
         ) : (
           <ul className="space-y-1.5">
             {rows.map(({ account, last }) => (
-              <li key={account}>
+              <li key={account} className="flex items-center gap-1">
                 <Link
                   to={`/memos/${account}`}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
+                  className="flex-1 min-w-0 flex items-center gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
                 >
                   <AddressIcon address={account} size={36} />
                   <div className="flex-1 min-w-0">
@@ -141,6 +144,13 @@ export function Memos() {
                   </div>
                   <ChevronRight size={16} className="text-ink-300 flex-shrink-0" />
                 </Link>
+                <button
+                  onClick={() => setDeleteTarget(account)}
+                  className="p-2.5 text-ink-300 active:text-danger flex-shrink-0"
+                  aria-label="Delete conversation"
+                >
+                  <Trash2 size={16} strokeWidth={2} />
+                </button>
               </li>
             ))}
           </ul>
@@ -159,6 +169,46 @@ export function Memos() {
       <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} />
       <ExportIdentitySheet open={exportOpen} onClose={() => setExportOpen(false)} />
       <ImportIdentitySheet open={importOpen} onClose={() => setImportOpen(false)} />
+
+      <Sheet
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete conversation"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-danger/5 border border-danger/20">
+            <AlertTriangle size={16} className="text-danger flex-shrink-0 mt-0.5" strokeWidth={2} />
+            <p className="text-xs text-ink-200 leading-relaxed">
+              This removes the chat history and this contact from this device. cMix keeps no
+              server copy, so it's gone here — you'd re-add the contact to message them again.
+            </p>
+          </div>
+
+          {deleteTarget && (
+            <div className="flex items-center gap-2 px-1">
+              <AddressIcon address={deleteTarget} size={28} />
+              <AddressLabel address={deleteTarget} className="text-sm" />
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              if (deleteTarget) {
+                clearConversation(deleteTarget);
+                forgetAccount(deleteTarget);
+              }
+              setDeleteTarget(null);
+            }}
+            className="w-full flex items-center justify-center gap-1.5 rounded-2xl bg-danger/15 border border-danger/40 text-danger font-medium py-2.5 active:bg-danger/25"
+          >
+            <Trash2 size={16} strokeWidth={2} />
+            Delete conversation
+          </button>
+          <button onClick={() => setDeleteTarget(null)} className="btn-secondary w-full">
+            Cancel
+          </button>
+        </div>
+      </Sheet>
     </>
   );
 }

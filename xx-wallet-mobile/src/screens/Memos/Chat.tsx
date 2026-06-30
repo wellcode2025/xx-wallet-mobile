@@ -22,7 +22,8 @@ import { contactsForAccount } from '@/cmix/contactRegistry';
 import { getIDFromContact } from '@/cmix/e2eApi';
 import { newChatMemo } from '@/cmix/chatMessage';
 import { sendMemoTo } from '@/cmix/messaging';
-import { isValidXxAddress, shortenAddress } from '@/utils';
+import { useAddressName } from '@/hooks/useAddressName';
+import { isValidXxAddress } from '@/utils';
 
 /** Stable empty array so the store selector doesn't return a fresh ref each render. */
 const NO_MESSAGES: ChatMessage[] = [];
@@ -46,6 +47,9 @@ function ChatView({ account }: { account: string }) {
   const setPartnerAccount = useCmixChatStore((s) => s.setPartnerAccount);
   const storedMyAccount = useCmixChatStore((s) => s.partnerAccounts[account]);
   const activeAddress = useAccountsStore((s) => s.activeAddress);
+  // Resolve the partner's name for the screen title (matches the body label) so
+  // it doesn't read as a stray raw address.
+  const { name: partnerName, fragment: partnerFragment } = useAddressName(account);
 
   // Which of MY accounts I'm this partner as: the recorded one, else my active
   // account (the default for a fresh conversation). Its identity is what I send
@@ -112,7 +116,7 @@ function ChatView({ account }: { account: string }) {
 
   return (
     <>
-      <TopBar title={shortenAddress(account)} showBack />
+      <TopBar title={partnerName ?? partnerFragment} showBack />
       <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-md mx-auto">
         {/* Who you're talking to + which of YOUR accounts you're messaging as. */}
         <div className="flex items-center gap-2 px-4 py-2 border-b border-ink-800 flex-shrink-0">
