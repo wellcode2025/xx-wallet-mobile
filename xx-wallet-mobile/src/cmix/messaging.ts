@@ -22,7 +22,16 @@ import {
   type CoordinationParseResult,
 } from './coordinationMessage';
 import type { BytesPackage } from '../utils/bytesPackage';
-import { CHAT_MESSAGE_TYPE, buildChatMemo, parseChatMemo, type ChatMemo } from './chatMessage';
+import {
+  CHAT_MESSAGE_TYPE,
+  CHAT_ACK_TYPE,
+  buildChatMemo,
+  parseChatMemo,
+  buildChatAck,
+  parseChatAck,
+  type ChatMemo,
+  type ChatAck,
+} from './chatMessage';
 
 /** e2e message type used for multisig coordination memos (app-defined). */
 export const COORDINATION_MESSAGE_TYPE = 2;
@@ -56,6 +65,11 @@ export interface MessagingHandle {
   sendMemo(partnerId: Uint8Array, memo: ChatMemo): Promise<SendResult>;
   /** Register a handler for incoming chat memos from a sender (invalid memos dropped). */
   onMemo(senderId: Uint8Array, handler: (memo: ChatMemo) => void): Promise<void>;
+  /** Send a delivery ack for a received memo back to its sender (distinct from
+   *  sendAck, which is the multisig approve/reject ack). */
+  sendMemoAck(partnerId: Uint8Array, ackId: string): Promise<SendResult>;
+  /** Register a handler for incoming memo-delivery acks from a sender (invalid acks dropped). */
+  onMemoAck(senderId: Uint8Array, handler: (ack: ChatAck) => void): Promise<void>;
 }
 
 export interface MessagingOptions {
@@ -132,6 +146,13 @@ function makeHandle(e2e: E2eSession): MessagingHandle {
       e2e.onMessage(senderId, CHAT_MESSAGE_TYPE, (msg) => {
         const memo = parseChatMemo(msg.payload);
         if (memo) handler(memo);
+      }),
+    sendMemoAck: (partnerId, ackId) =>
+      e2e.send(partnerId, CHAT_ACK_TYPE, buildChatAck(ackId)),
+    onMemoAck: (senderId, handler) =>
+      e2e.onMessage(senderId, CHAT_ACK_TYPE, (msg) => {
+        const ack = parseChatAck(msg.payload);
+        if (ack) handler(ack);
       }),
   };
 }

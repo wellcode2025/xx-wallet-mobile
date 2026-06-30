@@ -29,7 +29,11 @@ export interface ChatMessage {
   /** Local clock when this message was stored (ms) — used for ordering, since a
    *  peer's sentAt can't be trusted against our clock. */
   at: number;
-  /** Outgoing only: true once a delivery receipt confirmed it landed. */
+  /** Outgoing only: true once the cMix round-result confirmed it entered the
+   *  mixnet (in transit to the recipient), even before they've received it. */
+  sent?: boolean;
+  /** Outgoing only: true once the RECIPIENT acked it — i.e. their device
+   *  received + decoded it (the honest "delivered", distinct from `sent`). */
   delivered?: boolean;
 }
 
@@ -40,7 +44,9 @@ interface CmixChatState {
   /** Append a message to a conversation. Dedups by id (idempotent on a repeat,
    *  e.g. a retried inbound memo) — returns false if it was already present. */
   append(account: string, msg: ChatMessage): boolean;
-  /** Mark an outgoing message delivered (or not) by id. */
+  /** Mark an outgoing message as having entered the mixnet (round-confirmed). */
+  markSent(account: string, id: string): void;
+  /** Mark an outgoing message delivered (recipient acked) by id. */
   markDelivered(account: string, id: string, delivered: boolean): void;
   /** The ordered messages for a partner (empty array if none). */
   conversation(account: string): ChatMessage[];
@@ -67,6 +73,17 @@ export const useCmixChatStore = create<CmixChatState>()(
           },
         });
         return true;
+      },
+
+      markSent(account, id) {
+        const existing = get().conversations[account];
+        if (!existing) return;
+        set({
+          conversations: {
+            ...get().conversations,
+            [account]: existing.map((m) => (m.id === id ? { ...m, sent: true } : m)),
+          },
+        });
       },
 
       markDelivered(account, id, delivered) {

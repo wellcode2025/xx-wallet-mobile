@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Send, Loader2, Check, AlertTriangle } from 'lucide-react';
+import { Send, Loader2, Check, CheckCheck, AlertTriangle } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
@@ -41,7 +41,7 @@ function ChatView({ account }: { account: string }) {
   const conv = useCmixChatStore((s) => s.conversations[account]);
   const messages = conv ?? NO_MESSAGES;
   const append = useCmixChatStore((s) => s.append);
-  const markDelivered = useCmixChatStore((s) => s.markDelivered);
+  const markSent = useCmixChatStore((s) => s.markSent);
 
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState<Set<string>>(new Set());
@@ -66,26 +66,23 @@ function ChatView({ account }: { account: string }) {
       return next;
     });
 
-  // Fan a memo out to all of the partner's devices; delivered if any confirms.
+  // Fan a memo out to all of the partner's devices. The round-result only tells
+  // us it entered the mixnet ("sent") — the recipient's ACK is what flips it to
+  // "delivered" (handled in useCmixChatReceive). Leaving it un-sent (no handle,
+  // no contact, send error) makes the bubble offer Retry once the spinner clears.
   const deliver = async (id: string, text: string, sentAt: number) => {
-    if (!handle) {
-      markDelivered(account, id, false);
-      return;
-    }
+    if (!handle) return;
+    const contacts = contactsForAccount(deserializeRegistry(bindings), account);
+    if (contacts.length === 0) return;
     setSendingFlag(id, true);
     try {
-      const contacts = contactsForAccount(deserializeRegistry(bindings), account);
-      if (contacts.length === 0) {
-        markDelivered(account, id, false);
-        return;
-      }
       const targets = contacts.map((c) => ({ contact: c, id: getIDFromContact(c) }));
       const results = await Promise.all(
         targets.map((t) => sendMemoTo(handle, t, { kind: 'chat.memo', v: 1, id, text, sentAt }))
       );
-      markDelivered(account, id, results.some((r) => r.delivered));
+      if (results.some((r) => r.delivered)) markSent(account, id);
     } catch {
-      markDelivered(account, id, false);
+      /* leave un-sent → Retry */
     } finally {
       setSendingFlag(id, false);
     }
@@ -137,7 +134,7 @@ function ChatView({ account }: { account: string }) {
         >
           {!online ? (
             <p className="text-xs text-ink-300 leading-snug px-1 py-1.5">
-              Go online (from a multisig's Cosigner messaging section) to send.
+              Go online from the Memos tab to send.
             </p>
           ) : !hasContact ? (
             <p className="text-xs text-ink-300 leading-snug px-1 py-1.5">
@@ -196,10 +193,12 @@ function Bubble({
         <p className="text-sm text-ink-100 whitespace-pre-wrap break-words">{message.text}</p>
         {out && (
           <div className="flex justify-end mt-0.5">
-            {sending ? (
+            {message.delivered ? (
+              <CheckCheck size={12} className="text-xx-500" strokeWidth={2.5} aria-label="Delivered" />
+            ) : sending ? (
               <Loader2 size={11} className="text-ink-300 animate-spin" strokeWidth={2} />
-            ) : message.delivered ? (
-              <Check size={11} className="text-xx-500" strokeWidth={2.5} />
+            ) : message.sent ? (
+              <Check size={11} className="text-ink-300" strokeWidth={2} aria-label="Sent" />
             ) : (
               <button
                 onClick={onRetry}

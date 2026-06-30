@@ -161,6 +161,8 @@ describe('sendProposalToCosigners', () => {
       onCoordination: async () => {},
       sendMemo: async () => delivered,
       onMemo: async () => {},
+      sendMemoAck: async () => delivered,
+      onMemoAck: async () => {},
       ...over,
     };
   }
@@ -266,6 +268,8 @@ describe('sendMemoTo', () => {
     onCoordination: async () => {},
     sendMemo: async () => ok,
     onMemo: async () => {},
+    sendMemoAck: async () => ok,
+    onMemoAck: async () => {},
     ...over,
   });
 

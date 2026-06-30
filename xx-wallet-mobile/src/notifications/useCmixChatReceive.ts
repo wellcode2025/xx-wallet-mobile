@@ -66,10 +66,23 @@ export function useCmixChatReceive() {
               sentAt: memo.sentAt,
               at: Date.now(),
             });
+            // Auto-ack receipt so the sender's checkmark means "they got it",
+            // not just "it entered a round". Fire-and-forget; ack even on a
+            // duplicate (the sender resends until it sees an ack). `id` is the
+            // sender's reception id we're listening to.
+            void handle.sendMemoAck(id, memo.id).catch(() => {});
           })
           .catch(() => {
             registered.delete(regKey); // registration failed — allow a retry
           });
+
+        // The other half: when a partner acks one of OUR outgoing memos, mark it
+        // delivered (flips the checkmark). Best-effort registration.
+        handle
+          .onMemoAck(id, (ack) => {
+            useCmixChatStore.getState().markDelivered(account, ack.ackId, true);
+          })
+          .catch(() => {});
       }
     }
   }, [status, handle, bindings]);

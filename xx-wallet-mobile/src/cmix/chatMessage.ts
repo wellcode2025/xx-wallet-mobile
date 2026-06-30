@@ -13,10 +13,16 @@
  */
 
 const KIND = 'chat.memo';
+const ACK_KIND = 'chat.ack';
 const VERSION = 1;
 
 /** e2e messageType for 1:1 chat memos — distinct from coordination (2). */
 export const CHAT_MESSAGE_TYPE = 3;
+
+/** e2e messageType for chat delivery acks — distinct from memos (3). The
+ *  recipient auto-sends one on receipt so the sender's checkmark means "they got
+ *  it," not just "it entered a completed round." */
+export const CHAT_ACK_TYPE = 4;
 
 /** Max chars in a single memo. Caps storage + keeps within mixnet message size;
  *  a malformed/hostile oversize payload is rejected at parse rather than stored. */
@@ -77,6 +83,48 @@ export function parseChatMemo(input: Uint8Array | string | unknown): ChatMemo | 
   if (typeof o.sentAt !== 'number' || !Number.isFinite(o.sentAt)) return null;
 
   return { kind: KIND, v: VERSION, id: o.id, text: o.text, sentAt: o.sentAt };
+}
+
+/** A delivery ack referencing the memo id it confirms. */
+export interface ChatAck {
+  kind: typeof ACK_KIND;
+  v: typeof VERSION;
+  /** The id of the memo being acknowledged. */
+  ackId: string;
+}
+
+/** Serialize a delivery ack to the e2e payload bytes. */
+export function buildChatAck(ackId: string): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify({ kind: ACK_KIND, v: VERSION, ackId }));
+}
+
+/**
+ * Parse + validate a received ack payload. Returns null on anything malformed,
+ * unknown, or newer-versioned — a bad ack is dropped, never acted on.
+ */
+export function parseChatAck(input: Uint8Array | string | unknown): ChatAck | null {
+  let raw: unknown = input;
+  if (input instanceof Uint8Array) {
+    try {
+      raw = JSON.parse(new TextDecoder().decode(input));
+    } catch {
+      return null;
+    }
+  } else if (typeof input === 'string') {
+    try {
+      raw = JSON.parse(input);
+    } catch {
+      return null;
+    }
+  }
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+
+  if (o.kind !== ACK_KIND) return null;
+  if (typeof o.v !== 'number' || o.v > VERSION) return null;
+  if (typeof o.ackId !== 'string' || o.ackId.length === 0 || o.ackId.length > 128) return null;
+
+  return { kind: ACK_KIND, v: VERSION, ackId: o.ackId };
 }
 
 function randomId(): string {

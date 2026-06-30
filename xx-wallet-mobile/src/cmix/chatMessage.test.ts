@@ -7,6 +7,8 @@ import {
   buildChatMemo,
   newChatMemo,
   parseChatMemo,
+  buildChatAck,
+  parseChatAck,
   MAX_MEMO_CHARS,
   type ChatMemo,
 } from './chatMessage';
@@ -59,5 +61,29 @@ describe('buildChatMemo / parseChatMemo', () => {
       JSON.stringify({ kind: 'chat.memo', v: 99, id: 'abc', text: 'hi', sentAt: 1 })
     );
     expect(parseChatMemo(bytes)).toBeNull();
+  });
+});
+
+describe('buildChatAck / parseChatAck', () => {
+  it('round-trips an ack through bytes', () => {
+    const out = parseChatAck(buildChatAck('memo-id-123'));
+    expect(out).toEqual({ kind: 'chat.ack', v: 1, ackId: 'memo-id-123' });
+  });
+
+  it('rejects non-JSON, the wrong kind, and a missing/empty ackId', () => {
+    expect(parseChatAck(new TextEncoder().encode('nope {'))).toBeNull();
+    expect(parseChatAck(JSON.stringify({ kind: 'chat.memo', v: 1, ackId: 'x' }))).toBeNull();
+    expect(parseChatAck(JSON.stringify({ kind: 'chat.ack', v: 1, ackId: '' }))).toBeNull();
+    expect(parseChatAck(JSON.stringify({ kind: 'chat.ack', v: 1 }))).toBeNull();
+  });
+
+  it('rejects a future version', () => {
+    expect(parseChatAck(JSON.stringify({ kind: 'chat.ack', v: 99, ackId: 'x' }))).toBeNull();
+  });
+
+  // A memo and an ack must never parse as each other (they ride distinct e2e types).
+  it('does not cross-parse with memos', () => {
+    expect(parseChatMemo(buildChatAck('x'))).toBeNull();
+    expect(parseChatAck(buildChatMemo(newChatMemo('hi')))).toBeNull();
   });
 });
