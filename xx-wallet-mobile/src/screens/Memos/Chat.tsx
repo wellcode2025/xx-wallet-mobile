@@ -10,13 +10,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Send, Loader2, Check, CheckCheck, AlertTriangle } from 'lucide-react';
+import { Send, Loader2, Check, CheckCheck, AlertTriangle, ChevronDown } from 'lucide-react';
 import { TopBar } from '@/components/layout';
-import { AddressIcon, AddressLabel } from '@/components/ui';
+import { AddressIcon, AddressLabel, Sheet } from '@/components/ui';
 import { useAccountsStore } from '@/store';
+import { isLocalAccount } from '@/keyring/store';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
 import { useCmixChatStore, type ChatMessage } from '@/store/cmixChat';
+import { useCmixSecretStore } from '@/store/cmixSecret';
 import { deserializeRegistry } from '@/cmix/registrySerde';
 import { contactsForAccount } from '@/cmix/contactRegistry';
 import { getIDFromContact } from '@/cmix/e2eApi';
@@ -58,6 +60,7 @@ function ChatView({ account }: { account: string }) {
 
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState<Set<string>>(new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
   const online = status === 'online';
 
   // Whether the partner's contact is on this device (else we can't fan out).
@@ -89,9 +92,11 @@ function ChatView({ account }: { account: string }) {
     if (contacts.length === 0) return;
     setSendingFlag(id, true);
     try {
-      // Lock in which of my accounts I talk to this partner as, then send from
-      // THAT account's identity (so the partner sees the identity they added).
+      // Lock in which of my accounts I talk to this partner as, register it as a
+      // messaging identity (so its inbox is listened on for replies), then send
+      // from THAT account's identity (the partner sees the identity they added).
       setPartnerAccount(account, myAccount);
+      useCmixSecretStore.getState().addIdentityAccount(myAccount);
       const am = await handle.forAccount(myAccount);
       const targets = contacts.map((c) => ({ contact: c, id: getIDFromContact(c) }));
       const results = await Promise.all(
@@ -123,12 +128,18 @@ function ChatView({ account }: { account: string }) {
           <AddressIcon address={account} size={24} />
           <div className="min-w-0 flex-1">
             <AddressLabel address={account} className="text-sm" />
-            {myAccount && (
-              <div className="flex items-center gap-1 text-xs text-ink-300">
-                <span className="flex-shrink-0">Messaging as</span>
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="flex items-center gap-1 text-xs text-ink-300 active:text-ink-100"
+            >
+              <span className="flex-shrink-0">Messaging as</span>
+              {myAccount ? (
                 <AddressLabel address={myAccount} className="text-xs text-ink-300 truncate" />
-              </div>
-            )}
+              ) : (
+                <span className="text-xx-500">choose account</span>
+              )}
+              <ChevronDown size={11} className="flex-shrink-0" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
 
@@ -193,7 +204,85 @@ function ChatView({ account }: { account: string }) {
           )}
         </div>
       </div>
+
+      <MessagingAsSheet
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        partner={account}
+        current={myAccount || null}
+        hasMessages={messages.length > 0}
+      />
     </>
+  );
+}
+
+/**
+ * Pick which of YOUR accounts to message a partner as. Each account is a separate,
+ * unlinkable cMix identity — the chosen one is what they see and reply to. Set per
+ * conversation; switching after you've already messaged means re-sharing the new
+ * account's contact so they can reach that identity.
+ */
+function MessagingAsSheet({
+  open,
+  onClose,
+  partner,
+  current,
+  hasMessages,
+}: {
+  open: boolean;
+  onClose: () => void;
+  partner: string;
+  current: string | null;
+  hasMessages: boolean;
+}) {
+  const { accounts } = useAccountsStore();
+  const setPartnerAccount = useCmixChatStore((s) => s.setPartnerAccount);
+  const eligible = useMemo(() => accounts.filter(isLocalAccount), [accounts]);
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Message as">
+      <div className="space-y-3">
+        <p className="text-xs text-ink-300 leading-relaxed">
+          Choose which of your accounts to reach this person from. Each account is a separate,
+          unlinkable identity — they'll see and reply to the one you pick. Share that account's
+          contact with them so they can reach it.
+        </p>
+
+        {hasMessages && current && (
+          <div className="flex items-start gap-2 p-3 rounded-2xl bg-warning/5 border border-warning/20">
+            <AlertTriangle size={14} className="text-warning flex-shrink-0 mt-0.5" strokeWidth={2} />
+            <p className="text-xs text-ink-200 leading-relaxed">
+              You've already messaged them from another account. If you switch, share the new
+              account's contact with them — otherwise your messages won't reach.
+            </p>
+          </div>
+        )}
+
+        <ul className="space-y-1.5">
+          {eligible.map((a) => (
+            <li key={a.address}>
+              <button
+                onClick={() => {
+                  setPartnerAccount(partner, a.address, true);
+                  useCmixSecretStore.getState().addIdentityAccount(a.address);
+                  onClose();
+                }}
+                className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
+              >
+                <AddressIcon address={a.address} size={28} />
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm text-ink-100 truncate">{a.name}</p>
+                  <p className="font-mono text-xs text-ink-300 truncate">{a.address}</p>
+                </div>
+                {a.address === current && (
+                  <Check size={16} className="text-xx-500 flex-shrink-0" strokeWidth={2.5} />
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Sheet>
   );
 }
 
