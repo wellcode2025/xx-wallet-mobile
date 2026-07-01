@@ -14,7 +14,7 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 import { useAccountsStore, useAddressBook } from '@/store';
-import { useBalance, useTx } from '@/hooks';
+import { useApi, useBalance, useTx } from '@/hooks';
 import { isLedgerAccount } from '@/keyring';
 import { isValidXxAddress, formatBalance, parseAmount, shortenAddress } from '@/utils';
 import { XX_SYMBOL, XX_DECIMALS } from '@/api';
@@ -24,11 +24,12 @@ import { ContactsSheet } from './ContactsSheet';
 import { ContactForm, isVerifiedJudgement, type ContactFormMode } from './ContactForm';
 
 /**
- * Existential deposit for the xx network — 1,000,000 planck = 0.001 XX.
- * If an account's balance drops below this, it is removed from chain state.
- * Source: confirmed from xx network chain configuration.
+ * Fallback existential deposit, used only until the chain constant loads. The
+ * real value is read at runtime from `api.consts.balances.existentialDeposit`
+ * (see `ed` below) — the hardcoded number was too low and caused Max sends to
+ * fail, so it must never be trusted as ground truth.
  */
-const EXISTENTIAL_DEPOSIT = new BigNumber('1000000'); // 0.001 XX in planck
+const EXISTENTIAL_DEPOSIT = new BigNumber('1000000'); // fallback: 0.001 XX in planck
 
 /**
  * Send screen.
@@ -58,6 +59,7 @@ export function Send() {
   const activeIsLedger = !!active && isLedgerAccount(active);
   const { balance } = useBalance(active?.address ?? null);
   const { submit, status, error: txError, reset } = useTx();
+  const api = useApi();
 
   // Send form state
   const [recipient, setRecipient] = useState(() => searchParams.get('to') ?? '');
@@ -119,6 +121,20 @@ export function Send() {
     [balance]
   );
 
+  // The existential deposit, read from the chain (fallback until it loads).
+  // Hardcoding it too low made Max sends leave the account below ED → failure.
+  const ed = useMemo(
+    () =>
+      api
+        ? new BigNumber(api.consts.balances.existentialDeposit.toString())
+        : EXISTENTIAL_DEPOSIT,
+    [api]
+  );
+  const edHuman = useMemo(
+    () => ed.div(new BigNumber(10).pow(XX_DECIMALS)).toString(),
+    [ed]
+  );
+
   // Would sender drop below existential deposit after this send? Catches
   // both "leaves a tiny non-zero remainder" (was the only case before) AND
   // "exactly drains the account" (which the chain would also reap, after
@@ -129,8 +145,8 @@ export function Send() {
   const senderBelowED = useMemo(() => {
     if (!parsedAmount || !transferable) return false;
     const remaining = transferable.minus(parsedAmount);
-    return remaining.isLessThan(EXISTENTIAL_DEPOSIT);
-  }, [parsedAmount, transferable]);
+    return remaining.isLessThan(ed);
+  }, [parsedAmount, transferable, ed]);
 
   // The user has explicitly acknowledged that they understand reaping
   // and want to proceed anyway. Resets when amount/recipient changes so
@@ -143,8 +159,8 @@ export function Send() {
   // Is recipient amount below existential deposit (new account risk)?
   const recipientBelowED = useMemo(() => {
     if (!parsedAmount) return false;
-    return parsedAmount.isLessThan(EXISTENTIAL_DEPOSIT);
-  }, [parsedAmount]);
+    return parsedAmount.isLessThan(ed);
+  }, [parsedAmount, ed]);
 
   const amountValid =
     parsedAmount !== null &&
@@ -172,12 +188,24 @@ export function Send() {
     !matchedContact &&
     recipient.trim().length > 0;
 
-  // Safe max — leaves enough to stay above existential deposit
-  const setMax = () => {
-    if (!transferable) return;
-    // transferKeepAlive will reject below ED anyway, but we subtract here for
-    // a clean UX — no failed-tx surprises.
-    const safeMax = transferable.minus(EXISTENTIAL_DEPOSIT);
+  // Safe max — leaves the existential deposit AND the transfer fee. The sender
+  // pays the fee from this same account, so a naive `transferable − ED` would
+  // need `balance + fee` and fail with InsufficientBalance ("balance too low to
+  // send value"). Estimate the fee via paymentInfo (≈ value-independent here).
+  const setMax = async () => {
+    if (!transferable || !active || !api) return;
+    const probe = transferable.minus(ed);
+    if (probe.isLessThanOrEqualTo(0)) return;
+    let fee = new BigNumber(0);
+    try {
+      const info = await api.tx.balances
+        .transferKeepAlive(active.address, probe.toFixed(0))
+        .paymentInfo(active.address);
+      fee = new BigNumber(info.partialFee.toString());
+    } catch {
+      /* couldn't estimate the fee — leave only the ED (better than failing) */
+    }
+    const safeMax = transferable.minus(ed).minus(fee);
     if (safeMax.isLessThanOrEqualTo(0)) return;
     const human = safeMax
       .div(new BigNumber(10).pow(XX_DECIMALS))
@@ -459,7 +487,7 @@ export function Send() {
             </label>
             {balance && (
               <button
-                onClick={setMax}
+                onClick={() => void setMax()}
                 className="text-xs font-medium text-xx-500 active:text-xx-600"
               >
                 Max: {formatBalance(balance.transferable, { decimals: 4 })}
@@ -515,7 +543,7 @@ export function Send() {
                 />
                 <p className="text-xs text-ink-200 leading-relaxed">
                   This will leave your account below the existential
-                  deposit (0.001 XX) and the chain will remove the
+                  deposit ({edHuman} {XX_SYMBOL}) and the chain will remove the
                   account record.
                 </p>
               </div>
@@ -558,9 +586,9 @@ export function Send() {
             <div className="flex items-start gap-2 mt-2 p-3 rounded-xl bg-warning/10 border border-warning/30">
               <ShieldAlert size={14} className="text-warning flex-shrink-0 mt-0.5" />
               <p className="text-xs text-ink-200 leading-relaxed">
-                Sending less than 0.001 XX to a new account may mean it never
-                appears on the blockchain. Make sure the recipient already has
-                an existing balance.
+                Sending less than {edHuman} {XX_SYMBOL} to a new account may mean it
+                never appears on the blockchain. Make sure the recipient already
+                has an existing balance.
               </p>
             </div>
           )}

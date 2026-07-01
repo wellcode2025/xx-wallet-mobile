@@ -51,9 +51,11 @@ import { formatBalance, isValidXxAddress, parseAmount } from '@/utils';
 import { XX_DECIMALS, XX_SYMBOL } from '@/api';
 
 /**
- * Existential deposit on xx network — same constant the Send screen uses.
- * Multisig accounts are also subject to it; we don't want a propose to
- * leave the multisig itself reaped.
+ * Fallback existential deposit, used only until the chain constant loads. The
+ * real value is read at runtime from `api.consts.balances.existentialDeposit`
+ * (see `ed` below). Multisig accounts are subject to it too; we don't want a
+ * propose to leave the multisig itself reaped. The hardcoded number was too low
+ * and caused Max to fail, so it must never be trusted as ground truth.
  */
 const EXISTENTIAL_DEPOSIT = new BigNumber('1000000');
 
@@ -224,6 +226,20 @@ function ProposeView({ address }: { address: string }) {
     [balance]
   );
 
+  // The existential deposit, read from the chain (fallback until it loads).
+  // Hardcoding it too low made Max leave the multisig below ED → failure.
+  const ed = useMemo(
+    () =>
+      api
+        ? new BigNumber(api.consts.balances.existentialDeposit.toString())
+        : EXISTENTIAL_DEPOSIT,
+    [api]
+  );
+  const edHuman = useMemo(
+    () => ed.div(new BigNumber(10).pow(XX_DECIMALS)).toString(),
+    [ed]
+  );
+
   // Existential deposit warnings — same logic as Send. The multisig is
   // the sender here; if the proposed amount would reap it, the chain
   // will refuse via transferKeepAlive at execution time unless the user
@@ -233,8 +249,8 @@ function ProposeView({ address }: { address: string }) {
   const senderBelowED = useMemo(() => {
     if (!parsedAmount || !transferable) return false;
     const remaining = transferable.minus(parsedAmount);
-    return remaining.isLessThan(EXISTENTIAL_DEPOSIT);
-  }, [parsedAmount, transferable]);
+    return remaining.isLessThan(ed);
+  }, [parsedAmount, transferable, ed]);
 
   // Conscious-acknowledge: user understands that reaping the multisig
   // will remove its on-chain record (and any reserved deposits from
@@ -247,8 +263,8 @@ function ProposeView({ address }: { address: string }) {
 
   const recipientBelowED = useMemo(() => {
     if (!parsedAmount) return false;
-    return parsedAmount.isLessThan(EXISTENTIAL_DEPOSIT);
-  }, [parsedAmount]);
+    return parsedAmount.isLessThan(ed);
+  }, [parsedAmount, ed]);
 
   const amountValid =
     parsedAmount !== null &&
@@ -373,9 +389,12 @@ function ProposeView({ address }: { address: string }) {
     }
   })();
 
+  // The multisig is the sender but does NOT pay the network fee — the proposing
+  // signer pays that from its own account (pre-flighted separately). So Max only
+  // needs to leave the multisig its existential deposit.
   const setMax = () => {
     if (!transferable) return;
-    const safeMax = transferable.minus(EXISTENTIAL_DEPOSIT);
+    const safeMax = transferable.minus(ed);
     if (safeMax.isLessThanOrEqualTo(0)) return;
     const human = safeMax
       .div(new BigNumber(10).pow(XX_DECIMALS))
@@ -809,7 +828,7 @@ function ProposeView({ address }: { address: string }) {
                 />
                 <p className="text-xs text-ink-200 leading-relaxed">
                   This will leave the multisig below the existential
-                  deposit (0.001 XX) and the chain will remove its
+                  deposit ({edHuman} {XX_SYMBOL}) and the chain will remove its
                   account record.
                 </p>
               </div>
