@@ -123,24 +123,38 @@ function ChatView({ account }: { account: string }) {
     <>
       <TopBar title={partnerName ?? partnerFragment} showBack />
       <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-md mx-auto">
-        {/* Who you're talking to + which of YOUR accounts you're messaging as. */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-ink-800 flex-shrink-0">
-          <AddressIcon address={account} size={24} />
-          <div className="min-w-0 flex-1">
-            <AddressLabel address={account} className="text-sm" />
-            <button
-              onClick={() => setPickerOpen(true)}
-              className="flex items-center gap-1 text-xs text-ink-300 active:text-ink-100"
-            >
-              <span className="flex-shrink-0">Messaging as</span>
-              {myAccount ? (
-                <AddressLabel address={myAccount} className="text-xs text-ink-300 truncate" />
-              ) : (
-                <span className="text-xx-500">choose account</span>
-              )}
-              <ChevronDown size={11} className="flex-shrink-0" strokeWidth={2.5} />
-            </button>
+        {/* Header: who you're talking TO, and which of YOUR accounts you're
+            messaging AS — the latter a clearly-tappable control. */}
+        <div className="px-4 py-3 border-b border-ink-800 flex-shrink-0 space-y-2">
+          <div className="flex items-center gap-2.5">
+            <AddressIcon address={account} size={34} />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium uppercase tracking-wider text-ink-300">
+                Conversation with
+              </p>
+              <AddressLabel address={account} className="text-sm" />
+            </div>
           </div>
+
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-ink-800 border border-ink-700/70 active:bg-ink-700"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-medium uppercase tracking-wider text-ink-300 flex-shrink-0">
+                Messaging as
+              </span>
+              {myAccount ? (
+                <AddressLabel address={myAccount} className="text-sm truncate" />
+              ) : (
+                <span className="text-sm text-xx-500">Choose an account</span>
+              )}
+            </div>
+            <span className="flex items-center gap-1 text-xs font-medium text-xx-500 flex-shrink-0">
+              Change
+              <ChevronDown size={14} strokeWidth={2.75} />
+            </span>
+          </button>
         </div>
 
         {/* Messages */}
