@@ -10,7 +10,7 @@
 [![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8.svg)](https://mobile.xx.network)
 [![Built with React + Vite](https://img.shields.io/badge/React_18-Vite-06b6d4.svg)](#tech-stack)
 [![Chain: xx network](https://img.shields.io/badge/chain-xx_network-08cdd7.svg)](https://xx.network)
-[![Version 0.9.0](https://img.shields.io/badge/version-0.9.0-08cdd7.svg)](https://mobile.xx.network)
+[![Version 0.10.0](https://img.shields.io/badge/version-0.10.0-08cdd7.svg)](https://mobile.xx.network)
 
 [**Open the wallet → mobile.xx.network**](https://mobile.xx.network)
 
@@ -25,7 +25,8 @@ talks to no backend of its own, and can be installed to your home screen and use
 
 It covers the full surface a day-to-day xx network user needs from a phone: accounts, transfers,
 the complete staking lifecycle (nominator **and** validator), the full Gov1 governance surface,
-native multisig, and Ledger hardware accounts — with quantum-resistant key generation on by default.
+native multisig, Ledger hardware accounts, and private messaging over the xx mixnet — with
+quantum-resistant key generation on by default.
 
 > [!IMPORTANT]
 > **Not yet official.** This is an independent, community-built wallet — not yet a formally endorsed
@@ -59,6 +60,10 @@ on top of what xx network already provides:
 - **You can see what you sign.** Multisig calls, governance preimages, and proposals are decoded
   locally from the on-chain bytes — never from a description someone supplied — and validators are
   inspectable before you stake.
+- **Private messaging without a new server.** Coordinate a multisig or chat 1:1, end-to-end
+  encrypted over the xx network's own mixnet — metadata-resistant by design, nothing stored on any
+  server, and a separate unlinkable identity per account. The received data is still re-checked
+  against the on-chain call hash, so a message is transport, never an instruction.
 - **Quantum-resistant by default**, non-custodial, and free of telemetry, analytics, and ads — your
   keys never leave the device.
 

@@ -36,6 +36,8 @@ src/
 ├── api/             @polkadot/api singleton, xx network constants, on-chain identity lookup
 ├── keyring/         Encrypted account storage and the Sleeve WASM wrapper
 ├── ledger/          Ledger hardware-wallet transport + device signer (lazy-loaded)
+├── cmix/            Private messaging over the xx mixnet — per-account identities,
+│                    e2e sessions, contact bindings, chat + coordination wire formats
 ├── staking/         Sequential-Phragmén pass + validator selection
 ├── governance/      Cross-cutting Gov1 utilities
 ├── hooks/           Data + compute hooks for balances, staking, multisig, governance

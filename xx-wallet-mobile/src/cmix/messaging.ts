@@ -82,12 +82,10 @@ export interface AccountMessaging {
 /**
  * The device's messaging service: one cMix client hosting one identity PER
  * account. `forAccount` lazily logs in (and memoizes) an account's identity and
- * returns its AccountMessaging. The bare AccountMessaging methods it also exposes
- * are a transitional convenience that operate on the PRIMARY account (the active
- * one) — callers are being migrated to `forAccount` so every send/receive is
- * explicit about which account it's as.
+ * returns its AccountMessaging — every send/receive is explicit about which
+ * account it's as.
  */
-export interface MessagingHandle extends AccountMessaging {
+export interface MessagingHandle {
   /** Messaging scoped to one of the user's accounts (lazily logs its identity in). */
   forAccount(account: string): Promise<AccountMessaging>;
   /** Accounts whose identity is currently logged in this session. */
@@ -160,11 +158,10 @@ async function build(opts: MessagingOptions): Promise<MessagingHandle> {
     return p;
   };
 
-  // Eagerly bring up the primary account so the convenience methods are ready.
-  const primary = await create(opts.primaryAccount);
+  // Eagerly bring up the primary (active) account so it's ready to send/receive.
+  await create(opts.primaryAccount);
 
   return {
-    ...primary,
     forAccount: create,
     loadedAccounts: () => [...loaded.keys()],
   };

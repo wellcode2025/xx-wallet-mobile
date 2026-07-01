@@ -43,17 +43,16 @@
  *     (refactors, dependency bumps, file names). Substrate terms are fine.
  */
 
-export const APP_VERSION = '0.9.0';
+export const APP_VERSION = '0.10.0';
 
 /** Optional one-line subtitle rendered above the bullets. Keep <8 words. */
-export const RELEASE_TAGLINE = 'Sharper, safer, and more accessible.';
+export const RELEASE_TAGLINE = 'Private messaging, built in.';
 
 /** Short, user-facing bullets. Substrate jargon is fine — foundation
  *  members and power users already speak it. */
 export const RELEASE_NOTES: readonly string[] = [
-  'Connect a Ledger hardware wallet and sign transactions with your keys never leaving the device.',
-  'Take part in on-chain governance — vote on referenda, delegate your vote, second proposals, and follow treasury, council, and bounties.',
-  'Protect your funds with an optional app lock (PIN or biometric) and two-device approval for larger balances.',
-  'Clearer, more legible text across every screen, with higher-contrast labels and addresses that meet WCAG AA.',
-  'Completed an independent security review with every finding resolved, ahead of a planned external audit.',
+  'Send private, end-to-end encrypted messages to other wallets over the xx mixnet — no servers, no group chat, history only on your device.',
+  'Message as any of your accounts, each with its own unlinkable identity, and choose which one you reach someone from.',
+  'Coordinate a multisig over the mixnet — send a proposal straight to your cosigners and it arrives ready to approve, no file or QR to pass around.',
+  'Lock messaging behind a dedicated passphrase (separate from your wallet password), and back up your identities to restore them on another device.',
 ];
