@@ -13,6 +13,7 @@
  */
 import { getCmixSession, type CmixSessionOptions } from './session';
 import { createE2eSession, parseReceivedMessage, type E2eSession, type SendResult } from './e2e';
+import { ensureReceptionIdentity } from './identity';
 import type { AuthCallbacks } from './e2eApi';
 import type { ConnectPhase } from './phases';
 import {
@@ -106,9 +107,10 @@ export interface MessagingOptions {
   autoConfirm?: (contact: Uint8Array) => boolean;
   /** Fired as each connect phase begins, so the UI can show real progress. */
   onPhase?: (phase: ConnectPhase) => void;
-  /** Restore: adopt these decrypted-backup identity bytes as the PRIMARY
-   *  account's identity instead of loading/minting it. */
-  importIdentity?: Uint8Array;
+  /** Restore: persist these decrypted-backup identities (one per account) into
+   *  the EKV before logging in, so each account is reachable as its backed-up
+   *  identity. */
+  importIdentities?: { account: string; identity: Uint8Array }[];
 }
 
 let handlePromise: Promise<MessagingHandle> | null = null;
@@ -137,18 +139,21 @@ async function build(opts: MessagingOptions): Promise<MessagingHandle> {
   const session = await getCmixSession({ ...opts.session, onPhase: opts.onPhase });
   opts.onPhase?.('finalizing');
 
+  // Restore: persist each backed-up identity under its account BEFORE any Login,
+  // so the per-account sessions below load the restored identity, not a fresh one.
+  for (const { account, identity } of opts.importIdentities ?? []) {
+    await ensureReceptionIdentity(session.cmix, account, identity);
+  }
+
   // One identity per account, lazily logged in + memoized on the single client
   // (one cMix follower hosts them all — proven in the multi-identity spike).
   const loaded = new Map<string, Promise<AccountMessaging>>();
   const create = (account: string): Promise<AccountMessaging> => {
     let p = loaded.get(account);
     if (!p) {
-      // A restore's imported identity applies to the primary account only.
-      const importIdentity = account === opts.primaryAccount ? opts.importIdentity : undefined;
       p = createE2eSession(session.cmix, account, {
         authCallbacks: opts.authCallbacks,
         autoConfirm: opts.autoConfirm,
-        importIdentity,
       }).then(makeAccountMessaging);
       loaded.set(account, p);
     }

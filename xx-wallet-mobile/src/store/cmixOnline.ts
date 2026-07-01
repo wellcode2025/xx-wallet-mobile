@@ -125,13 +125,16 @@ interface CmixOnlineState {
   goOnlineWithDeviceKey(): Promise<void>;
 
   /**
-   * Restore a backed-up messaging identity (already-decrypted bytes) and bring
-   * it online: establish a fresh storage secret under the passphrase, then
-   * connect with the imported identity injected — so this device becomes the
-   * SAME messaging party as the backup's origin. Throws (status 'error') on a
-   * connect failure.
+   * Restore backed-up messaging identities (already decrypted, one per account)
+   * and bring messaging online: establish a fresh storage secret under the
+   * passphrase, persist each identity, connect, and register every restored
+   * account — so this device becomes the SAME messaging party as the backup's
+   * origin for each account. Throws (status 'error') on a connect failure.
    */
-  goOnlineWithImport(passphrase: string, identity: Uint8Array): Promise<void>;
+  goOnlineWithImport(
+    passphrase: string,
+    entries: { account: string; identity: Uint8Array }[]
+  ): Promise<void>;
 
   /**
    * Turn ON "stay enabled on this device": wrap the in-hand device secret under
@@ -220,26 +223,29 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
     }
   },
 
-  async goOnlineWithImport(passphrase, identity) {
+  async goOnlineWithImport(passphrase, entries) {
     const { status } = get();
     if (status === 'connecting' || status === 'online') return;
+    if (entries.length === 0) throw new Error('Backup contained no identities.');
     set({ status: 'connecting', error: null, phase: 'loading' });
     try {
       const secrets = useCmixSecretStore.getState();
       // Fresh device → mint a local storage secret; already-set-up device →
-      // unlock the existing one (the imported identity overwrites the stored one).
+      // unlock the existing one (the imported identities overwrite stored ones).
       const secret = secrets.hasSecret()
         ? await secrets.unlock(passphrase)
         : await secrets.establish(passphrase);
       const handle = await connectMessaging({
         session: { storagePassword: secret },
-        primaryAccount: primaryMessagingAccount(),
-        importIdentity: identity,
+        // Primary = the first restored account (the backup carries its own).
+        primaryAccount: entries[0].account,
+        importIdentities: entries,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
       set({ status: 'online', handle, error: null, phase: null, secret });
-      useCmixSecretStore.getState().addIdentityAccount(primaryMessagingAccount());
+      // Register every restored account so the receive hooks listen on all of them.
+      for (const e of entries) secrets.addIdentityAccount(e.account);
     } catch (err) {
       set({
         status: 'error',

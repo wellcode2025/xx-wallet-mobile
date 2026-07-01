@@ -19,10 +19,9 @@ import { Sheet } from '@/components/ui';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixSecretStore } from '@/store/cmixSecret';
 import {
-  encryptIdentityExport,
-  decryptIdentityExport,
-  readIdHint,
-  idHintFrom,
+  encryptIdentitiesExport,
+  decryptIdentitiesExport,
+  readBackupCount,
   EXPORT_FILE_NAME,
   EXPORT_MIME,
 } from '@/cmix/identityExport';
@@ -31,6 +30,7 @@ import { copyToClipboard } from '@/utils';
 export function ExportIdentitySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const handle = useCmixOnlineStore((s) => s.handle);
   const unlock = useCmixSecretStore((s) => s.unlock);
+  const identityAccounts = useCmixSecretStore((s) => s.identityAccounts);
 
   const [passphrase, setPassphrase] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,16 +43,18 @@ export function ExportIdentitySheet({ open, onClose }: { open: boolean; onClose:
     setError(null);
     try {
       // Confirm this is the device's messaging passphrase (unlock throws on a
-      // wrong one) so the export is encrypted under a passphrase the user knows
+      // wrong one) so the backup is encrypted under a passphrase the user knows
       // and will re-enter on the other device. We only need it to verify here.
       const secret = await unlock(passphrase);
       secret.fill(0);
-      const identity = handle.exportIdentity();
-      const env = await encryptIdentityExport(
-        identity,
-        passphrase,
-        idHintFrom(handle.myReceptionId())
-      );
+      // Bundle EVERY account's identity (fall back to whatever's logged in).
+      const accounts = identityAccounts.length > 0 ? identityAccounts : handle.loadedAccounts();
+      const entries: { account: string; identity: Uint8Array }[] = [];
+      for (const account of accounts) {
+        const am = await handle.forAccount(account);
+        entries.push({ account, identity: am.exportIdentity() });
+      }
+      const env = await encryptIdentitiesExport(entries, passphrase);
       setBlob(env);
       setPassphrase('');
     } catch (e) {
@@ -195,7 +197,7 @@ export function ImportIdentitySheet({ open, onClose }: { open: boolean; onClose:
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const idHint = useMemo(() => readIdHint(text), [text]);
+  const backupCount = useMemo(() => readBackupCount(text), [text]);
   const connecting = status === 'connecting';
 
   const handleFile = async (file: File) => {
@@ -214,9 +216,9 @@ export function ImportIdentitySheet({ open, onClose }: { open: boolean; onClose:
     setError(null);
     try {
       // Decrypt first (fails fast + clearly on a wrong passphrase / bad backup),
-      // then restore + connect with the recovered identity.
-      const identity = await decryptIdentityExport(text, passphrase);
-      await goOnlineWithImport(passphrase, identity);
+      // then restore all identities + connect.
+      const entries = await decryptIdentitiesExport(text, passphrase);
+      await goOnlineWithImport(passphrase, entries);
       setText('');
       setPassphrase('');
       onClose();
@@ -283,9 +285,11 @@ export function ImportIdentitySheet({ open, onClose }: { open: boolean; onClose:
               Open backup file
             </button>
 
-            {idHint && (
+            {backupCount !== null && (
               <p className="text-xs text-ink-300">
-                Backup for messaging identity <span className="font-mono text-ink-200">{idHint}</span>.
+                This backup holds{' '}
+                <span className="text-ink-200 font-medium">{backupCount}</span>{' '}
+                {backupCount === 1 ? 'identity' : 'identities'}.
               </p>
             )}
 
