@@ -1,22 +1,41 @@
 /**
  * Memos — the bottom-nav home for private, 1:1 mixnet messaging.
  *
- * Lists your conversations (per partner ACCOUNT) plus the contacts you can start
- * a chat with (anyone whose cMix contact is on this device — today that's
- * cosigners you've added). History is local + ephemeral by design: cMix keeps no
- * server-side log, so what you see here lives only on this device.
+ * Lists your conversations as THREADS — each a (your account, partner account)
+ * pair. Because every one of your accounts is its own unlinkable cMix identity,
+ * messaging one partner as account A is a different thread from messaging them as
+ * account B (their device sees two contacts), so they show as separate rows. You
+ * choose which of your accounts to reach someone from when you START a thread
+ * (the "New message" flow), never mid-conversation. History is local + ephemeral
+ * by design: cMix keeps no server-side log, so what you see here lives only on
+ * this device.
  */
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { MessageSquare, ChevronRight, Share2, UserPlus, KeyRound, Radio, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  MessageSquare,
+  ChevronRight,
+  ChevronLeft,
+  Share2,
+  UserPlus,
+  KeyRound,
+  Radio,
+  Loader2,
+  Trash2,
+  AlertTriangle,
+  PenSquare,
+} from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel, Sheet } from '@/components/ui';
+import { useAccountsStore } from '@/store';
+import { isLocalAccount } from '@/keyring/store';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
 import { useCmixContactsStore } from '@/store/cmixContacts';
-import { useCmixChatStore } from '@/store/cmixChat';
+import { useCmixChatStore, type ChatThread } from '@/store/cmixChat';
 import { useCmixSecretStore } from '@/store/cmixSecret';
 import { deserializeRegistry } from '@/cmix/registrySerde';
 import { knownAccounts } from '@/cmix/contactRegistry';
+import { useAddressName } from '@/hooks/useAddressName';
 import { ShareMyContactSheet, AddContactSheet } from './Contacts';
 import { ExportIdentitySheet, ImportIdentitySheet } from './Identity';
 import { GoOnlineSheet } from './GoOnline';
@@ -27,12 +46,12 @@ export function Memos() {
   const bindings = useCmixContactsStore((s) => s.bindings);
   const conversations = useCmixChatStore((s) => s.conversations);
   const clearConversation = useCmixChatStore((s) => s.clearConversation);
-  const forgetAccount = useCmixContactsStore((s) => s.forgetAccount);
   const notSetUp = useCmixSecretStore((s) => s.wrap === null);
   const stayEnabled = useCmixSecretStore((s) => s.deviceWrap !== null);
   const [shareOpen, setShareOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [newMsgOpen, setNewMsgOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ChatThread | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [goOnlineOpen, setGoOnlineOpen] = useState(false);
@@ -51,18 +70,25 @@ export function Memos() {
     setGoOnlineOpen(true);
   };
 
-  // Rows = anyone you have a contact for (can start a chat) ∪ anyone you already
-  // have a conversation with — most-recent first.
+  // Partners you can start a thread with (any contact on this device).
+  const partners = useMemo(
+    () => knownAccounts(deserializeRegistry(bindings)),
+    [bindings]
+  );
+
+  // Rows = every existing thread (your account, partner), most-recent first.
   const rows = useMemo(() => {
-    const reg = deserializeRegistry(bindings);
-    const all = new Set<string>([...knownAccounts(reg), ...Object.keys(conversations)]);
-    return [...all]
-      .map((account) => {
-        const msgs = conversations[account] ?? [];
-        return { account, last: msgs[msgs.length - 1] };
+    return Object.entries(conversations)
+      .map(([key, msgs]) => {
+        const i = key.indexOf('|');
+        return {
+          myAccount: key.slice(0, i),
+          partner: key.slice(i + 1),
+          last: msgs[msgs.length - 1],
+        };
       })
       .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
-  }, [bindings, conversations]);
+  }, [conversations]);
 
   return (
     <>
@@ -107,7 +133,14 @@ export function Memos() {
             className="w-full flex items-center justify-center gap-1.5 text-xs text-ink-300 active:text-ink-100 py-1"
           >
             <KeyRound size={13} strokeWidth={2} className="flex-shrink-0" />
-            Back up / move this messaging identity
+            Back up / move your messaging identities
+          </button>
+        )}
+
+        {partners.length > 0 && (
+          <button onClick={() => setNewMsgOpen(true)} className="btn-primary w-full">
+            <PenSquare size={16} strokeWidth={2} />
+            New message
           </button>
         )}
 
@@ -120,38 +153,23 @@ export function Memos() {
               <p className="font-display font-medium text-lg text-ink-100">No conversations yet</p>
               <p className="text-sm text-ink-300 leading-relaxed">
                 Private 1:1 messaging over the xx mixnet — no servers, no group chat,
-                history only on this device. Go online, then add a contact to start a
+                history only on this device. Go online, add a contact, then start a
                 conversation.
               </p>
             </div>
           </div>
         ) : (
           <ul className="space-y-1.5">
-            {rows.map(({ account, last }) => (
-              <li key={account} className="flex items-center gap-1">
-                <Link
-                  to={`/memos/${account}`}
-                  className="flex-1 min-w-0 flex items-center gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
-                >
-                  <AddressIcon address={account} size={36} />
-                  <div className="flex-1 min-w-0">
-                    <AddressLabel address={account} className="text-sm" />
-                    <p className="text-xs text-ink-300 truncate">
-                      {last
-                        ? `${last.direction === 'out' ? 'You: ' : ''}${last.text}`
-                        : 'No messages yet — tap to start'}
-                    </p>
-                  </div>
-                  <ChevronRight size={16} className="text-ink-300 flex-shrink-0" />
-                </Link>
-                <button
-                  onClick={() => setDeleteTarget(account)}
-                  className="p-2.5 text-ink-300 active:text-danger flex-shrink-0"
-                  aria-label="Delete conversation"
-                >
-                  <Trash2 size={16} strokeWidth={2} />
-                </button>
-              </li>
+            {rows.map((r) => (
+              <ThreadRow
+                key={`${r.myAccount}|${r.partner}`}
+                myAccount={r.myAccount}
+                partner={r.partner}
+                lastText={
+                  r.last ? `${r.last.direction === 'out' ? 'You: ' : ''}${r.last.text}` : null
+                }
+                onDelete={() => setDeleteTarget({ myAccount: r.myAccount, partner: r.partner })}
+              />
             ))}
           </ul>
         )}
@@ -165,6 +183,7 @@ export function Memos() {
           setImportOpen(true);
         }}
       />
+      <NewMessageSheet open={newMsgOpen} onClose={() => setNewMsgOpen(false)} partners={partners} />
       <ShareMyContactSheet open={shareOpen} onClose={() => setShareOpen(false)} />
       <AddContactSheet open={addOpen} onClose={() => setAddOpen(false)} />
       <ExportIdentitySheet open={exportOpen} onClose={() => setExportOpen(false)} />
@@ -179,23 +198,28 @@ export function Memos() {
           <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-danger/5 border border-danger/20">
             <AlertTriangle size={16} className="text-danger flex-shrink-0 mt-0.5" strokeWidth={2} />
             <p className="text-xs text-ink-200 leading-relaxed">
-              This removes the chat history and this contact from this device. cMix keeps no
-              server copy, so it's gone here — you'd re-add the contact to message them again.
+              This removes this conversation's history from this device. cMix keeps no
+              server copy, so it's gone here. Your contact stays — you can start a new
+              conversation with them anytime.
             </p>
           </div>
 
           {deleteTarget && (
-            <div className="flex items-center gap-2 px-1">
-              <AddressIcon address={deleteTarget} size={28} />
-              <AddressLabel address={deleteTarget} className="text-sm" />
+            <div className="space-y-1.5 px-1">
+              <div className="flex items-center gap-2">
+                <AddressIcon address={deleteTarget.partner} size={28} />
+                <AddressLabel address={deleteTarget.partner} className="text-sm" />
+              </div>
+              <p className="text-xs text-ink-300">
+                messaged as <AsName account={deleteTarget.myAccount} />
+              </p>
             </div>
           )}
 
           <button
             onClick={() => {
               if (deleteTarget) {
-                clearConversation(deleteTarget);
-                forgetAccount(deleteTarget);
+                clearConversation(deleteTarget.myAccount, deleteTarget.partner);
               }
               setDeleteTarget(null);
             }}
@@ -210,5 +234,150 @@ export function Memos() {
         </div>
       </Sheet>
     </>
+  );
+}
+
+/** One thread row: the partner you're talking to, plus which of your accounts
+ *  you're reaching them as (so two threads with the same partner are distinct). */
+function ThreadRow({
+  myAccount,
+  partner,
+  lastText,
+  onDelete,
+}: {
+  myAccount: string;
+  partner: string;
+  lastText: string | null;
+  onDelete: () => void;
+}) {
+  const { name, fragment } = useAddressName(myAccount);
+  const asLabel = name ?? fragment;
+  return (
+    <li className="flex items-center gap-1">
+      <Link
+        to={`/memos/${myAccount}/${partner}`}
+        className="flex-1 min-w-0 flex items-center gap-3 p-3 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
+      >
+        <AddressIcon address={partner} size={36} />
+        <div className="flex-1 min-w-0">
+          <AddressLabel address={partner} className="text-sm" />
+          <p className="text-xs text-ink-300 truncate">
+            <span className="font-medium">as {asLabel}</span>
+            {lastText ? ` · ${lastText}` : ''}
+          </p>
+        </div>
+        <ChevronRight size={16} className="text-ink-300 flex-shrink-0" />
+      </Link>
+      <button
+        onClick={onDelete}
+        className="p-2.5 text-ink-300 active:text-danger flex-shrink-0"
+        aria-label="Delete conversation"
+      >
+        <Trash2 size={16} strokeWidth={2} />
+      </button>
+    </li>
+  );
+}
+
+/** Small inline resolver for "messaged as [name]" in the delete sheet. */
+function AsName({ account }: { account: string }) {
+  const { name, fragment } = useAddressName(account);
+  return <span className="text-ink-200">{name ?? fragment}</span>;
+}
+
+/**
+ * Start a new thread: pick WHO to message, then which of YOUR accounts to message
+ * them AS. The account you pick fixes the thread's identity — a separate,
+ * unlinkable one per account — so reaching the same person as a different account
+ * is a different conversation. Share that account's contact with them so their
+ * device can reach it.
+ */
+function NewMessageSheet({
+  open,
+  onClose,
+  partners,
+}: {
+  open: boolean;
+  onClose: () => void;
+  partners: string[];
+}) {
+  const navigate = useNavigate();
+  const accounts = useAccountsStore((s) => s.accounts);
+  const myAccounts = useMemo(() => accounts.filter(isLocalAccount), [accounts]);
+  const [pickedPartner, setPickedPartner] = useState<string | null>(null);
+
+  const close = () => {
+    setPickedPartner(null);
+    onClose();
+  };
+
+  const start = (myAccount: string, partner: string) => {
+    useCmixSecretStore.getState().addIdentityAccount(myAccount);
+    close();
+    navigate(`/memos/${myAccount}/${partner}`);
+  };
+
+  return (
+    <Sheet open={open} onClose={close} title={pickedPartner ? 'Message as' : 'New message'}>
+      {!pickedPartner ? (
+        <div className="space-y-3">
+          <p className="text-xs text-ink-300 leading-relaxed">
+            Who do you want to message? You can reach anyone whose contact is on this device.
+          </p>
+          <ul className="space-y-1.5">
+            {partners.map((p) => (
+              <li key={p}>
+                <button
+                  onClick={() => setPickedPartner(p)}
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
+                >
+                  <AddressIcon address={p} size={28} />
+                  <AddressLabel address={p} className="text-sm flex-1 min-w-0 text-left" />
+                  <ChevronRight size={16} className="text-ink-300 flex-shrink-0" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <button
+            onClick={() => setPickedPartner(null)}
+            className="inline-flex items-center gap-1 text-xs font-medium text-xx-500 active:text-xx-400"
+          >
+            <ChevronLeft size={14} strokeWidth={2.75} />
+            Back
+          </button>
+
+          <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-ink-800 border border-ink-700/50">
+            <AddressIcon address={pickedPartner} size={28} />
+            <AddressLabel address={pickedPartner} className="text-sm min-w-0" />
+          </div>
+
+          <p className="text-xs text-ink-300 leading-relaxed">
+            Reach them as which of your accounts? Each is a separate, unlinkable identity —
+            they'll see and reply to the one you pick. Share that account's contact with them
+            so they can reach it.
+          </p>
+
+          <ul className="space-y-1.5">
+            {myAccounts.map((a) => (
+              <li key={a.address}>
+                <button
+                  onClick={() => start(a.address, pickedPartner)}
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl bg-ink-800 border border-ink-700/50 active:bg-ink-700"
+                >
+                  <AddressIcon address={a.address} size={28} />
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm text-ink-100 truncate">{a.name}</p>
+                    <p className="font-mono text-xs text-ink-300 truncate">{a.address}</p>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Sheet>
   );
 }

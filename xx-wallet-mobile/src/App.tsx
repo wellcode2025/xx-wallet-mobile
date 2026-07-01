@@ -269,7 +269,7 @@ export function App() {
             <Route path="/account/:address" element={<AccountDetail />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/memos" element={<Memos />} />
-            <Route path="/memos/:account" element={<Chat />} />
+            <Route path="/memos/:myAccount/:partner" element={<Chat />} />
             <Route path="/staking" element={<StakingLayout />}>
               <Route index element={<MyNominations />} />
               <Route path="validators" element={<ValidatorList />} />

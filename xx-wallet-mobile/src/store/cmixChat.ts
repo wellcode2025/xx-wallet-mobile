@@ -7,10 +7,14 @@
  * localStorage. It's per-device (not synced across the user's devices) and
  * ephemeral by design — exactly the privacy posture we want for a wallet.
  *
- * Keyed by the partner's wallet ACCOUNT (SS58): a conversation is with a person,
- * aggregating any devices (cMix contacts) they run — you message the account,
- * fan out to its device(s), and a reply from any device lands in the same
- * thread. Display is the account (name + identicon) with no reception-id lookup.
+ * Keyed by a THREAD = (my account, partner account). Each of my wallet accounts
+ * has its OWN unlinkable cMix identity, so messaging one partner AS account A is
+ * a genuinely different channel from messaging them AS account B — the partner's
+ * device sees A and B as two separate contacts (different reception ids) and
+ * gets two threads, so my side mirrors that with two threads too. The identity a
+ * thread is sent from is therefore FIXED by its key, never a mutable attribute:
+ * to reach a partner as a different account you start a new thread.
+ *
  * Incoming messages dedup by memo id (a delivery retry can deliver the same memo
  * twice — see withSendRetry).
  */
@@ -37,109 +41,115 @@ export interface ChatMessage {
   delivered?: boolean;
 }
 
-interface CmixChatState {
-  /** partner account (SS58) → messages, in store order (oldest first). */
-  conversations: Record<string, ChatMessage[]>;
-  /** Which of MY accounts I message a partner AS (partner SS58 → my account
-   *  SS58). Each partner is reached from ONE of my per-account identities; this
-   *  records which, so a send uses the same identity they added — and so the UI
-   *  can show "messaging as X". */
-  partnerAccounts: Record<string, string>;
+/** A conversation is one (my account, partner account) pair. */
+export interface ChatThread {
+  /** Which of MY accounts (SS58) this thread is sent from. */
+  myAccount: string;
+  /** The partner's wallet account (SS58). */
+  partner: string;
+}
 
-  /** Append a message to a conversation. Dedups by id (idempotent on a repeat,
-   *  e.g. a retried inbound memo) — returns false if it was already present. */
-  append(account: string, msg: ChatMessage): boolean;
-  /** The account I message `partner` as, if recorded. */
-  partnerAccount(partner: string): string | undefined;
-  /** Record which of my accounts I message `partner` as (idempotent — keeps the
-   *  first unless `force`, so an inbound message doesn't override my choice). */
-  setPartnerAccount(partner: string, myAccount: string, force?: boolean): void;
+/** SS58 addresses are base58 (no `|`), so `|` is a safe composite separator.
+ *  Exported so views can select `conversations[threadKey(...)]` reactively. */
+export function threadKey(myAccount: string, partner: string): string {
+  return `${myAccount}|${partner}`;
+}
+
+function parseThreadKey(key: string): ChatThread {
+  const i = key.indexOf('|');
+  return { myAccount: key.slice(0, i), partner: key.slice(i + 1) };
+}
+
+interface CmixChatState {
+  /** thread key (`${myAccount}|${partner}`) → messages, oldest first. */
+  conversations: Record<string, ChatMessage[]>;
+
+  /** Append a message to a thread. Dedups by id (idempotent on a repeat, e.g. a
+   *  retried inbound memo) — returns false if it was already present. */
+  append(myAccount: string, partner: string, msg: ChatMessage): boolean;
   /** Mark an outgoing message as having entered the mixnet (round-confirmed). */
-  markSent(account: string, id: string): void;
+  markSent(myAccount: string, partner: string, id: string): void;
   /** Mark an outgoing message delivered (recipient acked) by id. */
-  markDelivered(account: string, id: string, delivered: boolean): void;
-  /** The ordered messages for a partner (empty array if none). */
-  conversation(account: string): ChatMessage[];
-  /** Whether a message with this id is already stored for the partner. */
-  hasMessage(account: string, id: string): boolean;
-  /** Partner accounts with at least one message. */
-  partners(): string[];
-  /** Forget a single conversation. */
-  clearConversation(account: string): void;
+  markDelivered(myAccount: string, partner: string, id: string, delivered: boolean): void;
+  /** The ordered messages for a thread (empty array if none). */
+  conversation(myAccount: string, partner: string): ChatMessage[];
+  /** Whether a message with this id is already stored for the thread. */
+  hasMessage(myAccount: string, partner: string, id: string): boolean;
+  /** All threads that have at least one message. */
+  threads(): ChatThread[];
+  /** Forget a single thread. */
+  clearConversation(myAccount: string, partner: string): void;
 }
 
 export const useCmixChatStore = create<CmixChatState>()(
   persist(
     (set, get) => ({
       conversations: {},
-      partnerAccounts: {},
 
-      partnerAccount(partner) {
-        return get().partnerAccounts[partner];
-      },
-
-      setPartnerAccount(partner, myAccount, force = false) {
-        if (!force && get().partnerAccounts[partner]) return;
-        set({ partnerAccounts: { ...get().partnerAccounts, [partner]: myAccount } });
-      },
-
-      append(account, msg) {
-        const existing = get().conversations[account] ?? [];
+      append(myAccount, partner, msg) {
+        const key = threadKey(myAccount, partner);
+        const existing = get().conversations[key] ?? [];
         if (existing.some((m) => m.id === msg.id)) return false;
         set({
           conversations: {
             ...get().conversations,
-            [account]: [...existing, msg],
+            [key]: [...existing, msg],
           },
         });
         return true;
       },
 
-      markSent(account, id) {
-        const existing = get().conversations[account];
+      markSent(myAccount, partner, id) {
+        const key = threadKey(myAccount, partner);
+        const existing = get().conversations[key];
         if (!existing) return;
         set({
           conversations: {
             ...get().conversations,
-            [account]: existing.map((m) => (m.id === id ? { ...m, sent: true } : m)),
+            [key]: existing.map((m) => (m.id === id ? { ...m, sent: true } : m)),
           },
         });
       },
 
-      markDelivered(account, id, delivered) {
-        const existing = get().conversations[account];
+      markDelivered(myAccount, partner, id, delivered) {
+        const key = threadKey(myAccount, partner);
+        const existing = get().conversations[key];
         if (!existing) return;
         set({
           conversations: {
             ...get().conversations,
-            [account]: existing.map((m) => (m.id === id ? { ...m, delivered } : m)),
+            [key]: existing.map((m) => (m.id === id ? { ...m, delivered } : m)),
           },
         });
       },
 
-      conversation(account) {
-        return get().conversations[account] ?? [];
+      conversation(myAccount, partner) {
+        return get().conversations[threadKey(myAccount, partner)] ?? [];
       },
 
-      hasMessage(account, id) {
-        return (get().conversations[account] ?? []).some((m) => m.id === id);
+      hasMessage(myAccount, partner, id) {
+        return (get().conversations[threadKey(myAccount, partner)] ?? []).some(
+          (m) => m.id === id
+        );
       },
 
-      partners() {
-        return Object.keys(get().conversations);
+      threads() {
+        return Object.keys(get().conversations).map(parseThreadKey);
       },
 
-      clearConversation(account) {
+      clearConversation(myAccount, partner) {
         const conversations = { ...get().conversations };
-        delete conversations[account];
-        const partnerAccounts = { ...get().partnerAccounts };
-        delete partnerAccounts[account];
-        set({ conversations, partnerAccounts });
+        delete conversations[threadKey(myAccount, partner)];
+        set({ conversations });
       },
     }),
     {
-      name: 'xx-wallet:cmix-chat',
-      version: 1,
+      // v2 rekeys conversations from partner-only to (myAccount|partner). Old v1
+      // data was partner-keyed and can't be migrated meaningfully (we don't know
+      // which of your accounts each old thread was sent from), so it's dropped
+      // by the new persist name.
+      name: 'xx-wallet:cmix-chat-v2',
+      version: 2,
     }
   )
 );

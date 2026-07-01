@@ -72,11 +72,10 @@ export function useCmixChatReceive() {
 
               am
                 .onMemo(id, (memo) => {
-                  const chat = useCmixChatStore.getState();
-                  // They reached me on `myAccount` — remember that so my reply
-                  // uses the same identity (first-wins; an explicit pick stands).
-                  chat.setPartnerAccount(partner, myAccount);
-                  chat.append(partner, {
+                  // They reached me on `myAccount` — this inbound belongs to the
+                  // (myAccount, partner) thread, and a reply sends from the same
+                  // identity because the thread's sender is that account.
+                  useCmixChatStore.getState().append(myAccount, partner, {
                     id: memo.id,
                     direction: 'in',
                     text: memo.text,
@@ -92,7 +91,9 @@ export function useCmixChatReceive() {
 
               am
                 .onMemoAck(id, (ack) => {
-                  useCmixChatStore.getState().markDelivered(partner, ack.ackId, true);
+                  useCmixChatStore
+                    .getState()
+                    .markDelivered(myAccount, partner, ack.ackId, true);
                 })
                 .catch(() => {});
             }
