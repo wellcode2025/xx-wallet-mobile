@@ -36,7 +36,17 @@ import { copyToClipboard } from '@/utils';
 
 /** Share your own messaging contact: sign your cMix contact with one of your
  *  accounts (so the recipient can verify it) and hand out the blob. */
-export function ShareMyContactSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ShareMyContactSheet({
+  open,
+  onClose,
+  fixedAccount,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** When set, share THIS account's contact with no picker — e.g. from a chat
+   *  thread whose sender identity is fixed, so you can't share the wrong one. */
+  fixedAccount?: string;
+}) {
   const { accounts, activeAddress } = useAccountsStore();
   const handle = useCmixOnlineStore((s) => s.handle);
 
@@ -44,9 +54,12 @@ export function ShareMyContactSheet({ open, onClose }: { open: boolean; onClose:
   const eligible = useMemo(() => accounts.filter((a) => isLocalAccount(a)), [accounts]);
 
   const [account, setAccount] = useState(() => {
+    if (fixedAccount && eligible.some((a) => a.address === fixedAccount)) return fixedAccount;
     if (activeAddress && eligible.some((a) => a.address === activeAddress)) return activeAddress;
     return eligible[0]?.address ?? '';
   });
+  const selected = eligible.find((a) => a.address === account) ?? eligible[0];
+  const showPicker = eligible.length > 1 && !fixedAccount;
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,15 +123,7 @@ export function ShareMyContactSheet({ open, onClose }: { open: boolean; onClose:
               <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
                 Sign as
               </label>
-              {eligible.length === 1 ? (
-                <div className="flex items-center gap-2">
-                  <AddressIcon address={eligible[0].address} size={28} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink-100 truncate">{eligible[0].name}</p>
-                    <p className="font-mono text-xs text-ink-300 truncate">{eligible[0].address}</p>
-                  </div>
-                </div>
-              ) : (
+              {showPicker ? (
                 <select
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
@@ -130,7 +135,15 @@ export function ShareMyContactSheet({ open, onClose }: { open: boolean; onClose:
                     </option>
                   ))}
                 </select>
-              )}
+              ) : selected ? (
+                <div className="flex items-center gap-2">
+                  <AddressIcon address={selected.address} size={28} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink-100 truncate">{selected.name}</p>
+                    <p className="font-mono text-xs text-ink-300 truncate">{selected.address}</p>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div>

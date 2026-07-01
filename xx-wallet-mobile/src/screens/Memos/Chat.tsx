@@ -16,9 +16,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Send, Loader2, Check, CheckCheck, AlertTriangle } from 'lucide-react';
+import { Send, Loader2, Check, CheckCheck, AlertTriangle, Share2, Link2 } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
+import { ShareMyContactSheet } from './Contacts';
 import { useAccountsStore } from '@/store';
 import { isLocalAccount } from '@/keyring/store';
 import { useCmixOnlineStore } from '@/store/cmixOnline';
@@ -76,6 +77,71 @@ function ChatView({ myAccount, partner }: { myAccount: string; partner: string }
     () => contactsForAccount(deserializeRegistry(bindings), partner).length > 0,
     [bindings, partner]
   );
+
+  // The partner's primary contact (their first device) — used to watch/open the
+  // authenticated channel. Messaging is TWO-WAY: a channel only exists once you
+  // both have each other's contact, so we gate sending on it.
+  const partnerContact = useMemo(() => {
+    const cs = contactsForAccount(deserializeRegistry(bindings), partner);
+    return cs[0] ?? null;
+  }, [bindings, partner]);
+
+  const [connState, setConnState] = useState<'checking' | 'connected' | 'disconnected'>(
+    'checking'
+  );
+  const [connecting, setConnecting] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // Watch the channel while online + we have their contact. Poll while it's not
+  // up so the compose unlocks the moment the partner adds your contact + the
+  // handshake round-trips (from either side).
+  useEffect(() => {
+    if (!online || !handle || !partnerContact) {
+      setConnState('checking');
+      return;
+    }
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const check = async () => {
+      try {
+        const am = await handle.forAccount(myAccount);
+        const ok = await am.isConnected(getIDFromContact(partnerContact));
+        if (cancelled) return;
+        setConnState(ok ? 'connected' : 'disconnected');
+        if (!ok) timer = setTimeout(check, 4000);
+      } catch {
+        if (!cancelled) setConnState('disconnected');
+      }
+    };
+    void check();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [online, handle, partnerContact, myAccount]);
+
+  // Explicit connect: fire the auth-channel request and wait for the partner's
+  // auto-confirm to round-trip. Sending would do this lazily too, but we block
+  // sending until connected, so this is the user's way to open the channel.
+  const connect = async () => {
+    if (!handle || !partnerContact || connecting) return;
+    setConnecting(true);
+    try {
+      const am = await handle.forAccount(myAccount);
+      const id = getIDFromContact(partnerContact);
+      if (!(await am.isConnected(id))) {
+        await am.connectToPartner(partnerContact);
+        for (let i = 0; i < 8 && !(await am.isConnected(id)); i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+      setConnState((await am.isConnected(id)) ? 'connected' : 'disconnected');
+    } catch {
+      setConnState('disconnected');
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -192,6 +258,45 @@ function ChatView({ myAccount, partner }: { myAccount: string; partner: string }
               You don't have this contact on this device, so you can't message them
               here.
             </p>
+          ) : connState === 'checking' ? (
+            <div className="flex items-center gap-2 text-xs text-ink-300 px-1 py-2">
+              <Loader2 size={13} className="animate-spin flex-shrink-0" strokeWidth={2} />
+              Checking connection…
+            </div>
+          ) : connState === 'disconnected' ? (
+            <div className="space-y-2 py-1">
+              <div className="flex items-start gap-2 p-3 rounded-2xl bg-warning/10 border border-warning/30">
+                <AlertTriangle
+                  size={14}
+                  className="text-warning flex-shrink-0 mt-0.5"
+                  strokeWidth={2}
+                />
+                <p className="text-xs text-ink-200 leading-relaxed">
+                  You're not connected with this contact yet. Messaging is two-way — you
+                  both have to add each other's contact. You have theirs; make sure
+                  they've added yours, then connect.
+                </p>
+              </div>
+              <button onClick={() => setShareOpen(true)} className="btn-secondary w-full">
+                <Share2 size={15} strokeWidth={2} />
+                Share my contact
+              </button>
+              <button
+                onClick={() => void connect()}
+                disabled={connecting}
+                className="btn-primary w-full"
+              >
+                {connecting ? (
+                  <Loader2 size={16} className="animate-spin" strokeWidth={2} />
+                ) : (
+                  <Link2 size={16} strokeWidth={2} />
+                )}
+                {connecting ? 'Connecting…' : 'Connect'}
+              </button>
+              <p className="text-xs text-ink-300 leading-snug px-1">
+                Opens as soon as they've added your contact and the channel forms.
+              </p>
+            </div>
           ) : (
             <div className="flex items-end gap-2">
               <textarea
@@ -219,6 +324,12 @@ function ChatView({ myAccount, partner }: { myAccount: string; partner: string }
           )}
         </div>
       </div>
+
+      <ShareMyContactSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        fixedAccount={myAccount}
+      />
     </>
   );
 }
