@@ -70,6 +70,7 @@ import {
   registerSink,
   useCmixReceive,
   useCmixChatReceive,
+  useCmixChatResend,
   useGovernanceNotifications,
   useMultisigNotifications,
   useSlashNotifications,
@@ -122,6 +123,9 @@ function RequireAccount() {
   useCmixReceive();
   // Store incoming 1:1 chat memos into the local conversation log.
   useCmixChatReceive();
+  // Deliver-eventually backstop: while online, re-send un-acked outbound memos
+  // so a message reaches a recipient who was offline when it was first sent.
+  useCmixChatResend();
   if (accounts.length === 0) {
     return <Navigate to="/onboarding" replace state={{ from: location }} />;
   }

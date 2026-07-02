@@ -47,6 +47,7 @@ export { useMultisigNotifications } from './useMultisigNotifications';
 export { useSlashNotifications } from './useSlashNotifications';
 export { useCmixReceive } from './useCmixReceive';
 export { useCmixChatReceive } from './useCmixChatReceive';
+export { useCmixChatResend } from './useCmixChatResend';
 export {
   useGovernanceNotifications,
   useReferendumEndingNotifications,
