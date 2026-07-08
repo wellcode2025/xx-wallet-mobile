@@ -177,6 +177,10 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
       const handle = await connectMessaging({
         session: { storagePassword: secret },
         primaryAccount: primaryMessagingAccount(),
+        // Every enrolled identity logs in BEFORE the follower starts, so
+        // messages buffered while the app was closed can be decrypted the
+        // moment the follower recovers them (offline-delivery fix).
+        eagerAccounts: useCmixSecretStore.getState().identityAccounts,
         authCallbacks,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
@@ -206,6 +210,8 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
       const handle = await connectMessaging({
         session: { storagePassword: secret },
         primaryAccount: primaryMessagingAccount(),
+        // Pre-follower logins for all enrolled identities (offline-delivery fix).
+        eagerAccounts: useCmixSecretStore.getState().identityAccounts,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
@@ -240,6 +246,8 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
         // Primary = the first restored account (the backup carries its own).
         primaryAccount: entries[0].account,
         importIdentities: entries,
+        // Every restored identity logs in pre-follower (offline-delivery fix).
+        eagerAccounts: entries.map((e) => e.account),
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });

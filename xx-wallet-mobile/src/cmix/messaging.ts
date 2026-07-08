@@ -11,6 +11,7 @@
  * wallet-to-wallet messaging — a "partner" is just another wallet's cMix
  * identity, with no multisig required.
  */
+import type { CMix } from 'xxdk-wasm';
 import { getCmixSession, type CmixSessionOptions } from './session';
 import { createE2eSession, parseReceivedMessage, type E2eSession, type SendResult } from './e2e';
 import { ensureReceptionIdentity } from './identity';
@@ -98,6 +99,16 @@ export interface MessagingOptions {
   /** The account whose identity is logged in eagerly + backs the primary-account
    *  convenience methods (typically the active account). */
   primaryAccount: string;
+  /**
+   * Additional accounts whose identities are logged in BEFORE the network
+   * follower starts (typically every enrolled identity account). Logging in
+   * registers an identity's decryption fingerprints — and the follower's first
+   * polls retrieve any messages buffered while the app was closed, which are
+   * dropped unrecoverably if the fingerprints aren't registered yet (the
+   * cold-resume race, diagnosed 2026-07-06). Failures on non-primary accounts
+   * don't block go-online; they fall back to the lazy forAccount path.
+   */
+  eagerAccounts?: string[];
   /** Auth-channel callbacks (e.g. auto-accept a known cosigner, or prompt the user). */
   authCallbacks?: Partial<AuthCallbacks>;
   /** Auto-confirm a channel Request iff this returns true for the requester's
@@ -133,23 +144,25 @@ export function isMessagingConnected(): boolean {
   return handlePromise !== null;
 }
 
+/**
+ * The accounts to log in before the follower starts: the primary first, then
+ * every other known identity account, deduped. Pure; exported for tests.
+ */
+export function eagerLoginList(primary: string, others: string[] = []): string[] {
+  return [...new Set([primary, ...others])];
+}
+
 async function build(opts: MessagingOptions): Promise<MessagingHandle> {
-  const session = await getCmixSession({ ...opts.session, onPhase: opts.onPhase });
-  opts.onPhase?.('finalizing');
-
-  // Restore: persist each backed-up identity under its account BEFORE any Login,
-  // so the per-account sessions below load the restored identity, not a fresh one.
-  for (const { account, identity } of opts.importIdentities ?? []) {
-    await ensureReceptionIdentity(session.cmix, account, identity);
-  }
-
-  // One identity per account, lazily logged in + memoized on the single client
+  // One identity per account, logged in + memoized on the single client
   // (one cMix follower hosts them all — proven in the multi-identity spike).
   const loaded = new Map<string, Promise<AccountMessaging>>();
+  let cmixRef: CMix | null = null;
   const create = (account: string): Promise<AccountMessaging> => {
     let p = loaded.get(account);
     if (!p) {
-      p = createE2eSession(session.cmix, account, {
+      const cmix = cmixRef;
+      if (!cmix) throw new Error('cMix session not ready');
+      p = createE2eSession(cmix, account, {
         authCallbacks: opts.authCallbacks,
         autoConfirm: opts.autoConfirm,
       }).then(makeAccountMessaging);
@@ -158,7 +171,45 @@ async function build(opts: MessagingOptions): Promise<MessagingHandle> {
     return p;
   };
 
-  // Eagerly bring up the primary (active) account so it's ready to send/receive.
+  // COLD-RESUME ORDERING (the offline-delivery fix, 2026-07-06). The follower
+  // recovers messages buffered while the app was closed within seconds of
+  // starting; a message whose account hasn't logged in yet (no decryption
+  // fingerprints registered) is dropped and its round marked checked — lost for
+  // good. So every known identity is logged in BEFORE the follower starts, via
+  // the session's pre-follower hook, instead of lazily afterwards.
+  const session = await getCmixSession({
+    ...opts.session,
+    onPhase: opts.onPhase,
+    beforeFollower: async (cmix) => {
+      cmixRef = cmix;
+      // Restore: persist each backed-up identity under its account BEFORE any
+      // Login, so the sessions below load the restored identity, not a fresh one.
+      for (const { account, identity } of opts.importIdentities ?? []) {
+        await ensureReceptionIdentity(cmix, account, identity);
+      }
+      for (const account of eagerLoginList(opts.primaryAccount, opts.eagerAccounts)) {
+        try {
+          await create(account);
+        } catch (err) {
+          // The primary account failing is fatal (matches the old behavior);
+          // any other identity failing shouldn't block messaging as a whole —
+          // un-memoize it so forAccount can retry lazily.
+          if (account === opts.primaryAccount) throw err;
+          loaded.delete(account);
+          console.warn(`[cmix] pre-follower login failed for ${account}; will retry lazily`, err);
+        }
+      }
+    },
+  });
+  cmixRef = session.cmix;
+  opts.onPhase?.('finalizing');
+
+  // If the session already existed (a retry after an earlier failure past the
+  // session stage), the pre-follower hook never ran — fall back to the old
+  // post-follower path. Idempotent: ensure + create are both memoized.
+  for (const { account, identity } of opts.importIdentities ?? []) {
+    await ensureReceptionIdentity(session.cmix, account, identity);
+  }
   await create(opts.primaryAccount);
 
   return {

@@ -64,6 +64,16 @@ export interface CmixSessionOptions {
   load?: LoadXXDKOptions;
   /** Fired as each connect phase begins, so the UI can show real progress. */
   onPhase?: (phase: ConnectPhase) => void;
+  /**
+   * Invoked after the cMix state is loaded but BEFORE the network follower
+   * starts. The messaging layer uses this to log in every known identity first
+   * (Login registers the identity's decryption fingerprints): a follower that
+   * starts ahead of the Logins retrieves the messages buffered while the app
+   * was closed within seconds, finds no matching fingerprint, DROPS them, and
+   * marks their rounds checked — permanently lost, never retried. Cold-resume
+   * race diagnosed live 2026-07-06 (T5): retrieval at :36, Login at :38.
+   */
+  beforeFollower?: (cmix: CMix) => Promise<void>;
 }
 
 let sessionPromise: Promise<CmixSession> | null = null;
@@ -103,6 +113,10 @@ async function buildSession(opts: CmixSessionOptions): Promise<CmixSession> {
   } catch {
     // Health callbacks are best-effort; WaitForNetwork below is the real gate.
   }
+
+  // Identity registration MUST complete before the follower's first poll can
+  // retrieve offline-buffered messages (see beforeFollower's doc comment).
+  await opts.beforeFollower?.(cmix);
 
   opts.onPhase?.('connecting');
   cmix.StartNetworkFollower(FOLLOWER_POLL_MS);

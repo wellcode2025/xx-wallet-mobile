@@ -12,6 +12,7 @@ import { buildAckMessage, buildProposedMessage, parseCoordinationMessage } from 
 import type { SendResult } from './e2e';
 import {
   decodeCoordinationPayload,
+  eagerLoginList,
   incomingProposalFrom,
   pollUntil,
   sendMemoTo,
@@ -108,6 +109,21 @@ describe('incomingProposalFrom', () => {
 
   it('returns null for a parse failure', () => {
     expect(incomingProposalFrom({ ok: false, reason: 'nope' })).toBeNull();
+  });
+});
+
+describe('eagerLoginList', () => {
+  it('puts the primary first and appends the others', () => {
+    expect(eagerLoginList('A', ['B', 'C'])).toEqual(['A', 'B', 'C']);
+  });
+
+  it('dedupes the primary out of the others (order preserved)', () => {
+    expect(eagerLoginList('B', ['A', 'B', 'C', 'A'])).toEqual(['B', 'A', 'C']);
+  });
+
+  it('is just the primary when there are no others', () => {
+    expect(eagerLoginList('A')).toEqual(['A']);
+    expect(eagerLoginList('A', [])).toEqual(['A']);
   });
 });
 
