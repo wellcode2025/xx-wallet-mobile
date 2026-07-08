@@ -104,10 +104,15 @@ function makeAutoConfirm(): (contact: Uint8Array) => boolean {
  * ("didn't match any listeners in the map") because the receive hooks attach
  * only after go-online resolves; pre-registered slots buffer it until they do.
  */
-function preRegisterEntriesFor(account: string): { senderId: Uint8Array; types: number[] }[] {
+function preRegisterEntriesFor(_account: string): { senderId: Uint8Array; types: number[] }[] {
+  // The registry is keyed by the PARTNER's account (a contact belongs to the
+  // account that signed it), so "partners of one of my accounts" isn't a
+  // registry concept — pre-register every known partner's devices for every
+  // identity. A listener for a sender who never messages this identity is
+  // harmless; missing one loses cold-resume messages.
   const contacts = useCmixContactsStore.getState();
   const entries: { senderId: Uint8Array; types: number[] }[] = [];
-  for (const contact of contacts.contactsForAccount(account)) {
+  for (const contact of contacts.contactsForAccounts(contacts.knownAccounts())) {
     try {
       entries.push({
         senderId: getIDFromContact(contact),
