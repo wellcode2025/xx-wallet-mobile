@@ -96,6 +96,42 @@ export interface CreateE2eOptions {
    * device the same messaging party as the backup's origin.
    */
   importIdentity?: Uint8Array;
+  /**
+   * Listeners to register IMMEDIATELY at Login (i.e. before the network
+   * follower starts, when this session is created in the pre-follower hook),
+   * one per (sender, message type). Messages heard before the app attaches its
+   * handler via onMessage are BUFFERED and replayed on attach. Without this,
+   * a message the follower recovers on cold resume is decrypted and then
+   * dropped by the switchboard — "didn't match any listeners in the map" —
+   * the second half of the cold-resume race (the first was fingerprints;
+   * both diagnosed live 2026-07-06/07).
+   */
+  preRegister?: { senderId: Uint8Array; types: number[] }[];
+}
+
+/** A pre-registered listener slot: queues messages until a handler attaches. */
+export interface ListenerSlot {
+  queue: ReceivedMessage[];
+  handler: ((msg: ReceivedMessage) => void) | null;
+}
+
+/** Deliver to the attached handler, or queue until one attaches. Pure; exported for tests. */
+export function hearIntoSlot(slot: ListenerSlot, msg: ReceivedMessage): void {
+  if (slot.handler) slot.handler(msg);
+  else slot.queue.push(msg);
+}
+
+/** Attach a handler to a slot, first replaying anything heard before it
+ *  attached (e.g. messages recovered during cold resume). Pure; exported for tests. */
+export function attachToSlot(slot: ListenerSlot, handler: (msg: ReceivedMessage) => void): void {
+  slot.handler = handler;
+  for (const msg of slot.queue.splice(0)) handler(msg);
+}
+
+/** Stable map key for a (sender, message type) listener. Pure; exported for tests. */
+export function listenerKey(senderId: Uint8Array, messageType: number): string {
+  const hex = Array.from(senderId, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex}:${messageType}`;
 }
 
 /**
@@ -134,6 +170,25 @@ export async function createE2eSession(
   const e2e = globals.Login(cmix.GetID(), callbacks, identity, e2eParams);
   e2eRef = e2e;
 
+  // Pre-registered, buffering listeners (see CreateE2eOptions.preRegister):
+  // in place from Login, so a message the follower recovers the moment it
+  // starts has a listener in the map — buffered here until the app's real
+  // handler attaches via onMessage, then replayed.
+  const slots = new Map<string, ListenerSlot>();
+  for (const { senderId, types } of opts.preRegister ?? []) {
+    for (const messageType of types) {
+      const key = listenerKey(senderId, messageType);
+      if (slots.has(key)) continue;
+      const slot: ListenerSlot = { queue: [], handler: null };
+      slots.set(key, slot);
+      const listener: E2eListener = {
+        Hear: (item) => hearIntoSlot(slot, parseReceivedMessage(item)),
+        Name: () => LISTENER_NAME,
+      };
+      await e2e.RegisterListener(senderId, messageType, listener);
+    }
+  }
+
   return {
     e2e,
     contact: () => e2e.GetContact(),
@@ -145,6 +200,13 @@ export async function createE2eSession(
     send: (partnerId, messageType, payload) =>
       sendWithReceipt(cmix, e2e, partnerId, messageType, payload, e2eParams),
     onMessage: async (senderId, messageType, handler) => {
+      // A pre-registered slot already has the xxdk listener — attach (replaying
+      // anything buffered) instead of registering a duplicate.
+      const slot = slots.get(listenerKey(senderId, messageType));
+      if (slot) {
+        attachToSlot(slot, handler);
+        return;
+      }
       const listener: E2eListener = {
         Hear: (item) => handler(parseReceivedMessage(item)),
         Name: () => LISTENER_NAME,

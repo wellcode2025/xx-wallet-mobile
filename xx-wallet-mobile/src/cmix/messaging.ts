@@ -114,6 +114,14 @@ export interface MessagingOptions {
   /** Auto-confirm a channel Request iff this returns true for the requester's
    *  contact (a known cosigner). Forwarded to each account's e2e session. */
   autoConfirm?: (contact: Uint8Array) => boolean;
+  /**
+   * Per-account listener pre-registrations, in place from Login (before the
+   * follower starts): (partner, message types) pairs whose messages are
+   * buffered until the app attaches its real handler. Companion to
+   * eagerAccounts — fingerprints let a cold-resume-recovered message decrypt;
+   * these keep the switchboard from then dropping it unheard.
+   */
+  preRegisterFor?: (account: string) => { senderId: Uint8Array; types: number[] }[];
   /** Fired as each connect phase begins, so the UI can show real progress. */
   onPhase?: (phase: ConnectPhase) => void;
   /** Restore: persist these decrypted-backup identities (one per account) into
@@ -165,6 +173,7 @@ async function build(opts: MessagingOptions): Promise<MessagingHandle> {
       p = createE2eSession(cmix, account, {
         authCallbacks: opts.authCallbacks,
         autoConfirm: opts.autoConfirm,
+        preRegister: opts.preRegisterFor?.(account),
       }).then(makeAccountMessaging);
       loaded.set(account, p);
     }

@@ -4,10 +4,63 @@
  * unit-tested, per the project's "pure logic only" rule.
  */
 import { describe, expect, it } from 'vitest';
-import { base64ToBytes, parseReceivedMessage, withSendRetry } from './e2e';
+import {
+  attachToSlot,
+  base64ToBytes,
+  hearIntoSlot,
+  listenerKey,
+  parseReceivedMessage,
+  withSendRetry,
+  type ListenerSlot,
+  type ReceivedMessage,
+} from './e2e';
 
 const bytesToText = (b: Uint8Array) => new TextDecoder().decode(b);
 const noSleep = () => Promise.resolve();
+
+describe('listener slots (pre-registered receive buffering)', () => {
+  const msg = (n: number): ReceivedMessage => ({ payload: new Uint8Array([n]), raw: null });
+  const freshSlot = (): ListenerSlot => ({ queue: [], handler: null });
+
+  it('queues messages heard before a handler attaches, then replays them in order', () => {
+    const slot = freshSlot();
+    hearIntoSlot(slot, msg(1));
+    hearIntoSlot(slot, msg(2));
+    const seen: number[] = [];
+    attachToSlot(slot, (m) => seen.push(m.payload[0]));
+    expect(seen).toEqual([1, 2]);
+    expect(slot.queue).toHaveLength(0); // drained, not re-replayable
+  });
+
+  it('delivers directly once a handler is attached', () => {
+    const slot = freshSlot();
+    const seen: number[] = [];
+    attachToSlot(slot, (m) => seen.push(m.payload[0]));
+    hearIntoSlot(slot, msg(7));
+    expect(seen).toEqual([7]);
+    expect(slot.queue).toHaveLength(0);
+  });
+
+  it('re-attaching replaces the handler (no duplicate delivery)', () => {
+    const slot = freshSlot();
+    const first: number[] = [];
+    const second: number[] = [];
+    attachToSlot(slot, (m) => first.push(m.payload[0]));
+    attachToSlot(slot, (m) => second.push(m.payload[0]));
+    hearIntoSlot(slot, msg(9));
+    expect(first).toEqual([]);
+    expect(second).toEqual([9]);
+  });
+
+  it('listenerKey is stable per (sender, type) and distinguishes both parts', () => {
+    const a = new Uint8Array([0, 1, 255]);
+    const b = new Uint8Array([0, 1, 254]);
+    expect(listenerKey(a, 3)).toBe(listenerKey(a, 3));
+    expect(listenerKey(a, 3)).not.toBe(listenerKey(a, 4));
+    expect(listenerKey(a, 3)).not.toBe(listenerKey(b, 3));
+    expect(listenerKey(a, 3)).toBe('0001ff:3');
+  });
+});
 
 describe('base64ToBytes', () => {
   it('decodes base64 to the original bytes', () => {

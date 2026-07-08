@@ -18,7 +18,8 @@
  * (e.g. to retry after an error) and does NOT claim to leave the mixnet.
  */
 import { create } from 'zustand';
-import { connectMessaging, type MessagingHandle } from '@/cmix/messaging';
+import { connectMessaging, COORDINATION_MESSAGE_TYPE, type MessagingHandle } from '@/cmix/messaging';
+import { CHAT_MESSAGE_TYPE, CHAT_ACK_TYPE } from '@/cmix/chatMessage';
 import { planSecretAction } from '@/cmix/secretPlan';
 import { getIDFromContact, type AuthCallbacks } from '@/cmix/e2eApi';
 import { wrapWithDeviceKey, unwrapWithDeviceKey, clearDeviceKey } from '@/cmix/deviceKey';
@@ -93,6 +94,30 @@ function makeAutoConfirm(): (contact: Uint8Array) => boolean {
     }
     return known;
   };
+}
+
+/**
+ * Listener pre-registrations for an account: every known partner × the three
+ * app message types (coordination / chat / chat-ack), registered from Login —
+ * i.e. before the network follower starts. A message the follower recovers on
+ * cold resume is otherwise decrypted and then DROPPED by the switchboard
+ * ("didn't match any listeners in the map") because the receive hooks attach
+ * only after go-online resolves; pre-registered slots buffer it until they do.
+ */
+function preRegisterEntriesFor(account: string): { senderId: Uint8Array; types: number[] }[] {
+  const contacts = useCmixContactsStore.getState();
+  const entries: { senderId: Uint8Array; types: number[] }[] = [];
+  for (const contact of contacts.contactsForAccount(account)) {
+    try {
+      entries.push({
+        senderId: getIDFromContact(contact),
+        types: [COORDINATION_MESSAGE_TYPE, CHAT_MESSAGE_TYPE, CHAT_ACK_TYPE],
+      });
+    } catch {
+      // Unreadable stored contact — skip it; the lazy onMessage path still works.
+    }
+  }
+  return entries;
 }
 
 export type OnlineStatus = 'offline' | 'connecting' | 'online' | 'error';
@@ -181,6 +206,7 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
         // messages buffered while the app was closed can be decrypted the
         // moment the follower recovers them (offline-delivery fix).
         eagerAccounts: useCmixSecretStore.getState().identityAccounts,
+        preRegisterFor: preRegisterEntriesFor,
         authCallbacks,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
@@ -212,6 +238,7 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
         primaryAccount: primaryMessagingAccount(),
         // Pre-follower logins for all enrolled identities (offline-delivery fix).
         eagerAccounts: useCmixSecretStore.getState().identityAccounts,
+        preRegisterFor: preRegisterEntriesFor,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
@@ -248,6 +275,7 @@ export const useCmixOnlineStore = create<CmixOnlineState>((set, get) => ({
         importIdentities: entries,
         // Every restored identity logs in pre-follower (offline-delivery fix).
         eagerAccounts: entries.map((e) => e.account),
+        preRegisterFor: preRegisterEntriesFor,
         autoConfirm: makeAutoConfirm(),
         onPhase: (phase) => set({ phase }),
       });
