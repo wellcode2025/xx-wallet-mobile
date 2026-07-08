@@ -31,6 +31,7 @@ import { contactsForAccount } from '@/cmix/contactRegistry';
 import { getIDFromContact } from '@/cmix/e2eApi';
 import { newChatMemo } from '@/cmix/chatMessage';
 import { sendMemoTo } from '@/cmix/messaging';
+import { formatMessageTime } from './messageTime';
 import { useAddressName } from '@/hooks/useAddressName';
 import { isValidXxAddress } from '@/utils';
 
@@ -353,9 +354,14 @@ function Bubble({
         )}
       >
         <p className="text-sm text-ink-100 whitespace-pre-wrap break-words">{message.text}</p>
-        {out && (
-          <div className="flex justify-end mt-0.5">
-            {message.delivered ? (
+        {/* Meta row: when it was sent (sender's clock, rendered in device-local
+            time — epoch ms is timezone-free), plus delivery state on outgoing. */}
+        <div
+          className={clsx('flex items-center gap-1.5 mt-0.5', out ? 'justify-end' : 'justify-start')}
+        >
+          <span className="text-xs text-ink-300">{formatMessageTime(message.sentAt)}</span>
+          {out &&
+            (message.delivered ? (
               <CheckCheck size={12} className="text-xx-500" strokeWidth={2.5} aria-label="Delivered" />
             ) : sending ? (
               <Loader2 size={11} className="text-ink-300 animate-spin" strokeWidth={2} />
@@ -368,9 +374,8 @@ function Bubble({
               >
                 <AlertTriangle size={11} strokeWidth={2} /> Retry
               </button>
-            )}
-          </div>
-        )}
+            ))}
+        </div>
       </div>
     </div>
   );
