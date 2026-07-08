@@ -45,6 +45,16 @@ export interface E2e {
   Confirm(partnerContact: Uint8Array): Promise<number>;
   /** Whether an authenticated channel with the partner exists. */
   HasAuthenticatedChannel(partnerId: Uint8Array): Promise<boolean>;
+  /** Delete ALL traces of the relationship with a partner and send a reset
+   *  request that builds a new one from scratch (a critical message — the
+   *  client auto-resends it on round failure). Resolves to the round ID. */
+  Reset(partnerContact: Uint8Array): Promise<number>;
+  /** Resend a channel confirmation the partner never received. Only works
+   *  while neither side has ratcheted. Resolves to the round ID. */
+  ReplayConfirm(partnerContact: Uint8Array): Promise<number>;
+  /** Delete stuck sent/received auth-request state for a partner (throws if
+   *  there is none). Clears the state that can block a fresh Request/Reset. */
+  DeleteRequest(partnerContact: Uint8Array): void;
   /** Send a payload to a partner. Resolves to the marshalled send report (carries the round list). */
   SendE2E(messageType: number, recipientId: Uint8Array, payload: Uint8Array, e2eParams: Uint8Array): Promise<Uint8Array>;
   /** Register a handler for messages of `messageType` from `senderId`. */

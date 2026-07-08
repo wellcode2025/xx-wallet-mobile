@@ -72,6 +72,15 @@ export interface E2eSession {
   confirmChannel(partnerContact: Uint8Array): Promise<number>;
   /** Whether an authenticated channel with this partner exists. */
   hasChannel(partnerId: Uint8Array): Promise<boolean>;
+  /**
+   * Start the channel with a partner over from scratch: clear any stuck
+   * sent/received request state, then send a reset (which deletes the local
+   * relationship and asks the partner to rebuild — their side auto-confirms a
+   * known contact via the Reset callback above). The recovery for a
+   * half-established handshake where one side shows connected and the other
+   * doesn't.
+   */
+  resetChannel(partnerContact: Uint8Array): Promise<void>;
   /** Send a payload to a partner, verified with a delivery receipt. */
   send(partnerId: Uint8Array, messageType: number, payload: Uint8Array): Promise<SendResult>;
   /** Register a handler for incoming messages of `messageType` from `senderId`. */
@@ -163,8 +172,18 @@ export async function createE2eSession(
     },
     Confirm: (contact, receptionId, ephemeralId, roundId) =>
       opts.authCallbacks?.Confirm?.(contact, receptionId, ephemeralId, roundId),
-    Reset: (contact, receptionId, ephemeralId, roundId) =>
-      opts.authCallbacks?.Reset?.(contact, receptionId, ephemeralId, roundId),
+    Reset: (contact, receptionId, ephemeralId, roundId) => {
+      // An incoming reset replaces the relationship and behaves like a fresh
+      // request — complete it automatically under the same known-contact
+      // policy as Request, so a partner's "Reset connection" heals the channel
+      // on both ends without manual steps here.
+      if (opts.autoConfirm?.(contact) && e2eRef) {
+        e2eRef.Confirm(contact).catch(() => {
+          /* confirm failed (offline/blip) — the partner can retry the reset */
+        });
+      }
+      opts.authCallbacks?.Reset?.(contact, receptionId, ephemeralId, roundId);
+    },
   };
 
   const e2e = globals.Login(cmix.GetID(), callbacks, identity, e2eParams);
@@ -197,6 +216,14 @@ export async function createE2eSession(
     requestChannel: (partnerContact, facts = EMPTY_FACTS) => e2e.Request(partnerContact, facts),
     confirmChannel: (partnerContact) => e2e.Confirm(partnerContact),
     hasChannel: (partnerId) => e2e.HasAuthenticatedChannel(partnerId),
+    resetChannel: async (partnerContact) => {
+      try {
+        e2e.DeleteRequest(partnerContact);
+      } catch {
+        // No stuck request state to clear — fine.
+      }
+      await e2e.Reset(partnerContact);
+    },
     send: (partnerId, messageType, payload) =>
       sendWithReceipt(cmix, e2e, partnerId, messageType, payload, e2eParams),
     onMessage: async (senderId, messageType, handler) => {

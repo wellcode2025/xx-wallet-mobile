@@ -58,6 +58,10 @@ export interface AccountMessaging {
   acceptPartner(partnerContact: Uint8Array): Promise<void>;
   /** Whether an authenticated channel with this partner exists. */
   isConnected(partnerId: Uint8Array): Promise<boolean>;
+  /** Start the channel over (stuck half-handshake recovery): clears stuck
+   *  request state and sends a reset; the partner's device auto-confirms a
+   *  known contact and the channel rebuilds from scratch. */
+  resetConnection(partnerContact: Uint8Array): Promise<void>;
   /** Send a multisig proposal memo carrying the hash-gated package. */
   sendProposal(partnerId: Uint8Array, pkg: BytesPackage): Promise<SendResult>;
   /** Send an approve / reject ack referencing a proposal. */
@@ -239,6 +243,7 @@ function makeAccountMessaging(e2e: E2eSession): AccountMessaging {
       await e2e.confirmChannel(partnerContact);
     },
     isConnected: (partnerId) => e2e.hasChannel(partnerId),
+    resetConnection: (partnerContact) => e2e.resetChannel(partnerContact),
     sendProposal: (partnerId, pkg) =>
       e2e.send(partnerId, COORDINATION_MESSAGE_TYPE, buildProposedMessage(pkg)),
     sendAck: (partnerId, action, multisigAddress, callHash) =>

@@ -16,7 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Send, Loader2, Check, CheckCheck, AlertTriangle, Share2, Link2 } from 'lucide-react';
+import { Send, Loader2, Check, CheckCheck, AlertTriangle, Share2, Link2, RotateCcw } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, AddressLabel } from '@/components/ui';
 import { ShareMyContactSheet } from './Contacts';
@@ -92,6 +92,10 @@ function ChatView({ myAccount, partner }: { myAccount: string; partner: string }
   );
   const [connecting, setConnecting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  // Reset-connection affordance: first tap arms (with an auto-disarm), second
+  // tap actually resets — a lightweight confirm for a destructive-ish action.
+  const [resetArmed, setResetArmed] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Watch the channel while online + we have their contact. Poll while it's not
   // up so the compose unlocks the moment the partner adds your contact + the
@@ -141,6 +145,36 @@ function ChatView({ myAccount, partner }: { myAccount: string; partner: string }
       setConnState('disconnected');
     } finally {
       setConnecting(false);
+    }
+  };
+
+  // Arm-and-confirm reset: tears down the (possibly half-established) channel
+  // and asks the partner's device to rebuild it — their side auto-confirms a
+  // known contact, so a stuck handshake heals from whichever side is stuck.
+  useEffect(() => {
+    if (!resetArmed) return;
+    const t = setTimeout(() => setResetArmed(false), 5000);
+    return () => clearTimeout(t);
+  }, [resetArmed]);
+
+  const resetConnection = async () => {
+    if (!handle || !partnerContact || resetting) return;
+    if (!resetArmed) {
+      setResetArmed(true);
+      return;
+    }
+    setResetArmed(false);
+    setResetting(true);
+    try {
+      const am = await handle.forAccount(myAccount);
+      await am.resetConnection(partnerContact);
+      // The relationship is rebuilt when their auto-confirm round-trips — the
+      // existing poll flips the panel to connected when it lands.
+      setConnState('disconnected');
+    } catch {
+      /* reset send failed (offline/blip) — the button stays available */
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -297,6 +331,33 @@ function ChatView({ myAccount, partner }: { myAccount: string; partner: string }
               <p className="text-xs text-ink-300 leading-snug px-1">
                 Opens as soon as they've added your contact and the channel forms.
               </p>
+              <button
+                onClick={() => void resetConnection()}
+                disabled={resetting}
+                className={clsx(
+                  'w-full inline-flex items-center justify-center gap-1.5 py-2 text-xs rounded-xl border transition-colors',
+                  resetArmed
+                    ? 'text-danger border-danger/40 bg-danger/10'
+                    : 'text-ink-300 border-ink-700/70 active:bg-ink-800'
+                )}
+              >
+                {resetting ? (
+                  <Loader2 size={13} className="animate-spin" strokeWidth={2} />
+                ) : (
+                  <RotateCcw size={13} strokeWidth={2} />
+                )}
+                {resetting
+                  ? 'Resetting…'
+                  : resetArmed
+                    ? 'Tap again to reset the connection'
+                    : 'Stuck? Reset the connection'}
+              </button>
+              {resetArmed && (
+                <p className="text-xs text-ink-300 leading-snug px-1">
+                  This starts the secure channel over from scratch on both sides. Your
+                  message history stays on this device.
+                </p>
+              )}
             </div>
           ) : (
             <div className="flex items-end gap-2">
