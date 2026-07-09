@@ -305,7 +305,11 @@ function ContactBlob({ blob }: { blob: string }) {
   useEffect(() => {
     if (!qrOpen) return;
     let cancelled = false;
-    QRCode.toDataURL(blob, { errorCorrectionLevel: 'L', margin: 2, width: 320 })
+    // Contact blobs are ~1 KB → a very dense QR (~version 31, 141×141 modules).
+    // `scale` sizes by module (4 px each ≈ a 600 px image) so the code renders
+    // at readable density instead of being squeezed into a fixed width — the
+    // difference between scannable and not for a code this large.
+    QRCode.toDataURL(blob, { errorCorrectionLevel: 'L', margin: 3, scale: 4 })
       .then((url) => {
         if (!cancelled) {
           setQrUrl(url);
@@ -364,7 +368,21 @@ function ContactBlob({ blob }: { blob: string }) {
       {qrOpen && (
         <div className="card flex flex-col items-center space-y-2 bg-white">
           {qrUrl ? (
-            <img src={qrUrl} alt="Messaging contact QR code" className="w-full max-w-[280px] h-auto" />
+            <>
+              {/* Large but bounded — a dense contact QR needs every pixel it
+                  can get for another camera to resolve, but it also has to fit
+                  on screen (the underlying image keeps ~600px of resolution;
+                  display caps at 420px or 60% of the viewport height). */}
+              <img
+                src={qrUrl}
+                alt="Messaging contact QR code"
+                className="w-full max-w-[420px] max-h-[60vh] h-auto object-contain"
+              />
+              <p className="text-xs text-ink-700 text-center px-2">
+                Large code — scans best from a desktop screen, held steady. If it
+                won't read, use Copy or Download instead.
+              </p>
+            </>
           ) : qrError ? (
             <p className="text-xs text-ink-700 text-center px-2 py-6">
               Contact is too large for a QR — use Copy or Download.

@@ -45,7 +45,19 @@ export function QrScanner({ onScan, onClose }: QrScannerProps) {
         scannerRef.current = scanner;
         await scanner.start(
           { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+          {
+            fps: 10,
+            // Contact-blob QRs are very dense (~141×141 modules); a larger scan
+            // box + a high-resolution camera feed are what make them decodable.
+            // Small codes (addresses) are unaffected.
+            qrbox: { width: 300, height: 300 },
+            aspectRatio: 1,
+            videoConstraints: {
+              facingMode: 'environment',
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+          },
           (decodedText) => {
             const clean = decodedText.replace(/^[a-z]+:/i, '').trim();
             onScan(clean);
