@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, ExternalLink, ThumbsUp } from 'lucide-react';
+import { ChevronRight, ExternalLink, FilePlus2, ThumbsUp } from 'lucide-react';
 import { formatBalance } from '@/utils';
 import { displayName, useIdentity, blocksToHuman } from '@/governance';
 import { useConnectionStore } from '@/store';
 import { SecondSheet } from './SecondSheet';
+import { ProposeSheet } from './ProposeSheet';
 import type {
   ExternalProposal,
   OngoingReferendum,
@@ -173,6 +174,7 @@ function ProposalsSection({
   proposals: PublicProposal[];
   total: number;
 }) {
+  const [proposeOpen, setProposeOpen] = useState(false);
   return (
     <section className="card space-y-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -198,6 +200,11 @@ function ProposalsSection({
           )}
         </ul>
       )}
+      <button onClick={() => setProposeOpen(true)} className="btn-secondary w-full">
+        <FilePlus2 size={15} strokeWidth={2} />
+        Submit a proposal
+      </button>
+      <ProposeSheet open={proposeOpen} onClose={() => setProposeOpen(false)} />
     </section>
   );
 }

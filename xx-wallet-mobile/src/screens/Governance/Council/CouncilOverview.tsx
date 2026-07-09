@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import clsx from 'clsx';
+import { Vote } from 'lucide-react';
 import { TopBar } from '@/components/layout';
 import { LoadingIndicator } from '@/components/ui';
 import { useCouncil } from '@/hooks';
@@ -7,6 +8,7 @@ import { useConnectionStore } from '@/store';
 import { cycleProgress } from '@/governance';
 import { MembersTab } from './MembersTab';
 import { CommitteeTab } from './CommitteeTab';
+import { VoteCouncilSheet } from './VoteCouncilSheet';
 
 /**
  * Council + Technical Committee screen.
@@ -33,6 +35,7 @@ export function CouncilOverview() {
   const council = useCouncil();
   const blockNumber = useConnectionStore((s) => s.blockNumber);
   const [tab, setTab] = useState<Tab>('members');
+  const [voteOpen, setVoteOpen] = useState(false);
 
   const termInfo =
     blockNumber != null && council.termDuration > 0
@@ -76,6 +79,15 @@ export function CouncilOverview() {
           </div>
         )}
 
+        <button
+          onClick={() => setVoteOpen(true)}
+          disabled={council.isLoading || !!council.error}
+          className="btn-primary w-full"
+        >
+          <Vote size={16} strokeWidth={2} />
+          Vote for council members
+        </button>
+
         <div className="flex gap-1 p-1 rounded-2xl bg-ink-900 border border-ink-800">
           <TabButton
             label={`Members${
@@ -109,6 +121,8 @@ export function CouncilOverview() {
           <CommitteeTab council={council} />
         )}
       </div>
+
+      <VoteCouncilSheet open={voteOpen} onClose={() => setVoteOpen(false)} council={council} />
     </>
   );
 }
