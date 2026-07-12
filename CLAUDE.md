@@ -70,6 +70,7 @@ Tier UP when unsure. Anything importing/wrapping crypto, keys, or signing is T2 
 - **T1:** all T0 + independent review PASS + ADR (or `ADR: none` with reason) + boundary gate clean.
 - **T2:** all T1 + a non-AI check recorded (`Non-AI-Check:` trailer: test-vectors / audit-tool / human-review / static-analysis) + rollback noted.
 - Project specifics: `npm run typecheck` and `npx vitest run` green **before** any commit block is handed over; commits carry `Tier:` trailers (enforced by `gates/commit-msg`); secret scan via `gates/pre-commit` (never overridable); tests are required for security-critical pure logic (decoders, hash gates, derivation, keystore round-trips) — UI screens are not unit-tested.
+- Release flow (ADR-0016): commits land on **`beta`** (auto-deploys to the beta preview URL); production ships only by **beta→main PR** with the CI `checks` job green — `main` rejects direct pushes, no bypass. The PR description carries the T1+/T2 review record.
 
 ## Conventions
 

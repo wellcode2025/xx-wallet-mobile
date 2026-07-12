@@ -32,3 +32,7 @@ Failing tests can no longer reach production mechanically. Every production chan
 ## Reversibility
 
 Fully reversible: delete the protection rule, the beta build, and the env block. The habit is the valuable part; keep the machinery until a deliberate ADR retires it.
+
+## Amendment (2026-07-08, same day)
+
+Rollout revealed simpler plumbing than planned: Cloudflare's existing GitHub-connected Workers Build builds non-production branches automatically as **preview versions** with a stable per-branch alias — `beta-xx-wallet-mobile.<account>.workers.dev` — including the Worker code path (the `/xxdk-wasm/*` proxy verified working). The planned second Workers Build was therefore unnecessary and was not created; the `[env.beta]` wrangler config is retained for manual beta deploys or a future dedicated Worker. Verified live the same evening: CI green on both branches; a direct push to `main` rejected with `GH013` citing both the PR requirement and the required `checks` status; the ruleset has an empty bypass list (applies to the Owner).
