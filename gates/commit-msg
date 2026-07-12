@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# gates/commit-msg — classification-trailer gate (generic, project-agnostic)
+#
+# Enforces the doctrine's risk-tier trailers on commits that touch code:
+#   Tier: T0 | T1 | T2                         (always, on code commits)
+#   Review: independent | self                 (T1/T2 must be 'independent')
+#   ADR: none | docs/adr/NNNN-short-name.md    (T1/T2 must reference a real file)
+#   Non-AI-Check: test-vectors | human-review | static-analysis | audit-tool |
+#                 not-applicable:<reason>      (T2 only)
+#
+# Held-but-overridable: the Owner is CEO. Bypass with `git commit --no-verify`,
+# but that bypass is itself visible (no trailer recorded). Mirror in CI for teams.
+# Install: see gates/README.md.
+
+set -euo pipefail
+
+msg_file="$1"
+msg="$(cat "$msg_file")"
+
+# Only enforce on commits that actually touch code (not pure docs/markdown).
+code_changed="$(git diff --cached --name-only | grep -Ev '^(docs/|.*\.md$)' || true)"
+if [ -z "$code_changed" ]; then
+  exit 0   # docs-only commit, no classification required
+fi
+
+fail=0
+
+tier="$(printf '%s\n' "$msg" | grep -E '^Tier:' | head -1 | sed -E 's/^Tier:[[:space:]]*//')"
+if [ -z "$tier" ]; then
+  echo "BLOCKED: code commit is missing a 'Tier:' trailer (T0|T1|T2). See doctrine §3."
+  exit 1
+fi
+
+case "$tier" in
+  T0) : ;;  # routine — no further trailers required
+  T1|T2)
+    review="$(printf '%s\n' "$msg" | grep -E '^Review:' | head -1 | sed -E 's/^Review:[[:space:]]*//')"
+    if [ "$review" != "independent" ]; then
+      echo "BLOCKED: $tier requires 'Review: independent' (got: '${review:-none}'). The builder does not grade its own homework. Doctrine §4.4."
+      fail=1
+    fi
+    adr="$(printf '%s\n' "$msg" | grep -E '^ADR:' | head -1 | sed -E 's/^ADR:[[:space:]]*//')"
+    if ! printf '%s' "$adr" | grep -Eq '^(none|docs/adr/[0-9]{4}-[a-z0-9-]+\.md)$'; then
+      echo "BLOCKED: $tier requires 'ADR: none' or 'ADR: docs/adr/NNNN-short-name.md' (a real filename). Got: '${adr:-missing}'. Doctrine §7."
+      fail=1
+    fi
+    if [ "$tier" = "T2" ]; then
+      nac="$(printf '%s\n' "$msg" | grep -E '^Non-AI-Check:' | head -1 | sed -E 's/^Non-AI-Check:[[:space:]]*//')"
+      if ! printf '%s' "$nac" | grep -Eq '^(test-vectors|human-review|static-analysis|audit-tool|not-applicable:.+)$'; then
+        echo "BLOCKED: T2 requires a 'Non-AI-Check:' trailer (test-vectors|human-review|static-analysis|audit-tool|not-applicable:<reason>). AI may draft T2; it may not be the only approver. Doctrine §4.4."
+        fail=1
+      fi
+    fi
+    ;;
+  *)
+    echo "BLOCKED: unknown Tier '$tier' (expected T0, T1, or T2)."
+    fail=1
+    ;;
+esac
+
+if [ "$fail" -ne 0 ]; then
+  echo ""
+  echo "commit-msg gate FAILED. Fix the trailers, or (Owner override) re-run with --no-verify and record the skip per doctrine §9."
+  exit 1
+fi
+
+exit 0

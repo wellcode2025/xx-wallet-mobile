@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# gates/xx-wallet-boundary — enforce THE RULE for xx-wallet (doctrine §3).
+#
+# THE RULE, two facets (ADR-0002, ADR-0003):
+#   (a) No signing/approval surface renders text it didn't decode from call
+#       bytes verified against the on-chain hash.
+#   (b) Key material is confined to src/keyring/ — nothing else imports
+#       @polkadot/keyring or handles decrypted key bytes.
+#
+# Grep can enforce (b) quite precisely and can only *flag proximity* for (a) —
+# the decode-or-refuse property is semantic, so this gate flags touches to the
+# files that carry it and leaves judgment to review. Conservative by design:
+# a gate that cries wolf gets ignored.
+#
+# Advisory locally; strict in CI when XXWALLET_BOUNDARY_STRICT=1.
+
+set -euo pipefail
+
+strict="${XXWALLET_BOUNDARY_STRICT:-0}"
+staged_files="$(git diff --cached --name-only || true)"
+[ -z "$staged_files" ] && exit 0
+
+flagged=0
+flag() { echo "BOUNDARY: $1"; flagged=1; }
+
+# ---- Facet (b): keyring isolation ------------------------------------------
+# @polkadot/keyring may be imported only under src/keyring/.
+kr_files="$(echo "$staged_files" | grep -E '^xx-wallet-mobile/src/' | grep -Ev '^xx-wallet-mobile/src/keyring/' | grep -E '\.(ts|tsx)$' || true)"
+for f in $kr_files; do
+  if git show ":$f" 2>/dev/null | grep -Eq "from ['\"]@polkadot/keyring|require\(['\"]@polkadot/keyring" ; then
+    flag "@polkadot/keyring imported outside src/keyring/ in $f (THE RULE facet b, ADR-0003)"
+  fi
+done
+
+# ---- Facet (a) proximity: T2 decode/signing/credential files ---------------
+# Touching these doesn't fail anything — it reminds the committer the change
+# is T2 (Tier: trailer + independent review + non-AI check).
+t2_pattern='^xx-wallet-mobile/(src/keyring/|src/utils/decodeCall|src/utils/bytesPackage|src/hooks/useTx|src/hooks/useSequentialTx|src/ledger/|src/cmix/(storageSecret|identity|identityExport|deviceKey|contactBinding)|src/api/constants|src/utils/pin|src/utils/webauthn|public/_headers)'
+t2_touched="$(echo "$staged_files" | grep -E "$t2_pattern" || true)"
+if [ -n "$t2_touched" ]; then
+  echo "boundary gate: T2-area files in this commit (tier map, GAP_REPORT axis 7):"
+  echo "$t2_touched" | sed 's/^/  - /'
+  echo "  -> Tier: T2 trailer expected (Review: independent + Non-AI-Check:). Not a failure."
+fi
+
+# ---- Never-active-content: no dangerouslySetInnerHTML anywhere -------------
+# The codebase renders chain- and peer-supplied data as text only (ADR-0002).
+html_files="$(echo "$staged_files" | grep -E '\.(ts|tsx)$' || true)"
+for f in $html_files; do
+  if git show ":$f" 2>/dev/null | grep -q 'dangerouslySetInnerHTML'; then
+    flag "dangerouslySetInnerHTML in $f — untrusted-content surfaces are text-only (ADR-0002)"
+  fi
+done
+
+if [ "$flagged" -ne 0 ]; then
+  echo ""
+  if [ "$strict" = "1" ]; then
+    echo "boundary gate: STRICT — failing. These crossings make the change >= T1; route through the inner loop."
+    exit 1
+  else
+    echo "boundary gate: ADVISORY — review the flags above. They likely raise this change to T1+. (Set XXWALLET_BOUNDARY_STRICT=1 in CI to enforce.)"
+  fi
+fi
+exit 0

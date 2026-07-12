@@ -53,3 +53,41 @@ docs/CMIX_PRIVATE_INDEXER_DESIGN.md
 .audit/
 docs/audit-template/
 docs/USER_GUIDE.*
+
+# Internal docs + vendored reference material — never in the public tree.
+# Consolidated from .git/info/exclude (2026-07-08, brownfield audit Stage 3)
+# so the filter travels with every clone instead of living in local-only
+# config. NOTE: CLAUDE.md is deliberately NOT listed — the rewritten
+# governing file (facts + rules + tier map) is public by decision.
+/docs/HANDOFF.md
+/docs/STRATEGY_UPDATE.md
+/docs/PROJECT_BRIEF.md
+/docs/PHASE_2A_IMPLEMENTATION_PLAN.md
+/docs/PHASE_2A_MULTISIG_DESIGN.md
+/docs/PHASE_4_GOVERNANCE_IMPLEMENTATION_PLAN.md
+/docs/STAKING_INDEXER_FINDINGS.md
+/docs/INDEXER_FIX_BRIEF.md
+/docs/INDEXER_FIX_PATCH.md
+/docs/INDEXER_CRAWLER_RUN.md
+/docs/COWORK_QUICKSTART.md
+/docs/COWORK_NATIVE_APP_FEEL_PROMPT.md
+/docs/WSL_MIGRATION.md
+/docs/LEDGER_ACCOUNT_TYPE_SPEC.md
+/docs/PROTECTED_ACCOUNT_RECOGNITION_PLAN.md
+/docs/AUDIT_SCOPING_BRIEF.md
+/docs/test-write.txt
+/docs/_to-delete-*
+/docs/sleeve-main/
+/docs/sleeve-modification-single-seed-main*/
+/docs/scripts-main/
+/docs/xxfoundation-scripts/
+/docs/xxnetwork-js-main/
+/docs/_external-reference/
+/docs/xx network_media kit/
+/docs/xx network_media kit.zip
+/xx-wallet-mobile/docs/PHASE_4_GOVERNANCE_HANDOFF.md
+
+# Local workspace folders (never part of the product)
+/reference/
+/outputs/
+/indexer-staking-fix/

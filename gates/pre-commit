@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# gates/pre-commit — mechanical gate (generic, project-agnostic)
+#
+# Blocks secrets in STAGED content (scans the staged blob, not the working tree,
+# so staging a secret then reverting the file cannot sneak it past). Warns on a
+# missing signed-off STRATEGY.md or a stale PROJECT_STATE.md.
+#
+# The secret block is NEVER overridable here. The warnings are advisory.
+# Install: see gates/README.md. Mirror the secret scan in CI too (--no-verify
+# bypasses local hooks).
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+fail=0
+
+# --- 1. Secret scan over staged ADDED lines only -----------------------------
+# Look at what is actually being committed (added lines in the staged diff).
+staged_added="$(git diff --cached --no-color -U0 | grep '^+' | grep -v '^+++' || true)"
+
+# Patterns for common credential shapes. Tune per project by adding lines.
+# Kept deliberately conservative to limit false positives, but the high-signal
+# shapes (private keys, AWS keys, generic api_key=... assignments) are caught.
+secret_patterns=(
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+  'AKIA[0-9A-Z]{16}'                                  # AWS access key id
+  'ASIA[0-9A-Z]{16}'                                  # AWS temp key id
+  'gh[pousr]_[A-Za-z0-9]{20,}'                        # GitHub tokens
+  'xox[baprs]-[A-Za-z0-9-]{10,}'                      # Slack tokens
+  '(secret|password|passwd|api[_-]?key|token|access[_-]?key)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9/+=_-]{12,}'
+  'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'  # JWT
+)
+
+if [ -n "$staged_added" ]; then
+  for pat in "${secret_patterns[@]}"; do
+    # `-e --` so patterns beginning with '-' (e.g. PRIVATE KEY header) aren't
+    # mis-read as grep options.
+    if echo "$staged_added" | grep -EiqI -e "$pat"; then
+      echo "BLOCKED: a staged line matches a secret pattern: /$pat/"
+      echo "         Remove the secret from the staged change. This block is not overridable."
+      fail=1
+    fi
+  done
+fi
+
+# --- 2. Advisory: strategy gate ----------------------------------------------
+# Warn (don't block) if there's no signed-off strategy and no gap report — the
+# project may not have been set up under the doctrine yet.
+if [ ! -f "$repo_root/docs/STRATEGY.md" ] && [ ! -f "$repo_root/docs/GAP_REPORT.md" ]; then
+  echo "warning: no docs/STRATEGY.md or docs/GAP_REPORT.md found — has intake/audit been run? (advisory)"
+fi
+
+# --- 3. Advisory: stale ledger -----------------------------------------------
+# If code is changing but PROJECT_STATE.md is not in this commit, warn.
+code_changed="$(git diff --cached --name-only | grep -Ev '^(docs/|PROJECT_STATE\.md|.*\.md$)' || true)"
+ledger_changed="$(git diff --cached --name-only | grep -E '^PROJECT_STATE\.md$' || true)"
+if [ -n "$code_changed" ] && [ -z "$ledger_changed" ]; then
+  echo "warning: code changed but PROJECT_STATE.md is not in this commit — update the ledger before ending the session (advisory)"
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo ""
+  echo "pre-commit gate FAILED (secret detected). Commit aborted."
+  exit 1
+fi
+
+exit 0
