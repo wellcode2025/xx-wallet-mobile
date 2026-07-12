@@ -13,11 +13,24 @@
 # a gate that cries wolf gets ignored.
 #
 # Advisory locally; strict in CI when XXWALLET_BOUNDARY_STRICT=1.
+#
+# Modes:
+#   (default)  scan the STAGED diff (pre-commit hook usage)
+#   --tree     scan ALL tracked files in the checkout (CI usage; skips the
+#              T2-touch advisory, which only makes sense for a diff)
 
 set -euo pipefail
 
 strict="${XXWALLET_BOUNDARY_STRICT:-0}"
-staged_files="$(git diff --cached --name-only || true)"
+mode="${1:-}"
+
+if [ "$mode" = "--tree" ]; then
+  staged_files="$(git ls-files)"
+  show_file() { cat "$1" 2>/dev/null; }
+else
+  staged_files="$(git diff --cached --name-only || true)"
+  show_file() { git show ":$1" 2>/dev/null; }
+fi
 [ -z "$staged_files" ] && exit 0
 
 flagged=0
@@ -25,9 +38,12 @@ flag() { echo "BOUNDARY: $1"; flagged=1; }
 
 # ---- Facet (b): keyring isolation ------------------------------------------
 # @polkadot/keyring may be imported only under src/keyring/.
-kr_files="$(echo "$staged_files" | grep -E '^xx-wallet-mobile/src/' | grep -Ev '^xx-wallet-mobile/src/keyring/' | grep -E '\.(ts|tsx)$' || true)"
+# Only VALUE imports of the package root count: type-only imports and
+# '@polkadot/keyring/types' carry no key material and are allowed. Unit
+# tests (*.test.ts) may build fixture pairs — they don't ship.
+kr_files="$(echo "$staged_files" | grep -E '^xx-wallet-mobile/src/' | grep -Ev '^xx-wallet-mobile/src/keyring/' | grep -Ev '\.test\.tsx?$' | grep -E '\.(ts|tsx)$' || true)"
 for f in $kr_files; do
-  if git show ":$f" 2>/dev/null | grep -Eq "from ['\"]@polkadot/keyring|require\(['\"]@polkadot/keyring" ; then
+  if show_file "$f" | grep -E "from ['\"]@polkadot/keyring['\"]|require\(['\"]@polkadot/keyring['\"]" | grep -Evq '^[[:space:]]*import[[:space:]]+type' ; then
     flag "@polkadot/keyring imported outside src/keyring/ in $f (THE RULE facet b, ADR-0003)"
   fi
 done
@@ -36,7 +52,8 @@ done
 # Touching these doesn't fail anything — it reminds the committer the change
 # is T2 (Tier: trailer + independent review + non-AI check).
 t2_pattern='^xx-wallet-mobile/(src/keyring/|src/utils/decodeCall|src/utils/bytesPackage|src/hooks/useTx|src/hooks/useSequentialTx|src/ledger/|src/cmix/(storageSecret|identity|identityExport|deviceKey|contactBinding)|src/api/constants|src/utils/pin|src/utils/webauthn|public/_headers)'
-t2_touched="$(echo "$staged_files" | grep -E "$t2_pattern" || true)"
+t2_touched=""
+[ "$mode" != "--tree" ] && t2_touched="$(echo "$staged_files" | grep -E "$t2_pattern" || true)"
 if [ -n "$t2_touched" ]; then
   echo "boundary gate: T2-area files in this commit (tier map, GAP_REPORT axis 7):"
   echo "$t2_touched" | sed 's/^/  - /'
@@ -47,7 +64,7 @@ fi
 # The codebase renders chain- and peer-supplied data as text only (ADR-0002).
 html_files="$(echo "$staged_files" | grep -E '\.(ts|tsx)$' || true)"
 for f in $html_files; do
-  if git show ":$f" 2>/dev/null | grep -q 'dangerouslySetInnerHTML'; then
+  if show_file "$f" | grep -q 'dangerouslySetInnerHTML'; then
     flag "dangerouslySetInnerHTML in $f — untrusted-content surfaces are text-only (ADR-0002)"
   fi
 done

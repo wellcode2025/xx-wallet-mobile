@@ -13,8 +13,7 @@ _Last updated: 2026-07-08 by the Lead (brownfield audit session)_
 
 ## Next
 
-- Install gates + CI mirror (typecheck, `vitest run`, gitleaks, boundary gate strict) — pairs with the beta/main workflow build.
-- Stage 2 leftover: none — ADR set complete pending any Owner corrections.
+- Finish the beta/main rollout: create `beta` branch, second Cloudflare Workers Build (`wrangler deploy --env beta`), enable branch protection on `main` (PR-only + required CI check), live-verify (Non-AI-Check for ADR-0016).
 - Pre-launch ritual when the time comes: bump `version.ts` + What's-New entry (offline delivery as marquee).
 
 ## Blocked
@@ -23,6 +22,7 @@ _Last updated: 2026-07-08 by the Lead (brownfield audit session)_
 
 ## Recently done
 
+- **2026-07-08 (late):** Doctrine adopted (Stages 1–3, `218f47e`): Gap Report, ADRs 0001–0016, public CLAUDE.md, this ledger, three gates installed + hooks active, internal filter consolidated into tracked `.gitignore`. Release-channel machinery built (ADR-0016): `[env.beta]` Worker config, CI mirror workflow, boundary-gate `--tree` mode — independent review caught day-one CI false positives pre-commit (fixed); gitleaks full-history trial clean (192 commits).
 - **2026-07-08:** Governance participation — `elections.vote` (council voting w/ stake validation + removeVoter) and `democracy.propose` (inline ≤128 bytes or notePreimage+Lookup batch), spike-verified against the live chain, live-tested (`c038438`). Contact QR codes made reliably scannable (`d0f1de6`).
 - **2026-07-07:** Offline-message delivery fixed — the two-layer cold-resume race (fingerprints, then listeners) closed wallet-side with stock xxdk-wasm (`9f05507`, `b26b8b8`, `7c4d3db`); verified on-device: offline→cold-open delivery in ~4s with the sender offline throughout. Channel reset for stuck half-established connections (`842fe0f`); chat timestamps in device-local time (`d1cf610`).
 - **2026-07-01:** Two-way handshake gate on chat send; sender-side re-send backstop for un-acked memos; Max-send fix (ED read from chain — ADR-0009).

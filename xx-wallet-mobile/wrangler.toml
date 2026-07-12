@@ -37,3 +37,19 @@ not_found_handling = "single-page-application"
 # Cleaner URL behaviour — auto-strips/adds trailing slashes for index.html
 # lookups. Matches what we configured in the dashboard previously.
 html_handling = "auto-trailing-slash"
+
+# --- Beta channel (ADR-0016) -------------------------------------------------
+# Deployed by a SECOND GitHub-connected Workers Build watching the `beta`
+# branch, with deploy command `npx wrangler deploy --env beta`. Separate
+# Worker, separate origin (xx-wallet-mobile-beta.<account>.workers.dev),
+# separate browser storage — a beta install can't touch production state.
+# `main`/compatibility_date are inherited; assets must be restated (binding
+# keys are not inherited by environments).
+[env.beta]
+name = "xx-wallet-mobile-beta"
+
+[env.beta.assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+html_handling = "auto-trailing-slash"

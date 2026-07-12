@@ -1,0 +1,45 @@
+# CI mirror of the local gates (ADR-0016). Local hooks can be bypassed with
+# --no-verify; this cannot. Branch protection on `main` requires this job green
+# before a beta->main PR can merge — which is what actually stops failing tests
+# from reaching the production deploy.
+name: CI
+
+on:
+  push:
+    branches: [beta, main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history for the gitleaks scan
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: xx-wallet-mobile/package-lock.json
+
+      - name: Install
+        working-directory: xx-wallet-mobile
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: xx-wallet-mobile
+        run: npm run typecheck
+
+      - name: Tests
+        working-directory: xx-wallet-mobile
+        run: npx vitest run
+
+      - name: Boundary gate (THE RULE, strict)
+        run: XXWALLET_BOUNDARY_STRICT=1 bash gates/xx-wallet-boundary --tree
+
+      - name: Secret scan (gitleaks, full history)
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose
