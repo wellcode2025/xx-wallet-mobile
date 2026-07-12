@@ -1,7 +1,7 @@
 # ADR-0015: Risk-to-self gets a warning + explicit acknowledgement; only integrity violations get hard blocks
 
 - Status: accepted (retroactive capture; pattern set 2026-06-11 with the exchange-routing caution)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T1
 - Review: independent
 

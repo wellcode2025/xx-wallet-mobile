@@ -1,7 +1,7 @@
 # ADR-0014: Deliberate web-platform posture — CSP/HSTS choices, public sourcemaps, same-origin WASM (audit #1 dispositions)
 
 - Status: accepted (retroactive capture; decisions made 2026-05 → 06-13, most during the 2026-06-12 security-audit remediation)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent (external security audit #1: 6 Low + 4 Info, no Crit/High/Med; per-finding dispositions committed 78374aa…20506ff)
 

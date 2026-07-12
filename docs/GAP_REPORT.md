@@ -1,6 +1,6 @@
 # Gap Report — xx Wallet Mobile vs. PROJECT_DOCTRINE
 
-*Brownfield audit, Stage 1 (read-only). 2026-07-08.*
+*Brownfield audit, Stage 1 (read-only). 2026-07-11.*
 *Evidence: live run at `c038438` (HEAD = origin/main, clean tree) — typecheck green, 452/452 tests across 38 files, zero git hooks installed, no CI workflows.*
 
 This report assesses the repo against the engineering-lead doctrine's seven axes. Nothing was changed except this file. Each axis reports **Wants / Has / Gap / Cost-Risk**; the report ends with the tier map, THE RULE, a candidate-ADR list, and a prioritisation.
@@ -99,7 +99,7 @@ Per doctrine §3, anything wrapping crypto/key/signing is T2 until proven otherw
 
 **T0 — Routine:** presentational components, copy, formatting utils, docs, layout, read-only views without external input.
 
-**THE RULE** (Owner-decided 2026-07-08, one boundary gate, two facets):
+**THE RULE** (Owner-decided 2026-07-11, one boundary gate, two facets):
 
 1. **Decode-from-bytes (§6.4):** no signing or approval surface renders a description it didn't decode from call bytes verified against the on-chain hash. Depositor-, sender-, or file-supplied text is never the narrative.
 2. **Keyring isolation:** key material and keystore operations are confined to `src/keyring/`; nothing else imports `@polkadot/keyring` or handles decrypted key bytes.

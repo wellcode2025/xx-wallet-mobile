@@ -2,7 +2,7 @@
 
 Each file records one material decision: the context, what was decided, what was rejected, and what it costs to reverse. ADRs are immutable once accepted — to change a decision, write a new ADR that supersedes the old one.
 
-Most of these are retroactive captures (2026-07-08 brownfield audit, Stage 2) of decisions made earlier in the project; the decision dates are noted inside each record.
+Most of these are retroactive captures (2026-07-11 brownfield audit, Stage 2) of decisions made earlier in the project; the decision dates are noted inside each record.
 
 | ADR | Title | Tier |
 |-----|-------|------|

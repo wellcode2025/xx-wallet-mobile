@@ -1,7 +1,7 @@
 # ADR-0010: The indexer is an untrusted narrator; chain-first reads; privacy toggle at a single gate
 
 - Status: accepted (retroactive capture, decisions made 2026-05 → 06)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T1
 - Review: independent
 

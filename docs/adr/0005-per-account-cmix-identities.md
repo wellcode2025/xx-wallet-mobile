@@ -1,7 +1,7 @@
 # ADR-0005: One cMix identity per wallet account; fixed sender identity per thread
 
 - Status: accepted (retroactive capture, decision made 2026-06)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent
 

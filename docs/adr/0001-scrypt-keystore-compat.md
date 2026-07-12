@@ -1,7 +1,7 @@
 # ADR-0001: Keystore KDF pinned to scrypt N=131072 for official-wallet compatibility
 
 - Status: accepted (retroactive capture, decision made 2026-05)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent (captured in brownfield audit Stage 2; original decision validated by round-trip test vectors and audit #1)
 

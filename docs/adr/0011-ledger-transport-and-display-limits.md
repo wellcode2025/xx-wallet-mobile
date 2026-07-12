@@ -1,7 +1,7 @@
 # ADR-0011: Ledger — WebHID/WebUSB only (no Bluetooth, no iOS); refuse what the device can't display
 
 - Status: accepted (retroactive capture, decisions made 2026-06-12)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent (verified on mainnet on both form factors)
 
