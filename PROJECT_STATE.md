@@ -2,19 +2,23 @@
 
 > Live status ledger. **Updated every session that changes the project**, before the session ends. This replaces the status-narrative sections that used to live in `CLAUDE.md`; the phase-by-phase build history remains in the internal handoff doc (local-only, not in the public tree). See `PROJECT_DOCTRINE.md` §12.
 
-_Last updated: 2026-07-08 by the Lead (brownfield audit session)_
+_Last updated: 2026-07-08 (late evening) by the Lead — beta/main workflow live and verified_
 
 ---
 
 ## Now
 
-- **Doctrine adoption (brownfield audit):** Stage 1 (Gap Report) and Stage 2 (ADRs 0001–0015) complete and Owner-approved. Stage 3 in progress this session: gates written, CLAUDE.md restructured, this ledger created; remaining — gates install (symlinks), tracked-.gitignore consolidation, doctrine/template files copied into the repo.
-- **Pre-launch program** (launch moved to ~mid/late July 2026): launch website (separate workstream) → GitHub/README organisation → code audit #2 (scoped by the Gap Report tier map) → beta/main branch workflow + second Cloudflare Pages project → launch.
+- **Doctrine adoption COMPLETE** (brownfield audit Stages 1–3, `218f47e`; Stage 4 declined as unnecessary). **Release workflow LIVE and verified** (ADR-0016 + amendment, `603368b`): beta channel at the Workers preview alias, `main` PR-only behind required CI, direct-push rejection verified (`GH013`).
+- **Pre-launch program** (launch ~mid/late July 2026): launch website (separate workstream) → GitHub/README organisation → code audit #2 (scoped by the Gap Report tier map) → launch.
 
 ## Next
 
-- Finish the beta/main rollout: create `beta` branch, second Cloudflare Workers Build (`wrangler deploy --env beta`), enable branch protection on `main` (PR-only + required CI check), live-verify (Non-AI-Check for ADR-0016).
+- Pre-launch program remainder: GitHub/README organisation → code audit #2 (scoped by the Gap Report tier map) → launch website goes live → launch.
 - Pre-launch ritual when the time comes: bump `version.ts` + What's-New entry (offline delivery as marquee).
+
+## Workflow (in force since ADR-0016)
+
+Day-to-day commits land on **`beta`** (auto-deploys to the beta preview URL). Production releases are **beta→main pull requests** — `main` rejects direct pushes and requires the CI `checks` job green. The PR description carries the review record for T1+/T2 work.
 
 ## Blocked
 
