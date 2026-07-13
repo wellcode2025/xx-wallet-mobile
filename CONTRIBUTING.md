@@ -60,9 +60,8 @@ alternatives — that's expected, not a bug. Ledger work is the exception that's
 - **Verify call signatures against the live chain, not against Substrate docs.** xx network forks
   several pallets and changes call signatures (for example, `staking.bond` takes a cMix node id
   where upstream takes a payee). Before building any screen that submits an extrinsic, construct the
-  call against the real chain in a small spike script and confirm it builds. The scripts under
-  `xx-wallet-mobile/scripts/spikes/` are the template and stay in the tree as executable
-  documentation of each screen's data assumptions.
+  call against the real chain in a small spike script and confirm it builds, decodes, and (where
+  safe) dry-runs before writing any UI on top of it.
 - **Decode storage defensively.** On the xx runtime, some auto-generated codec accessors and tuple
   destructures return wrong values silently. Read enums via `.toJSON()` and structs by named field,
   and guard decoded addresses (xx addresses start with "6"). Some runtime constants that look like a
@@ -93,8 +92,9 @@ the Ledger xx network app supports the call, an honest visible explanation where
 never silent absence, and never blind signing.
 
 ### Do not change without discussion
-- `xx-wallet-mobile/src/api/constants.ts` — chain-baked values (SS58 prefix, decimals, existential
-  deposit, genesis hash, RPC URLs). Wrong values silently break things.
+- `xx-wallet-mobile/src/api/constants.ts` — chain-baked values (SS58 prefix, decimals, genesis
+  hash, RPC URLs). Wrong values silently break things. Economic parameters like the existential
+  deposit are deliberately *not* here — they're read from the chain at runtime.
 - `xx-wallet-mobile/src/keyring/store.ts` — the manual scrypt decrypt/encrypt path and the async
   `unlock()` flow. This is load-bearing for compatibility with `wallet.xx.network` keystores; changing
   it carelessly breaks the ability to import and sign with existing wallets.
@@ -118,7 +118,9 @@ Run `npm run test:run` and make sure the suite is green before opening a PR.
 
 ## Pull requests
 
-1. Branch from `main`.
+1. Branch from **`beta`** and open your PR against `beta` — that's the integration branch, and it
+   auto-deploys to a live beta preview. `main` is the protected production branch: it only receives
+   beta→main release PRs with CI green, and rejects direct pushes for everyone, maintainer included.
 2. Keep the change focused — one logical change per PR. Vertical slices that ship something usable
    end-to-end are preferred over broad scaffolding.
 3. Before pushing, confirm **`npm run typecheck`, `npm run lint`, and `npm run test:run` are all
