@@ -6,6 +6,7 @@
 
 **A mobile-first, non-custodial Progressive Web App wallet for the [xx network](https://xx.network) blockchain.**
 
+[![CI](https://github.com/wellcode2025/xx-wallet-mobile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wellcode2025/xx-wallet-mobile/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8.svg)](https://mobile.xx.network)
 [![Built with React + Vite](https://img.shields.io/badge/React_18-Vite-06b6d4.svg)](#tech-stack)
@@ -29,16 +30,19 @@ native multisig, Ledger hardware accounts, and private messaging over the xx mix
 quantum-resistant key generation on by default.
 
 > [!IMPORTANT]
-> **Not yet official.** This is an independent, community-built wallet — not yet a formally endorsed
-> or official xx network / xx Foundation product. It interacts with the public xx network chain the
-> same way any wallet does.
+> **Independent, community-built.** This is not (yet) a formally endorsed or official xx network /
+> xx Foundation product. It interacts with the public xx network chain the same way any wallet does.
 >
-> **Self-custody, your responsibility.** The wallet is non-custodial — you alone hold your keys
-> and recovery phrases. There is no password reset and no way to recover lost phrases.
+> **Self-custody by design.** The wallet is non-custodial — you alone hold your keys and recovery
+> phrases, and no one (including us) can reset a password or recover a lost phrase. That's the
+> point; back your phrases up accordingly.
 >
-> **Not independently audited.** An internal security review has been completed and its findings
-> addressed, but the code has not yet had a *third-party* audit. Treat it as experimental and use it
-> at your own risk. See [Security](#security) and [`SECURITY.md`](SECURITY.md).
+> **Where security stands.** The code has been through an internal security review (all findings
+> addressed), ships with a [documented threat model](SECURITY.md), and is built under a
+> risk-tiered engineering process with the security-critical paths under test. A *third-party*
+> audit hasn't happened yet — it's the top roadmap item. As with any browser wallet, for
+> significant balances prefer the built-in [two-device protection](docs/two-device-approval.md) or
+> a Ledger.
 
 ---
 
@@ -76,24 +80,24 @@ experience without asking you to trust anything new.
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/wallet-dashboard.png" width="220" alt="Wallet dashboard" /><br/><sub><b>Wallet</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/account-add.png" width="220" alt="Add account, including a Ledger hardware account" /><br/><sub><b>Add account &middot; Ledger</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/settings-app-lock.png" width="220" alt="App lock and privacy settings" /><br/><sub><b>App lock &amp; privacy</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/dashboard.jpg" width="220" alt="Wallet dashboard with balance, send/receive, and recent activity" /><br/><sub><b>Wallet</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/accounts.jpg" width="220" alt="Account switcher with local and Ledger accounts" /><br/><sub><b>Accounts &middot; Ledger</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/transfer.jpg" width="220" alt="Send screen with address book" /><br/><sub><b>Send</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/staking-start.png" width="220" alt="Start staking with recommended validators" /><br/><sub><b>Staking &middot; nominate</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/staking-validators.png" width="220" alt="Network-wide validator list" /><br/><sub><b>Staking &middot; validators</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/staking-advanced-selection.png" width="220" alt="Tunable validator selection" /><br/><sub><b>Staking &middot; tunable picks</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/staking-start.jpg" width="220" alt="Start staking with recommended validators" /><br/><sub><b>Staking &middot; start</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/staking-active.jpg" width="220" alt="Active nominations with per-validator earning status" /><br/><sub><b>Staking &middot; nominations</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/manage-stake.jpg" width="220" alt="Manage an existing stake" /><br/><sub><b>Staking &middot; manage</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/governance.png" width="220" alt="Governance index" /><br/><sub><b>Governance</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/governance-treasury.png" width="220" alt="Treasury" /><br/><sub><b>Treasury</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/governance-democracy.png" width="220" alt="Democracy" /><br/><sub><b>Democracy</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/governance.jpg" width="220" alt="Governance index: bounties, democracy, council, treasury, my governance" /><br/><sub><b>Governance</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/two-device.jpg" width="220" alt="Two-device approval: require two devices to spend" /><br/><sub><b>Two-device 2FA</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/add-multisig.jpg" width="220" alt="Add a multisig account" /><br/><sub><b>Multisig</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/governance-council.png" width="220" alt="Council members" /><br/><sub><b>Council</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/governance-bounties.png" width="220" alt="Bounties" /><br/><sub><b>Bounties</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/multisig-add.png" width="220" alt="Add multisig, including two-device approval" /><br/><sub><b>Multisig &middot; two-device 2FA</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/memos-list.jpg" width="220" alt="Memos conversation list" /><br/><sub><b>Memos</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/memos-chat.jpg" width="220" alt="End-to-end encrypted 1:1 chat over the xx mixnet with delivery receipts" /><br/><sub><b>Memos &middot; chat</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/memos-new.jpg" width="220" alt="Add a messaging contact" /><br/><sub><b>Memos &middot; add contact</b></sub></td>
   </tr>
 </table>
 
@@ -146,8 +150,10 @@ wallet's governance surface, consolidated for mobile:
 - **Read** every surface — bounties, democracy and stored preimages, council and technical
   committee, treasury and tips, plus a personal "My Governance" dashboard.
 - **Participate** — vote on referenda (with a conviction picker and live vote-power preview), second
-  public proposals, delegate and undelegate voting power, remove votes, release matured locks,
-  propose treasury spends, and propose bounties.
+  public proposals, submit your own public proposals (inline or via a stored preimage), vote for
+  council members (with the vote bond and chain-minimum stake surfaced up front), delegate and
+  undelegate voting power, remove votes, release matured locks, propose treasury spends, and
+  propose bounties.
 - **Verify what you sign** — preimages and proposals are decoded locally from their on-chain bytes,
   never from proposer-supplied descriptions. Addresses everywhere show a resolved name *and* a
   truncated address fragment so a friendly label can't disguise what's actually being signed.
@@ -168,6 +174,24 @@ wallet's governance surface, consolidated for mobile:
   deposit (the transfer is nested inside a multisig call that many exchange systems don't scan
   for), so the propose flow warns up front and asks for explicit acknowledgement when the
   recipient isn't an address the wallet recognizes.
+
+### Private messaging & coordination (Memos)
+Opt-in, off by default, and built for one job first: coordinating funds without a Telegram
+back-channel.
+- **Send a multisig proposal to your cosigners over the xx mixnet** — the receiving wallet caches
+  the call data and re-validates it against the on-chain call hash before anything can be approved,
+  exactly like a pasted or QR'd bytes-package. A message is transport, never an instruction.
+- **1:1 chat between wallet accounts**, end-to-end encrypted and metadata-resistant — the mixnet
+  hides who is talking to whom, and no server stores your messages. Delivery is confirmed by
+  receipt (the double-check means *received*, not just sent), with automatic re-send while you're
+  online and offline delivery when the recipient next opens the app.
+- **A separate, unlinkable messaging identity per account** — your accounts can't be connected to
+  each other through messaging. Contacts are account-signed bindings exchanged by QR or blob, so a
+  contact can't be spoofed.
+- **Protected by its own passphrase**, separate from every wallet password — messaging is an access
+  credential, never a signing factor — with encrypted backup/restore covering all identities, and
+  ephemeral by design: history lives on your device, and undelivered messages expire from the
+  network's gateways after ~21 days.
 
 ### Security & privacy
 - Non-custodial. No backend, no telemetry, no analytics, no third-party scripts.
@@ -210,7 +234,7 @@ Requires **Node 22**. (Rebuilding the Sleeve WASM additionally needs Go 1.22+, b
 artifact is committed, so day-to-day development does not.)
 
 ```bash
-git clone <your-fork-or-repo-url> xx-wallet
+git clone https://github.com/wellcode2025/xx-wallet-mobile.git xx-wallet
 cd xx-wallet/xx-wallet-mobile
 
 npm install
@@ -257,7 +281,7 @@ Baked into the chain itself and defined in
 | Token symbol | XX |
 | Block time | 6 seconds |
 | Finality | ~18 seconds (3 blocks) |
-| Existential deposit | 0.001 XX |
+| Existential deposit | 1 XX — read live from the chain, never hardcoded |
 | Default RPC | `wss://rpc.xx.network` |
 | Indexer | `https://indexer.xx.network/v1/graphql` |
 
@@ -279,6 +303,12 @@ Planned and under consideration, roughly in priority order:
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first — it covers the dev
 setup, coding conventions, the test expectations for security-critical code, and the PR process.
 For a map of the codebase, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+The project runs a risk-tiered engineering process: every material decision is recorded in
+[`docs/adr/`](docs/adr/), the riskiest code paths are mapped in [`CLAUDE.md`](CLAUDE.md), changes
+land on the `beta` branch (with its own live deployment), and production ships only through a
+pull request with CI green — typecheck, the full test suite, a secret scan, and an architectural
+boundary check. The process itself is documented in [`PROJECT_DOCTRINE.md`](PROJECT_DOCTRINE.md).
 
 ---
 

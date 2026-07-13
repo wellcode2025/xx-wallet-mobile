@@ -1,7 +1,7 @@
 # ADR-0013: Service-worker updates via user prompt; no version pin or bundle signature (accepted risk)
 
 - Status: accepted (retroactive capture; documented in SECURITY.md deployment trust model)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T1
 - Review: independent
 

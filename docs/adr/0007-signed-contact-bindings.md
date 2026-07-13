@@ -1,7 +1,7 @@
 # ADR-0007: Contacts are account-signed bindings; auto-confirm only known contacts, matched by reception ID
 
 - Status: accepted (retroactive capture, decisions made 2026-06 → 07-01)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T1
 - Review: independent
 

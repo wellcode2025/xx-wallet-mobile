@@ -1,19 +1,25 @@
 # Architecture
 
 How xx Wallet Mobile is put together and the reasoning behind the major decisions. This is the
-orientation doc for contributors; pair it with [CONTRIBUTING.md](../CONTRIBUTING.md).
+orientation doc for contributors; pair it with [CONTRIBUTING.md](../CONTRIBUTING.md). The *why*
+behind each material decision is recorded one file per decision in [`docs/adr/`](adr/); the
+engineering process itself (risk tiers, review, gates) is in
+[`PROJECT_DOCTRINE.md`](../PROJECT_DOCTRINE.md).
 
 ## Shape of the project
 
 The wallet is a standalone, client-only single-page app. There is no backend of its own: it talks
-directly to an xx network RPC node for chain state and signing, and to the public xx network indexer
-for history and identity enrichment. Everything — including key generation and signing — happens in
-the browser.
+directly to an xx network RPC node for chain state and signing, to the public xx network indexer
+for history and identity enrichment, and — for the opt-in messaging feature — to the xx network
+mixnet itself via an in-browser cMix client. Everything, including key generation and signing,
+happens in the browser.
 
 ```
 xx-wallet/
-├── docs/                 Architecture and contributor docs
+├── docs/                 Architecture and contributor docs; decision records in docs/adr/
+├── gates/                Mechanical enforcement scripts (secret scan, tier trailers, boundary)
 ├── xx-wallet-mobile/     The wallet application
+├── PROJECT_DOCTRINE.md / CLAUDE.md / PROJECT_STATE.md
 └── README.md / SECURITY.md / CONTRIBUTING.md / LICENSE
 ```
 
@@ -26,13 +32,14 @@ xx-wallet-mobile/
 │   ├── icons/            Favicon and PWA install icons
 │   └── sleeve/           Compiled Sleeve WASM + Go runtime helper (committed)
 ├── sleeve-wasm/          Go source for the Sleeve module (built artifacts live in public/sleeve/)
-├── scripts/
-│   └── spikes/           Live-chain feasibility scripts kept as executable documentation
+├── worker/               Cloudflare Worker entry: serves dist/ + proxies /xxdk-wasm/* same-origin
 ├── src/
 │   ├── api/              @polkadot/api connection singleton, xx network constants, identity
 │   │                     lookup, and the gated indexer client (see "Privacy toggle" below)
 │   ├── keyring/          Encrypted on-device key storage and the Sleeve TS wrapper; accounts are
 │   │                     a discriminated union of local (keystore) and Ledger (device) records
+│   ├── cmix/             Messaging engine: cMix session/follower, per-account e2e identities,
+│   │                     contact bindings, coordination + chat wire formats (see "Messaging")
 │   ├── ledger/           Ledger hardware-wallet transport + device signer, fully lazy-loaded
 │   ├── staking/          Sequential-Phragmén pass and validator-selection scoring
 │   ├── governance/       Cross-cutting Gov1 utilities (identity resolver, forum-link parsing,
@@ -52,7 +59,7 @@ xx-wallet-mobile/
 
 The feature areas under `screens/` are: onboarding, dashboard, send, receive, transaction detail,
 per-account detail, connect-Ledger, settings, multisig (including the guided two-device-approval
-setup), staking, and governance.
+setup), staking, governance, and Memos (private messaging + multisig coordination).
 
 ## Tech choices and why
 
@@ -117,7 +124,7 @@ lazy-loaded, so users who never touch a Ledger never download it.
 xx network forks several Substrate pallets and changes call signatures. The discipline is to
 construct any new extrinsic against the real chain in a spike before designing the screen around it —
 a call that builds is proof of the right signature; one that throws at construction is caught half an
-hour early instead of at submit time. The spikes stay in `scripts/spikes/`.
+hour early instead of at submit time.
 
 ### Defensive decoding
 On the xx runtime, some auto-generated codec accessors and tuple destructures silently return wrong
@@ -145,6 +152,31 @@ than one of the user's keys always present an explicit signer picker. Ledger acc
 same rule to hardware: the device screen is the final authority on what gets signed, so anything the
 device can't display, the wallet won't ask it to sign.
 
+## Messaging (Memos)
+
+Messaging is opt-in and default-off, and exists first for **multisig coordination**: sending a
+proposal's call data to cosigners over the xx mixnet instead of a Telegram back-channel. The
+architecture (each point recorded as an ADR):
+
+- **One cMix client, one network follower**, hosting a **separate reception identity per wallet
+  account** — accounts stay unlinkable through messaging, and a conversation's sender identity is
+  fixed for its lifetime (ADR-0005). The heavy xxdk WASM (~40 MB) loads lazily, and only for users
+  who enable messaging; the browser fetches it same-origin via the Worker proxy.
+- **Contacts are account-signed bindings**: the wallet verifies the wallet-account key signed the
+  (account ⟷ cMix identity) binding before storing, and incoming channel requests are auto-accepted
+  only from known contacts, matched by canonical reception ID (ADR-0007).
+- **A memo is transport, never instruction**: coordination payloads received over the mixnet are
+  cached and re-validated against the on-chain call hash before anything reaches an approval
+  surface — the same decode-from-bytes rule as every other input path (ADR-0002/0006).
+- **Credentials**: all identities are wrapped under one storage secret, scrypt-protected by a
+  dedicated messaging passphrase (never a wallet password, never a signing factor), with an
+  optional non-extractable device-key wrap for one-tap reconnect and encrypted multi-identity
+  backup/restore (ADR-0006).
+- **Delivery is engineered, not assumed**: identities log in and buffering listeners register
+  *before* the network follower starts (the cold-resume ordering contract, ADR-0008), receipts
+  confirm actual delivery, un-acked memos re-send automatically while online, and messages to
+  offline recipients are held encrypted by network gateways (~21 days) for pickup on next open.
+
 ## Notifications
 
 Notifications are a **pluggable scaffold, not a shipped channel.** The wallet defines a typed event
@@ -154,18 +186,26 @@ that surfaces slash and similar alerts directly inside the app — so the wallet
 external service connected. Channels like a Telegram bot or the browser Notification API plug in
 additively by registering a sink and switching on the event kind.
 
-## Deployment
+## Deployment and release channels
 
-The production app at [mobile.xx.network](https://mobile.xx.network) is a static-assets-only
-Cloudflare Worker, configured in `wrangler.toml` and deployed on push to `main`:
+The production app at [mobile.xx.network](https://mobile.xx.network) is a Cloudflare Worker: the
+entry in `worker/index.ts` serves the built `dist/` as static assets (with SPA routing fallback)
+and proxies `/xxdk-wasm/*` server-side, keeping the large messaging WASM same-origin and off the
+static-asset size cap. Configuration lives in `wrangler.toml`; the custom domain and TLS are
+provisioned through Cloudflare DNS.
 
-1. Cloudflare clones the repo.
-2. The Worker's root directory is `xx-wallet-mobile`.
-3. `npm install && npm run build` produces `xx-wallet-mobile/dist/`.
-4. `wrangler deploy` uploads `dist/` as static assets.
+Releases run on two channels (ADR-0016):
 
-Single-page-application routing and trailing-slash handling are set in `wrangler.toml`; the custom
-domain and TLS are provisioned through Cloudflare DNS.
+- **`beta`** is the integration branch. Every push is built by the GitHub-connected Cloudflare
+  Workers Build and served as a preview with a stable branch alias — a live beta wallet on its own
+  origin (so its browser storage is fully separate from production).
+- **`main`** is production. It rejects direct pushes for everyone; changes arrive only by
+  beta→main pull request with the CI workflow green. CI mirrors the repo's local gates: typecheck,
+  the full test suite, an architectural boundary check (`gates/xx-wallet-boundary`), and a
+  full-history secret scan.
+- On a merge to `main`, Cloudflare builds (`npm install && npm run build` in `xx-wallet-mobile/`)
+  and runs `wrangler deploy`. Installed PWAs pick the release up through the in-app update prompt
+  (ADR-0013).
 
 ## Rebuilding the Sleeve WASM (rare)
 

@@ -1,7 +1,7 @@
 # ADR-0002: Decode-from-bytes is the approval-surface invariant (THE RULE, facet 1)
 
 - Status: accepted (retroactive capture, decision made 2026-05, design doc §6.4/§7.3)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent
 

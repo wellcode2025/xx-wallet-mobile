@@ -55,7 +55,7 @@ docs/audit-template/
 docs/USER_GUIDE.*
 
 # Internal docs + vendored reference material — never in the public tree.
-# Consolidated from .git/info/exclude (2026-07-08, brownfield audit Stage 3)
+# Consolidated from .git/info/exclude (2026-07-11, brownfield audit Stage 3)
 # so the filter travels with every clone instead of living in local-only
 # config. NOTE: CLAUDE.md is deliberately NOT listed — the rewritten
 # governing file (facts + rules + tier map) is public by decision.

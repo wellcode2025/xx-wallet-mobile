@@ -1,7 +1,7 @@
 # ADR-0006: Dedicated messaging passphrase; a memo is transport, never instruction
 
 - Status: accepted (retroactive capture, decisions made 2026-06)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent
 

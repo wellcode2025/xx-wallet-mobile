@@ -1,7 +1,7 @@
 # ADR-0009: transferKeepAlive everywhere; existential deposit read from chain; ED-aware Max
 
 - Status: accepted (retroactive capture; ED fix shipped 2026-06-30 → 07-01)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T1
 - Review: independent
 

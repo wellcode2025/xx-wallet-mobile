@@ -1,7 +1,7 @@
 # ADR-0003: Key material is confined to src/keyring/ (THE RULE, facet 2)
 
-- Status: accepted (retroactive capture; practiced since project start, formalized 2026-07-08)
-- Date: 2026-07-08
+- Status: accepted (retroactive capture; practiced since project start, formalized 2026-07-11)
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent
 

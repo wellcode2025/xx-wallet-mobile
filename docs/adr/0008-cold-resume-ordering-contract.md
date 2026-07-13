@@ -1,7 +1,7 @@
 # ADR-0008: Cold-resume ordering — identities log in and listeners pre-register before the follower starts
 
 - Status: accepted (decision made 2026-07-07, verified on-device)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T1
 - Review: independent (root cause proven in isolated spikes; fix T5-verified on-device)
 

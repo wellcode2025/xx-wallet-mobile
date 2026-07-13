@@ -1,7 +1,7 @@
 # ADR-0012: xx v206 codec conventions — enums via toJSON, structs via named field, mangle guards
 
 - Status: accepted (retroactive capture; convention set after two production bugs, 2026-05)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T1
 - Review: independent
 

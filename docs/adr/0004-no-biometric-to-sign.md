@@ -1,7 +1,7 @@
 # ADR-0004: No biometric-to-sign; fund 2FA must be chain-enforced; app lock is access-gate-only
 
 - Status: accepted (retroactive capture, decision made 2026-06-01)
-- Date: 2026-07-08
+- Date: 2026-07-11
 - Tier: T2
 - Review: independent
 

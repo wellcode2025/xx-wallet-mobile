@@ -2,7 +2,7 @@
 
 > Live status ledger. **Updated every session that changes the project**, before the session ends. This replaces the status-narrative sections that used to live in `CLAUDE.md`; the phase-by-phase build history remains in the internal handoff doc (local-only, not in the public tree). See `PROJECT_DOCTRINE.md` §12.
 
-_Last updated: 2026-07-08 (late evening) by the Lead — beta/main workflow live and verified_
+_Last updated: 2026-07-12 by the Lead — date corrections (the doctrine-adoption evening was 2026-07-11, not 07-08)_
 
 ---
 
@@ -26,7 +26,15 @@ Day-to-day commits land on **`beta`** (auto-deploys to the beta preview URL). Pr
 
 ## Recently done
 
-- **2026-07-08 (late):** Doctrine adopted (Stages 1–3, `218f47e`): Gap Report, ADRs 0001–0016, public CLAUDE.md, this ledger, three gates installed + hooks active, internal filter consolidated into tracked `.gitignore`. Release-channel machinery built (ADR-0016): `[env.beta]` Worker config, CI mirror workflow, boundary-gate `--tree` mode — independent review caught day-one CI false positives pre-commit (fixed); gitleaks full-history trial clean (192 commits).
+- **2026-07-12:** Public-docs refresh for launch: README gains a CI badge, a Memos/messaging
+  feature section (coordination-first), council-vote + submit-proposal in governance, the real
+  clone URL, the corrected existential deposit (1 XX, read live — the table contradicted ADR-0009),
+  and an engineering-process paragraph. CONTRIBUTING: PRs target `beta`, spike-scripts wording
+  fixed (they're not in the public tree), constants.ts description matches ADR-0009.
+  ARCHITECTURE: cmix/ + worker/ + Memos added, new Messaging section (ADR-linked), deployment
+  section rewritten for the two release channels. Internal-process comment refs in src/: already
+  zero (June scrub was complete).
+- **2026-07-11 (late):** Doctrine adopted (Stages 1–3, `218f47e`): Gap Report, ADRs 0001–0016, public CLAUDE.md, this ledger, three gates installed + hooks active, internal filter consolidated into tracked `.gitignore`. Release-channel machinery built (ADR-0016): `[env.beta]` Worker config, CI mirror workflow, boundary-gate `--tree` mode — independent review caught day-one CI false positives pre-commit (fixed); gitleaks full-history trial clean (192 commits).
 - **2026-07-08:** Governance participation — `elections.vote` (council voting w/ stake validation + removeVoter) and `democracy.propose` (inline ≤128 bytes or notePreimage+Lookup batch), spike-verified against the live chain, live-tested (`c038438`). Contact QR codes made reliably scannable (`d0f1de6`).
 - **2026-07-07:** Offline-message delivery fixed — the two-layer cold-resume race (fingerprints, then listeners) closed wallet-side with stock xxdk-wasm (`9f05507`, `b26b8b8`, `7c4d3db`); verified on-device: offline→cold-open delivery in ~4s with the sender offline throughout. Channel reset for stuck half-established connections (`842fe0f`); chat timestamps in device-local time (`d1cf610`).
 - **2026-07-01:** Two-way handshake gate on chat send; sender-side re-send backstop for un-acked memos; Max-send fix (ED read from chain — ADR-0009).
