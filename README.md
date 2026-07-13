@@ -30,16 +30,19 @@ native multisig, Ledger hardware accounts, and private messaging over the xx mix
 quantum-resistant key generation on by default.
 
 > [!IMPORTANT]
-> **Not yet official.** This is an independent, community-built wallet — not yet a formally endorsed
-> or official xx network / xx Foundation product. It interacts with the public xx network chain the
-> same way any wallet does.
+> **Independent, community-built.** This is not (yet) a formally endorsed or official xx network /
+> xx Foundation product. It interacts with the public xx network chain the same way any wallet does.
 >
-> **Self-custody, your responsibility.** The wallet is non-custodial — you alone hold your keys
-> and recovery phrases. There is no password reset and no way to recover lost phrases.
+> **Self-custody by design.** The wallet is non-custodial — you alone hold your keys and recovery
+> phrases, and no one (including us) can reset a password or recover a lost phrase. That's the
+> point; back your phrases up accordingly.
 >
-> **Not independently audited.** An internal security review has been completed and its findings
-> addressed, but the code has not yet had a *third-party* audit. Treat it as experimental and use it
-> at your own risk. See [Security](#security) and [`SECURITY.md`](SECURITY.md).
+> **Where security stands.** The code has been through an internal security review (all findings
+> addressed), ships with a [documented threat model](SECURITY.md), and is built under a
+> risk-tiered engineering process with the security-critical paths under test. A *third-party*
+> audit hasn't happened yet — it's the top roadmap item. As with any browser wallet, for
+> significant balances prefer the built-in [two-device protection](docs/two-device-approval.md) or
+> a Ledger.
 
 ---
 
@@ -77,24 +80,24 @@ experience without asking you to trust anything new.
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/wallet-dashboard.png" width="220" alt="Wallet dashboard" /><br/><sub><b>Wallet</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/account-add.png" width="220" alt="Add account, including a Ledger hardware account" /><br/><sub><b>Add account &middot; Ledger</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/settings-app-lock.png" width="220" alt="App lock and privacy settings" /><br/><sub><b>App lock &amp; privacy</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/dashboard.jpg" width="220" alt="Wallet dashboard with balance, send/receive, and recent activity" /><br/><sub><b>Wallet</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/accounts.jpg" width="220" alt="Account switcher with local and Ledger accounts" /><br/><sub><b>Accounts &middot; Ledger</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/transfer.jpg" width="220" alt="Send screen with address book" /><br/><sub><b>Send</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/staking-start.png" width="220" alt="Start staking with recommended validators" /><br/><sub><b>Staking &middot; nominate</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/staking-validators.png" width="220" alt="Network-wide validator list" /><br/><sub><b>Staking &middot; validators</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/staking-advanced-selection.png" width="220" alt="Tunable validator selection" /><br/><sub><b>Staking &middot; tunable picks</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/staking-start.jpg" width="220" alt="Start staking with recommended validators" /><br/><sub><b>Staking &middot; start</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/staking-active.jpg" width="220" alt="Active nominations with per-validator earning status" /><br/><sub><b>Staking &middot; nominations</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/manage-stake.jpg" width="220" alt="Manage an existing stake" /><br/><sub><b>Staking &middot; manage</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/governance.png" width="220" alt="Governance index" /><br/><sub><b>Governance</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/governance-treasury.png" width="220" alt="Treasury" /><br/><sub><b>Treasury</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/governance-democracy.png" width="220" alt="Democracy" /><br/><sub><b>Democracy</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/governance.jpg" width="220" alt="Governance index: bounties, democracy, council, treasury, my governance" /><br/><sub><b>Governance</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/two-device.jpg" width="220" alt="Two-device approval: require two devices to spend" /><br/><sub><b>Two-device 2FA</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/add-multisig.jpg" width="220" alt="Add a multisig account" /><br/><sub><b>Multisig</b></sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/redacted/governance-council.png" width="220" alt="Council members" /><br/><sub><b>Council</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/governance-bounties.png" width="220" alt="Bounties" /><br/><sub><b>Bounties</b></sub></td>
-    <td align="center"><img src="docs/screenshots/redacted/multisig-add.png" width="220" alt="Add multisig, including two-device approval" /><br/><sub><b>Multisig &middot; two-device 2FA</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/memos-list.jpg" width="220" alt="Memos conversation list" /><br/><sub><b>Memos</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/memos-chat.jpg" width="220" alt="End-to-end encrypted 1:1 chat over the xx mixnet with delivery receipts" /><br/><sub><b>Memos &middot; chat</b></sub></td>
+    <td align="center"><img src="docs/screenshots/launch/memos-new.jpg" width="220" alt="Add a messaging contact" /><br/><sub><b>Memos &middot; add contact</b></sub></td>
   </tr>
 </table>
 
