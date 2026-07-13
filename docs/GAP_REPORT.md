@@ -1,6 +1,14 @@
 # Gap Report — xx Wallet Mobile vs. PROJECT_DOCTRINE
 
 *Brownfield audit, Stage 1 (read-only). 2026-07-11.*
+
+> **Status update, 2026-07-12:** this report is a point-in-time snapshot; its major gaps have
+> since been closed. Enforcement (axis 4): the three gates are installed as hooks and mirrored in
+> CI, which now runs typecheck, the full test suite, the boundary check, and a secret scan on
+> every push and PR. Decision record (axis 2): ADRs 0001–0016 exist. Ledger (axes 1/5):
+> `PROJECT_STATE.md` is the single live ledger and `CLAUDE.md` the governing facts sheet. The
+> internal-material filter (axis 3) lives in the tracked `.gitignore`. `main` is branch-protected
+> behind required CI (ADR-0016). Remaining open: the optional Stage 4 workspace tidiness only.
 *Evidence: live run at `c038438` (HEAD = origin/main, clean tree) — typecheck green, 452/452 tests across 38 files, zero git hooks installed, no CI workflows.*
 
 This report assesses the repo against the engineering-lead doctrine's seven axes. Nothing was changed except this file. Each axis reports **Wants / Has / Gap / Cost-Risk**; the report ends with the tier map, THE RULE, a candidate-ADR list, and a prioritisation.
