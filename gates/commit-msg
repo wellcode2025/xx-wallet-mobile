@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gates/commit-msg — classification-trailer gate (generic, project-agnostic)
+# gates/commit-msg — classification-trailer gate (generic core, project-agnostic)
 #
 # Enforces the doctrine's risk-tier trailers on commits that touch code:
 #   Tier: T0 | T1 | T2                         (always, on code commits)
@@ -8,57 +8,121 @@
 #   Non-AI-Check: test-vectors | human-review | static-analysis | audit-tool |
 #                 not-applicable:<reason>      (T2 only)
 #
-# Held-but-overridable: the Owner is CEO. Bypass with `git commit --no-verify`,
-# but that bypass is itself visible (no trailer recorded). Mirror in CI for teams.
-# Install: see gates/README.md.
+# Modes:
+#   commit-msg <msg-file>     git commit-msg hook (local): validate the commit
+#                             being created, against the STAGED file set.
+#   commit-msg --range A..B   CI mirror (AUDIT-2026-07-003): validate every
+#                             non-merge commit in the range — e.g. the
+#                             beta→main PR commits. Additionally asserts that
+#                             a commit touching a T2 path (gates/t2-paths)
+#                             carries `Tier: T2` — a local hook is bypassable
+#                             with --no-verify; this is what makes the tier
+#                             ceremony real server-side (doctrine §8.1).
+#
+# Held-but-overridable locally: the Owner is CEO. Bypass with
+# `git commit --no-verify`, but the CI range check still runs at the
+# beta→main gate. Install: see gates/README.md.
 
 set -euo pipefail
 
-msg_file="$1"
+repo_root="$(git rev-parse --show-toplevel)"
+t2_pattern=""
+if [ -f "$repo_root/gates/t2-paths" ]; then
+  t2_pattern="$(grep -Ev '^[[:space:]]*(#|$)' "$repo_root/gates/t2-paths" | head -1 || true)"
+fi
+
+# Paths whose changes don't require classification (pure docs).
+docs_only_filter() { grep -Ev '^(docs/|.*\.md$)' || true; }
+
+# validate_trailers <label> <msg> <t2_touched:0|1>
+# Prints BLOCKED lines; returns non-zero on any violation.
+validate_trailers() {
+  local label="$1" msg="$2" t2_touched="$3" fail=0 tier review adr nac
+
+  tier="$(printf '%s\n' "$msg" | grep -E '^Tier:' | head -1 | sed -E 's/^Tier:[[:space:]]*//')"
+  if [ -z "$tier" ]; then
+    echo "BLOCKED: ${label}: code commit is missing a 'Tier:' trailer (T0|T1|T2). See doctrine §3."
+    return 1
+  fi
+
+  case "$tier" in
+    T0) : ;;  # routine — no further trailers required
+    T1|T2)
+      review="$(printf '%s\n' "$msg" | grep -E '^Review:' | head -1 | sed -E 's/^Review:[[:space:]]*//')"
+      if [ "$review" != "independent" ]; then
+        echo "BLOCKED: ${label}: $tier requires 'Review: independent' (got: '${review:-none}'). The builder does not grade its own homework. Doctrine §4.4."
+        fail=1
+      fi
+      adr="$(printf '%s\n' "$msg" | grep -E '^ADR:' | head -1 | sed -E 's/^ADR:[[:space:]]*//')"
+      if ! printf '%s' "$adr" | grep -Eq '^(none|docs/adr/[0-9]{4}-[a-z0-9-]+\.md)$'; then
+        echo "BLOCKED: ${label}: $tier requires 'ADR: none' or 'ADR: docs/adr/NNNN-short-name.md' (a real filename). Got: '${adr:-missing}'. Doctrine §7."
+        fail=1
+      fi
+      if [ "$tier" = "T2" ]; then
+        nac="$(printf '%s\n' "$msg" | grep -E '^Non-AI-Check:' | head -1 | sed -E 's/^Non-AI-Check:[[:space:]]*//')"
+        if ! printf '%s' "$nac" | grep -Eq '^(test-vectors|human-review|static-analysis|audit-tool|not-applicable:.+)$'; then
+          echo "BLOCKED: ${label}: T2 requires a 'Non-AI-Check:' trailer (test-vectors|human-review|static-analysis|audit-tool|not-applicable:<reason>). AI may draft T2; it may not be the only approver. Doctrine §4.4."
+          fail=1
+        fi
+      fi
+      ;;
+    *)
+      echo "BLOCKED: ${label}: unknown Tier '$tier' (expected T0, T1, or T2)."
+      fail=1
+      ;;
+  esac
+
+  if [ "$t2_touched" = "1" ] && [ "$tier" != "T2" ]; then
+    echo "BLOCKED: ${label}: touches T2 tier-map paths (gates/t2-paths) but is labelled 'Tier: $tier'. T2-path touches are T2 — tier up, or fix the tier map first. CLAUDE.md tier map / doctrine §3."
+    fail=1
+  fi
+
+  return "$fail"
+}
+
+# ---- Mode: CI range check (AUDIT-2026-07-003) --------------------------------
+if [ "${1:-}" = "--range" ]; then
+  range="${2:?usage: gates/commit-msg --range <A..B>}"
+  overall=0
+  checked=0
+  for sha in $(git rev-list --no-merges "$range"); do
+    files="$(git diff-tree --no-commit-id --name-only -r "$sha")"
+    code_changed="$(printf '%s\n' "$files" | docs_only_filter)"
+    [ -z "$code_changed" ] && continue   # docs-only commit, no classification required
+    checked=$((checked + 1))
+    t2=0
+    if [ -n "$t2_pattern" ] && printf '%s\n' "$files" | grep -Eq "$t2_pattern"; then
+      t2=1
+    fi
+    msg="$(git log -1 --format=%B "$sha")"
+    label="$(git log -1 --format='%h (%s)' "$sha")"
+    if ! validate_trailers "$label" "$msg" "$t2"; then
+      overall=1
+    fi
+  done
+  if [ "$overall" -ne 0 ]; then
+    echo ""
+    echo "commit-msg gate FAILED over range $range. Fix the trailers (rebase/reword) — the tier ceremony is enforced at the beta→main gate. Doctrine §8.1."
+    exit 1
+  fi
+  echo "commit-msg gate: $checked code commit(s) in $range classified correctly."
+  exit 0
+fi
+
+# ---- Mode: local commit-msg hook ---------------------------------------------
+msg_file="${1:?usage: gates/commit-msg <msg-file> | --range <A..B>}"
 msg="$(cat "$msg_file")"
 
 # Only enforce on commits that actually touch code (not pure docs/markdown).
-code_changed="$(git diff --cached --name-only | grep -Ev '^(docs/|.*\.md$)' || true)"
+code_changed="$(git diff --cached --name-only | docs_only_filter)"
 if [ -z "$code_changed" ]; then
   exit 0   # docs-only commit, no classification required
 fi
 
-fail=0
-
-tier="$(printf '%s\n' "$msg" | grep -E '^Tier:' | head -1 | sed -E 's/^Tier:[[:space:]]*//')"
-if [ -z "$tier" ]; then
-  echo "BLOCKED: code commit is missing a 'Tier:' trailer (T0|T1|T2). See doctrine §3."
-  exit 1
-fi
-
-case "$tier" in
-  T0) : ;;  # routine — no further trailers required
-  T1|T2)
-    review="$(printf '%s\n' "$msg" | grep -E '^Review:' | head -1 | sed -E 's/^Review:[[:space:]]*//')"
-    if [ "$review" != "independent" ]; then
-      echo "BLOCKED: $tier requires 'Review: independent' (got: '${review:-none}'). The builder does not grade its own homework. Doctrine §4.4."
-      fail=1
-    fi
-    adr="$(printf '%s\n' "$msg" | grep -E '^ADR:' | head -1 | sed -E 's/^ADR:[[:space:]]*//')"
-    if ! printf '%s' "$adr" | grep -Eq '^(none|docs/adr/[0-9]{4}-[a-z0-9-]+\.md)$'; then
-      echo "BLOCKED: $tier requires 'ADR: none' or 'ADR: docs/adr/NNNN-short-name.md' (a real filename). Got: '${adr:-missing}'. Doctrine §7."
-      fail=1
-    fi
-    if [ "$tier" = "T2" ]; then
-      nac="$(printf '%s\n' "$msg" | grep -E '^Non-AI-Check:' | head -1 | sed -E 's/^Non-AI-Check:[[:space:]]*//')"
-      if ! printf '%s' "$nac" | grep -Eq '^(test-vectors|human-review|static-analysis|audit-tool|not-applicable:.+)$'; then
-        echo "BLOCKED: T2 requires a 'Non-AI-Check:' trailer (test-vectors|human-review|static-analysis|audit-tool|not-applicable:<reason>). AI may draft T2; it may not be the only approver. Doctrine §4.4."
-        fail=1
-      fi
-    fi
-    ;;
-  *)
-    echo "BLOCKED: unknown Tier '$tier' (expected T0, T1, or T2)."
-    fail=1
-    ;;
-esac
-
-if [ "$fail" -ne 0 ]; then
+# The T2-path assertion runs in CI (--range) only: locally the boundary gate
+# already prints the T2-touch advisory at commit time, and the Owner may
+# override locally per doctrine §9 — the CI mirror is the durable layer.
+if ! validate_trailers "commit" "$msg" 0; then
   echo ""
   echo "commit-msg gate FAILED. Fix the trailers, or (Owner override) re-run with --no-verify and record the skip per doctrine §9."
   exit 1
