@@ -20,7 +20,12 @@ import { scrypt as scryptAsync } from 'scrypt-js';
 import nacl from 'tweetnacl';
 import { Keyring } from '@polkadot/keyring';
 import { stringToU8a } from '@polkadot/util';
-import { base64Decode, base64Encode, mnemonicGenerate } from '@polkadot/util-crypto';
+import {
+  base64Decode,
+  base64Encode,
+  mnemonicGenerate,
+  signatureVerify,
+} from '@polkadot/util-crypto';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import {
   isLedgerAccount,
@@ -589,6 +594,74 @@ describe('xxKeyring.unlock — pair must be usable for signing', () => {
       try {
         xxKeyring.removeFromKeyring(account.address);
       } catch { /* ignore */ }
+      xxKeyring.removeAccount(account.address);
+    }
+  });
+});
+
+describe('xxKeyring.signMessage — keyring-owned raw-message signing (ADR-0003 / AUDIT-2026-07-002)', () => {
+  /** Peek into the keyring's private in-memory pair map (test-only). */
+  function pairsInMemory(): string[] {
+    const inner = (xxKeyring as unknown as { keyring: Keyring | null }).keyring;
+    return (inner?.getPairs() ?? []).map((p) => p.address);
+  }
+
+  async function makeAccount(password: string) {
+    await xxKeyring.init();
+    const tmpKeyring = new Keyring({ type: 'sr25519' });
+    const sourcePair = tmpKeyring.addFromUri(mnemonicGenerate());
+    const json = sourcePair.toJson(password);
+    return xxKeyring.importFromJson({ json, password });
+  }
+
+  it('signs a message that verifies against the account address, and evicts the pair', async () => {
+    const password = 'sign-message-7d1b';
+    const account = await makeAccount(password);
+    try {
+      const message = new TextEncoder().encode(
+        'xx-wallet/cmix-contact-binding/v1\n' + account.address + '\nAAECAw=='
+      );
+      const signature = await xxKeyring.signMessage(account.address, password, message);
+
+      expect(signature).toBeInstanceOf(Uint8Array);
+      expect(signature.length).toBe(64);
+      expect(signatureVerify(message, signature, account.address).isValid).toBe(true);
+      // A different message must NOT verify under the same signature.
+      expect(
+        signatureVerify(new Uint8Array([1, 2, 3]), signature, account.address).isValid
+      ).toBe(false);
+
+      // THE-RULE facet-b contract: no unlocked pair left resident after the call.
+      expect(pairsInMemory()).not.toContain(account.address);
+    } finally {
+      xxKeyring.removeAccount(account.address);
+    }
+  });
+
+  it('is reusable — a second call signs again (evict does not poison later use)', async () => {
+    const password = 'sign-again-3e8c';
+    const account = await makeAccount(password);
+    try {
+      const message = new Uint8Array([42, 42, 42]);
+      const sig1 = await xxKeyring.signMessage(account.address, password, message);
+      const sig2 = await xxKeyring.signMessage(account.address, password, message);
+      expect(signatureVerify(message, sig1, account.address).isValid).toBe(true);
+      expect(signatureVerify(message, sig2, account.address).isValid).toBe(true);
+      expect(pairsInMemory()).not.toContain(account.address);
+    } finally {
+      xxKeyring.removeAccount(account.address);
+    }
+  });
+
+  it('throws the uniform incorrect-password error and leaves nothing resident', async () => {
+    const password = 'right-password-5a2f';
+    const account = await makeAccount(password);
+    try {
+      await expect(
+        xxKeyring.signMessage(account.address, 'wrong-password', new Uint8Array([1]))
+      ).rejects.toThrow(/incorrect password/i);
+      expect(pairsInMemory()).not.toContain(account.address);
+    } finally {
       xxKeyring.removeAccount(account.address);
     }
   });

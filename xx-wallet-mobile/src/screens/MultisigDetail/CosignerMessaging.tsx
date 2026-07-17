@@ -35,7 +35,7 @@ import { useAccountsStore } from '@/store';
 import { isLocalAccount, xxKeyring } from '@/keyring/store';
 import { useCmixSecretStore } from '@/store/cmixSecret';
 import {
-  signContactBinding,
+  buildContactBindingMessage,
   serializeSignedBinding,
   parseSignedBinding,
 } from '@/cmix/contactBinding';
@@ -330,16 +330,15 @@ function ShareContactSheet({
       const am = await handle.forAccount(account);
       const myContact = am.myContact();
       useCmixSecretStore.getState().addIdentityAccount(account);
-      const pair = await xxKeyring.unlock(account, password);
-      try {
-        const binding = signContactBinding(pair, myContact);
-        setBlob(serializeSignedBinding(binding));
-        setPassword('');
-      } finally {
-        // The keyring contract: lock + evict the unlocked pair right after use.
-        pair.lock();
-        xxKeyring.removeFromKeyring(account);
-      }
+      // Sign via the keyring-owned raw-message signer — the unlocked pair's
+      // lifetime stays inside src/keyring/ (ADR-0003; AUDIT-2026-07-002).
+      const signature = await xxKeyring.signMessage(
+        account,
+        password,
+        buildContactBindingMessage(account, myContact)
+      );
+      setBlob(serializeSignedBinding({ account, cMixContact: myContact, signature }));
+      setPassword('');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
