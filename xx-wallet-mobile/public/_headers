@@ -7,7 +7,17 @@
 #
 # Content-Security-Policy:
 #   - default-src 'self'                      everything not otherwise specified must be same-origin
-#   - script-src 'self' 'wasm-unsafe-eval'    no inline scripts; allow WebAssembly.instantiate for the Sleeve WASM
+#   - script-src 'self' 'wasm-unsafe-eval' blob:
+#                                             no inline scripts; 'wasm-unsafe-eval' allows
+#                                             WebAssembly.instantiate for the Sleeve WASM.
+#                                             blob: is REQUIRED by xxdk-wasm's worker bootstrap:
+#                                             it fetches wasm_exec.js, wraps it in a blob URL, and
+#                                             boots its worker from a blob script that importScripts
+#                                             that blob URL — all governed by script-src(-elem).
+#                                             Verified empirically 2026-07-17: removing blob: blocks
+#                                             go-online with a CSP violation (AUDIT-2026-07-001;
+#                                             trade-off recorded in ADR-0014 amendment). Revisit if
+#                                             xxdk-wasm ever ships a same-origin worker entry file.
 #   - style-src                               allow inline styles (Tailwind utility classes mixed with JSX `style={}`)
 #                                             and Google Fonts CSS
 #   - font-src                                Google Fonts files (Roboto + JetBrains Mono)
@@ -42,7 +52,7 @@
 #   start the mic or read geolocation.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://indexer.xx.network https://*.xxnode.io:* https://*.cmix.rip:* ws://localhost:* wss://*; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://indexer.xx.network https://*.xxnode.io:* https://*.cmix.rip:* ws://localhost:* wss://*; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
