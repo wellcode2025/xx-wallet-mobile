@@ -2,18 +2,20 @@
 
 > Live status ledger. **Updated every session that changes the project**, before the session ends. This replaces the status-narrative sections that used to live in `CLAUDE.md`; the phase-by-phase build history remains in the internal handoff doc (local-only, not in the public tree). See `PROJECT_DOCTRINE.md` §12.
 
-_Last updated: 2026-07-12 by the Lead — date corrections (the doctrine-adoption evening was 2026-07-11, not 07-08)_
+_Last updated: 2026-07-17 by the Lead — code audit #2 remediation complete on `beta`_
 
 ---
 
 ## Now
 
-- **Doctrine adoption COMPLETE** (brownfield audit Stages 1–3, `218f47e`; Stage 4 declined as unnecessary). **Release workflow LIVE and verified** (ADR-0016 + amendment, `603368b`): beta channel at the Workers preview alias, `main` PR-only behind required CI, direct-push rejection verified (`GH013`).
-- **Pre-launch program** (launch ~mid/late July 2026): launch website (separate workstream) → GitHub/README organisation → code audit #2 (scoped by the Gap Report tier map) → launch.
+- **Code audit #2 remediation COMPLETE on `beta` — all three independent reviews PASS** (2026-07-19; report: 2026-07-17, 2 Low + 2 Info, no Crit/High/Med; findings fixed in `79ce245`+`8f56962`, `988d160`, `19923b1`). Ready for the beta→main PR (main..beta = 4 code commits + 2 ledger commits).
+- **Release workflow LIVE** (ADR-0016 + amendment): beta channel at the Workers preview alias (`beta-xx-wallet-mobile.<account>.workers.dev` — note: the `[env.beta]` block in wrangler.toml is NOT what the build uses; non-production-branch builds version-upload to the same Worker), `main` PR-only behind required CI.
+- **Pre-launch program** (launch ~2026-07-23): launch website (separate workstream) → launch.
 
 ## Next
 
-- **Code audit #2** — dedicated session, scoped by the Gap Report tier map (T2 first) + everything since audit #1's baseline; report lands in the audit workstream's area. Kickoff prompt prepared.
+- **beta→main PR** carrying the three PASS review records — the first PR to exercise the new CI `Tier trailers` range check.
+- **Review-advisory follow-ups (non-blocking, from the audit-2 review passes):** (1) `_headers` `worker-src` comment still says "service worker is same-origin only" while the directive is `'self' blob:` — same comment/header-drift class as AUDIT-2026-07-001, log as its own item; (2) ADR-0014 amendment wording nit: the blob worker's top-level fetch is `worker-src`-governed, only the inner `importScripts` is `script-src` — fix next time 0014 is touched; (3) re-confirm `main` branch protection (required `checks`) whenever protection settings are next touched.
 - Launch website goes live → launch (~2026-07-23). Launch ritual: bump to **v1.0.0** (decided) + What's-New entry, README version badge.
 
 ## Workflow (in force since ADR-0016)
@@ -26,6 +28,18 @@ Day-to-day commits land on **`beta`** (auto-deploys to the beta preview URL). Pr
 
 ## Recently done
 
+- **2026-07-17:** Code audit #2 REMEDIATED, all four findings, on `beta` (T2 ceremony throughout):
+  **001** `script-src blob:` investigated by live removal test on beta — xxdk-wasm's blob-worker
+  bootstrap requires it (CSP violation observed, go-online blocked) → kept + `_headers` comment
+  fixed + ADR-0014 amendment with revisit trigger (`79ce245` + `8f56962`). **002** new
+  `xxKeyring.signMessage` (unlock→sign→lock+evict inside the keyring); both contact-binding
+  screens routed through it — no unlocked pair in UI code; 3 unit tests, 455 green (`988d160`).
+  **003+004** `gates/commit-msg --range` mode + shared `gates/t2-paths` tier-map regex + CI
+  steps: production `vite build` + PR-range tier-trailer assertion (commits touching T2 paths
+  must be `Tier: T2`); boundary gate now also flags `xxKeyring.unlock(` outside keyring/useTx
+  (`19923b1`). Toolchain re-run clean 5/5: npm audit 0, osv-scanner 0 (754 pkgs), semgrep 0
+  (265 files, 94 rules), eslint strict clean, gitleaks 0 (203 commits). Audit #1 baseline SHA
+  corrected in project memory (`78374aa..6826a40`). Awaiting independent reviews → beta→main PR.
 - **2026-07-12:** GitHub/README organisation COMPLETE (promoted to main via PR). README: CI badge,
   Memos feature section, governance participation additions, real clone URL, corrected ED (1 XX,
   read live), engineering-process paragraph, twelve current launch screenshots (pre-Memos set

@@ -33,3 +33,15 @@ The posture, each part intentional:
 ## Reversibility
 
 Each line is independently revisable except HSTS preload (browser-side, months to undo) — which is exactly why it's the one thing deliberately *not* enabled.
+
+## Amendment (2026-07-17) — `script-src blob:` accepted for the xxdk-wasm worker bootstrap (AUDIT-2026-07-001)
+
+The cMix messaging build (2026-06) widened `script-src` to `'self' 'wasm-unsafe-eval' blob:` without arguing it against this posture — exactly the drift the Consequences section warned about. Audit #2 flagged it; this amendment closes it with an explicit accept.
+
+**Why it's required.** `xxdk-wasm`'s bootstrap (dist/bundle.js) fetches `wasm_exec.js`, wraps it in a blob URL, then boots its worker from a second blob-URL script whose body is `importScripts('<blob-url>'); (fn)(...)`. The `Worker` construction is covered by `worker-src 'self' blob:`, but blob-URL workers inherit the document's CSP, and both the worker script element load and the `importScripts` inside it are governed by `script-src`(`-elem`). No first-party code needs `script-src blob:` (every app `createObjectURL` is a download anchor).
+
+**Empirical verification (the non-AI check).** Removing `blob:` was deployed to the beta channel and live-tested 2026-07-17: go-online fails with `Loading the script 'blob:...' violates ... "script-src 'self' 'wasm-unsafe-eval'"` and messaging never connects; restoring it fixes go-online. Investigation + restore: the two AUDIT-2026-07-001 commits on `beta`.
+
+**Accepted trade-off.** `blob:` in `script-src` converts a DOM-XSS foothold that can reach `URL.createObjectURL` into full script execution — a recognised CSP-bypass class and a real weakening of the first line of XSS containment. Accepted because messaging is a headline feature, the alternative (forking xxdk-wasm to ship a same-origin worker entry file) is a maintenance burden out of proportion to a *defence-in-depth* erosion (not a direct hole: an attacker still needs an XSS foothold first, and inline scripts remain blocked). Same treatment as the `wss://*` wildcard: documented in the `_headers` comment + here.
+
+**Revisit trigger.** If a future `xxdk-wasm` version boots its worker from a same-origin file, drop `blob:` from `script-src` the same release.

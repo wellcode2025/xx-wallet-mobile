@@ -667,6 +667,48 @@ class XxKeyring {
   }
 
   /**
+   * Sign a raw message with an account's key, keeping the unlocked pair's
+   * ENTIRE lifetime inside this module (THE RULE facet b, ADR-0003).
+   *
+   * unlock → sign → lock + evict happen in one call, so no caller ever
+   * holds a decrypted-key KeyringPair. Mirrors the `useTx` cleanup
+   * discipline: lock() and removeFromKeyring() run in a `finally` block
+   * with independent guards so a failure in one cannot skip the other.
+   * Ledger accounts reject inside unlock() — there is no local keystore
+   * to raw-sign with (their signing is transaction-shaped, on-device).
+   *
+   * Added for cMix contact-binding signatures (AUDIT-2026-07-002). Any
+   * future raw-message signing goes through here — never through a
+   * caller-held unlock() outside src/keyring/ or the useTx hooks (the
+   * boundary gate flags that pattern).
+   */
+  async signMessage(
+    address: string,
+    password: string,
+    message: Uint8Array
+  ): Promise<Uint8Array> {
+    const pair = await this.unlock(address, password);
+    try {
+      return pair.sign(message);
+    } finally {
+      if (typeof pair.lock === 'function') {
+        try {
+          pair.lock();
+        } catch {
+          /* swallow — eviction below must still run */
+        }
+      } else {
+        // Should not happen with current @polkadot/keyring versions — if it
+        // does, the pair is sitting in memory unlocked and we want to know.
+        console.error(
+          'KeyringPair has no lock() method — possible @polkadot/keyring API change'
+        );
+      }
+      this.removeFromKeyring(address);
+    }
+  }
+
+  /**
    * Check whether a password can decrypt a stored account's keystore.
    *
    * Used by the batch export flow to validate the user-supplied

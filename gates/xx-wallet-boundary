@@ -48,10 +48,26 @@ for f in $kr_files; do
   fi
 done
 
+# Facet (b), unlocked-pair handling: `xxKeyring.unlock(` may be called only
+# inside src/keyring/ and the useTx* signing hooks. Anywhere else, a
+# decrypted-key KeyringPair is being held outside the boundary — use
+# `xxKeyring.signMessage(...)` (raw messages) or the useTx hooks
+# (extrinsics) instead. Import-grep alone can't see this crossing; this
+# closes the gap audit finding AUDIT-2026-07-002 identified.
+ul_files="$(echo "$staged_files" | grep -E '^xx-wallet-mobile/src/' | grep -Ev '^xx-wallet-mobile/src/(keyring/|hooks/useTx|hooks/useSequentialTx)' | grep -Ev '\.test\.tsx?$' | grep -E '\.(ts|tsx)$' || true)"
+for f in $ul_files; do
+  if show_file "$f" | grep -q 'xxKeyring\.unlock('; then
+    flag "xxKeyring.unlock( outside src/keyring/ + useTx hooks in $f — unlocked pair handled outside the boundary (THE RULE facet b, ADR-0003, AUDIT-2026-07-002)"
+  fi
+done
+
 # ---- Facet (a) proximity: T2 decode/signing/credential files ---------------
 # Touching these doesn't fail anything — it reminds the committer the change
 # is T2 (Tier: trailer + independent review + non-AI check).
-t2_pattern='^xx-wallet-mobile/(src/keyring/|src/utils/decodeCall|src/utils/bytesPackage|src/hooks/useTx|src/hooks/useSequentialTx|src/ledger/|src/cmix/(storageSecret|identity|identityExport|deviceKey|contactBinding)|src/api/constants|src/utils/pin|src/utils/webauthn|public/_headers)'
+# The pattern lives in gates/t2-paths (shared with `gates/commit-msg --range`,
+# which ENFORCES it server-side over the beta→main PR commit range).
+t2_pattern="$(grep -Ev '^[[:space:]]*(#|$)' "$(git rev-parse --show-toplevel)/gates/t2-paths" | head -1 || true)"
+[ -z "$t2_pattern" ] && t2_pattern='^xx-wallet-mobile/(src/keyring/|src/utils/decodeCall|src/utils/bytesPackage|src/hooks/useTx|src/hooks/useSequentialTx|src/ledger/|src/cmix/(storageSecret|identity|identityExport|deviceKey|contactBinding)|src/api/constants|src/utils/pin|src/utils/webauthn|public/_headers)'
 t2_touched=""
 [ "$mode" != "--tree" ] && t2_touched="$(echo "$staged_files" | grep -E "$t2_pattern" || true)"
 if [ -n "$t2_touched" ]; then

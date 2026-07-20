@@ -36,8 +36,27 @@ jobs:
         working-directory: xx-wallet-mobile
         run: npx vitest run
 
+      # Prove the exact artifact Cloudflare deploys actually builds — tsc
+      # doesn't model Vite failures (dynamic imports, ?url assets, plugin
+      # config), so without this a build-only breakage merges green and only
+      # fails at deploy time (AUDIT-2026-07-004).
+      - name: Build
+        working-directory: xx-wallet-mobile
+        run: npm run build
+
       - name: Boundary gate (THE RULE, strict)
         run: XXWALLET_BOUNDARY_STRICT=1 bash gates/xx-wallet-boundary --tree
+
+      # Server-side mirror of the local commit-msg hook (AUDIT-2026-07-003):
+      # a local hook dies to --no-verify; this asserts every code commit in
+      # the beta→main PR range carries its Tier: trailers, and that commits
+      # touching T2 paths (gates/t2-paths) are actually labelled T2. This is
+      # what makes the tier ceremony (independent review + non-AI check)
+      # enforceable at the gate that deploys to production. PR events only —
+      # a push has no unambiguous range.
+      - name: Tier trailers (commit-msg gate over PR range)
+        if: github.event_name == 'pull_request'
+        run: bash gates/commit-msg --range "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
 
       - name: Secret scan (gitleaks, full history)
         run: |

@@ -1,0 +1,15 @@
+# gates/t2-paths — the T2 tier map as a single machine-readable regex (ERE).
+#
+# Source of truth for "which paths are T2" (CLAUDE.md tier map; rationale in
+# docs/GAP_REPORT.md axis 7). Read by:
+#   - gates/xx-wallet-boundary  (T2-touch advisory on staged commits)
+#   - gates/commit-msg --range  (CI assertion: commits touching these paths
+#                                must carry `Tier: T2` — AUDIT-2026-07-003)
+#
+# Keep this in sync with the CLAUDE.md tier map: edit BOTH or the gates drift
+# from the doctrine. Deploy configuration (workflows, wrangler.toml, gates/)
+# is T2 per the tier map — push access to main is deploy access to a live
+# wallet, and a weakened gate is a weakened control.
+#
+# One non-comment line: the pattern.
+^xx-wallet-mobile/(src/keyring/|src/utils/decodeCall|src/utils/bytesPackage|src/hooks/useTx|src/hooks/useSequentialTx|src/ledger/|src/cmix/(storageSecret|identity|identityExport|deviceKey|contactBinding)|src/api/constants|src/utils/pin|src/utils/webauthn|public/_headers|wrangler\.toml)|^\.github/workflows/|^gates/
