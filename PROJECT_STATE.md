@@ -36,8 +36,8 @@ Day-to-day commits land on **`beta`** (auto-deploys to the beta preview URL). Pr
   **003+004** `gates/commit-msg --range` mode + shared `gates/t2-paths` tier-map regex + CI
   steps: production `vite build` + PR-range tier-trailer assertion (commits touching T2 paths
   must be `Tier: T2`); boundary gate now also flags `xxKeyring.unlock(` outside keyring/useTx
-  (`19923b1`). Toolchain re-run clean: npm audit 0, osv-scanner 0 (754 pkgs), eslint strict
-  clean, gitleaks 0 (203 commits); semgrep pending local install. Audit #1 baseline SHA
+  (`19923b1`). Toolchain re-run clean 5/5: npm audit 0, osv-scanner 0 (754 pkgs), semgrep 0
+  (265 files, 94 rules), eslint strict clean, gitleaks 0 (203 commits). Audit #1 baseline SHA
   corrected in project memory (`78374aa..6826a40`). Awaiting independent reviews → beta→main PR.
 - **2026-07-12:** GitHub/README organisation COMPLETE (promoted to main via PR). README: CI badge,
   Memos feature section, governance participation additions, real clone URL, corrected ED (1 XX,
