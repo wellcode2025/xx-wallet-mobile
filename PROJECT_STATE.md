@@ -8,13 +8,14 @@ _Last updated: 2026-07-17 by the Lead — code audit #2 remediation complete on 
 
 ## Now
 
-- **Code audit #2 remediation COMPLETE on `beta` — all three independent reviews PASS** (2026-07-19; report: 2026-07-17, 2 Low + 2 Info, no Crit/High/Med; findings fixed in `79ce245`+`8f56962`, `988d160`, `19923b1`). Ready for the beta→main PR (main..beta = 4 code commits + 2 ledger commits).
+- **Code audit #2 CLOSED end-to-end** (2026-07-20): remediated on `beta` (`79ce245`+`8f56962`, `988d160`, `19923b1`), three independent reviews PASS, promoted via **PR #5** — the first PR gated by the new CI `Tier trailers` range check (fired live: "4 code commit(s) classified correctly") — deployed to production and live-verified (CSP byte-identical to pre-session, mixnet connects). Review records in PR #5; advisory follow-ups logged below.
 - **Release workflow LIVE** (ADR-0016 + amendment): beta channel at the Workers preview alias (`beta-xx-wallet-mobile.<account>.workers.dev` — note: the `[env.beta]` block in wrangler.toml is NOT what the build uses; non-production-branch builds version-upload to the same Worker), `main` PR-only behind required CI.
 - **Pre-launch program** (launch ~2026-07-23): launch website (separate workstream) → launch.
 
 ## Next
 
-- **beta→main PR** carrying the three PASS review records — the first PR to exercise the new CI `Tier trailers` range check.
+- **Launch** (~2026-07-23): launch website goes live → bump to v1.0.0 + What's-New entry, README version badge.
+- T0 chore, unhurried: bump `actions/checkout` + `actions/setup-node` off the deprecated Node-20 majors; fix the stale `[env.beta]` comment in wrangler.toml (beta actually deploys as version-uploads to the same Worker, alias `beta-xx-wallet-mobile...workers.dev`).
 - **Review-advisory follow-ups (non-blocking, from the audit-2 review passes):** (1) `_headers` `worker-src` comment still says "service worker is same-origin only" while the directive is `'self' blob:` — same comment/header-drift class as AUDIT-2026-07-001, log as its own item; (2) ADR-0014 amendment wording nit: the blob worker's top-level fetch is `worker-src`-governed, only the inner `importScripts` is `script-src` — fix next time 0014 is touched; (3) re-confirm `main` branch protection (required `checks`) whenever protection settings are next touched.
 - Launch website goes live → launch (~2026-07-23). Launch ritual: bump to **v1.0.0** (decided) + What's-New entry, README version badge.
 
