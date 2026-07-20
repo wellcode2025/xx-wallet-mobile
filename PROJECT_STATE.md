@@ -8,13 +8,14 @@ _Last updated: 2026-07-17 by the Lead — code audit #2 remediation complete on 
 
 ## Now
 
-- **Code audit #2 remediation COMPLETE on `beta`** (report: 2026-07-17, 2 Low + 2 Info, no Crit/High/Med; all four findings fixed in commits `79ce245`, `988d160`, `19923b1`, `8f56962`). Ready for the beta→main PR once the independent reviews (Reviewer Packets prepared) return PASS.
+- **Code audit #2 remediation COMPLETE on `beta` — all three independent reviews PASS** (2026-07-19; report: 2026-07-17, 2 Low + 2 Info, no Crit/High/Med; findings fixed in `79ce245`+`8f56962`, `988d160`, `19923b1`). Ready for the beta→main PR (main..beta = 4 code commits + 2 ledger commits).
 - **Release workflow LIVE** (ADR-0016 + amendment): beta channel at the Workers preview alias (`beta-xx-wallet-mobile.<account>.workers.dev` — note: the `[env.beta]` block in wrangler.toml is NOT what the build uses; non-production-branch builds version-upload to the same Worker), `main` PR-only behind required CI.
 - **Pre-launch program** (launch ~2026-07-23): launch website (separate workstream) → launch.
 
 ## Next
 
-- **Independent reviews** of the three audit-2 T2 changes (packets prepared by the build session) → **beta→main PR** carrying the review record. This PR is the first to exercise the new CI `Tier trailers` range check.
+- **beta→main PR** carrying the three PASS review records — the first PR to exercise the new CI `Tier trailers` range check.
+- **Review-advisory follow-ups (non-blocking, from the audit-2 review passes):** (1) `_headers` `worker-src` comment still says "service worker is same-origin only" while the directive is `'self' blob:` — same comment/header-drift class as AUDIT-2026-07-001, log as its own item; (2) ADR-0014 amendment wording nit: the blob worker's top-level fetch is `worker-src`-governed, only the inner `importScripts` is `script-src` — fix next time 0014 is touched; (3) re-confirm `main` branch protection (required `checks`) whenever protection settings are next touched.
 - Launch website goes live → launch (~2026-07-23). Launch ritual: bump to **v1.0.0** (decided) + What's-New entry, README version badge.
 
 ## Workflow (in force since ADR-0016)
