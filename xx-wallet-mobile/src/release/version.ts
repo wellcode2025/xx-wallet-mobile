@@ -20,9 +20,10 @@
  *     fatigue and trains users to dismiss the sheet without reading.
  *   - APP_VERSION's only requirement is that it's a string that
  *     changes when you want the sheet to fire. It now tracks the app's
- *     semver (kept in sync with package.json and the Settings → About
- *     screen) so the sheet's "v0.9.0" header matches the version users
- *     see everywhere else. Bump it when you cut a release worth a nudge.
+ *     semver (kept in sync with package.json by hand; the Settings →
+ *     About screen imports it directly) so the sheet's version header
+ *     matches what users see everywhere else. Bump it when you cut a
+ *     release worth a nudge.
  *   - RELEASE_NOTES wants 3–6 short bullets. This isn't a changelog
  *     (the commit log is the changelog); it's a launch nudge.
  *   - RELEASE_TAGLINE is optional — leave as empty string to skip.
@@ -43,16 +44,15 @@
  *     (refactors, dependency bumps, file names). Substrate terms are fine.
  */
 
-export const APP_VERSION = '0.10.0';
+export const APP_VERSION = '1.0.0';
 
 /** Optional one-line subtitle rendered above the bullets. Keep <8 words. */
-export const RELEASE_TAGLINE = 'Private messaging, built in.';
+export const RELEASE_TAGLINE = 'Stable, audited, and here to stay.';
 
 /** Short, user-facing bullets. Substrate jargon is fine — foundation
  *  members and power users already speak it. */
 export const RELEASE_NOTES: readonly string[] = [
-  'Send private, end-to-end encrypted messages to other wallets over the xx mixnet — no servers, no group chat, history only on your device.',
-  'Message as any of your accounts, each with its own unlinkable identity, and choose which one you reach someone from.',
-  'Coordinate a multisig over the mixnet — send a proposal straight to your cosigners and it arrives ready to approve, no file or QR to pass around.',
-  'Lock messaging behind a dedicated passphrase (separate from your wallet password), and back up your identities to restore them on another device.',
+  'The full wallet — send, stake, vote, coordinate multisigs, sign with Ledger, message privately — is complete and stable.',
+  'A second security audit is closed, with every finding fixed before this release.',
+  'Your keys never leave your device — no servers, no accounts, and nothing to sign up for.',
 ];

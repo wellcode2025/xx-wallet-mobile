@@ -34,6 +34,7 @@ import { XX_ENDPOINTS } from '@/api';
 import { TopBar } from '@/components/layout';
 import { AddressIcon, Sheet } from '@/components/ui';
 import { isLocalAccount, xxKeyring } from '@/keyring';
+import { APP_VERSION } from '@/release/version';
 import { isLedgerSupported } from '@/ledger';
 import { Users } from 'lucide-react';
 import clsx from 'clsx';
@@ -262,7 +263,7 @@ export function Settings() {
           <div className="px-4 py-3 rounded-2xl bg-ink-800 border border-ink-700/50 space-y-3">
             <div>
               <p className="text-sm font-medium text-ink-200">xx Wallet Mobile</p>
-              <p className="text-xs text-ink-300">Version 0.10.0</p>
+              <p className="text-xs text-ink-300">Version {APP_VERSION}</p>
               <p className="text-xs text-ink-300 pt-1">
                 Open source, non-custodial. Your keys stay on this device.
               </p>
