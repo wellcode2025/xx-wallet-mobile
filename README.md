@@ -11,7 +11,7 @@
 [![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8.svg)](https://mobile.xx.network)
 [![Built with React + Vite](https://img.shields.io/badge/React_18-Vite-06b6d4.svg)](#tech-stack)
 [![Chain: xx network](https://img.shields.io/badge/chain-xx_network-08cdd7.svg)](https://xx.network)
-[![Version 0.10.0](https://img.shields.io/badge/version-0.10.0-08cdd7.svg)](https://mobile.xx.network)
+[![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-08cdd7.svg)](https://mobile.xx.network)
 
 [**Open the wallet → mobile.xx.network**](https://mobile.xx.network)
 

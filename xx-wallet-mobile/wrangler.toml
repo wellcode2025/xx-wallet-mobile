@@ -39,12 +39,18 @@ not_found_handling = "single-page-application"
 html_handling = "auto-trailing-slash"
 
 # --- Beta channel (ADR-0016) -------------------------------------------------
-# Deployed by a SECOND GitHub-connected Workers Build watching the `beta`
-# branch, with deploy command `npx wrangler deploy --env beta`. Separate
-# Worker, separate origin (xx-wallet-mobile-beta.<account>.workers.dev),
-# separate browser storage — a beta install can't touch production state.
-# `main`/compatibility_date are inherited; assets must be restated (binding
-# keys are not inherited by environments).
+# How beta actually deploys (PROJECT_STATE 2026-07-17): the GitHub-connected
+# Workers Build watching `beta` treats it as a non-production branch and
+# version-uploads to the SAME Worker as production (`name` above). It does
+# NOT read this [env.beta] block and does not run `--env beta`. The upload
+# is served at the branch preview alias
+# beta-xx-wallet-mobile.<account>.workers.dev — a different origin from
+# production, so browser storage stays isolated even on a shared Worker.
+# Production only changes when the main-branch build runs `wrangler deploy`.
+#
+# The [env.beta] block below is therefore UNUSED by the current builds. Kept
+# as the starting config should a dedicated beta Worker ever be wanted
+# (assets restated because binding keys are not inherited by environments).
 [env.beta]
 name = "xx-wallet-mobile-beta"
 
