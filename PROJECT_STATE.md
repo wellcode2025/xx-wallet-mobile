@@ -2,20 +2,20 @@
 
 > Live status ledger. **Updated every session that changes the project**, before the session ends. This replaces the status-narrative sections that used to live in `CLAUDE.md`; the phase-by-phase build history remains in the internal handoff doc (local-only, not in the public tree). See `PROJECT_DOCTRINE.md` §12.
 
-_Last updated: 2026-07-21 by the Lead — v1.0.0 launch ritual complete on `beta`_
+_Last updated: 2026-07-21 by the Lead — **v1.0.0 IN PRODUCTION**; public launch moment 2026-07-23_
 
 ---
 
 ## Now
 
-- **v1.0.0 ON `beta`, awaiting launch morning** (2026-07-21): launch ritual complete — version bump + What's-New + README badge (`13a5bc3`, T0) and both parked deploy-config chores at full T2 ceremony (`11e2794` CI actions v4→v6, `e219947` wrangler.toml comment; independent reviews PASS). Pending: Owner observes CI green on the beta push (the recorded Non-AI check for `11e2794`) + v1.0.0 spot-check on the beta alias → ONE beta→main PR opens **2026-07-23 10:00 PDT** (description pre-drafted); merge = production launch, same morning the launch site goes live.
+- **v1.0.0 LIVE in production** (2026-07-21, evening): beta→main PR merged ahead of schedule — Owner's call to decouple the deploy from the announcement (production had ~36h of quiet to surface deploy issues; existing installed users seeing the v1.0.0 What's-New pre-announcement accepted knowingly). All checks green including the tier-trailer range check over the three commits; Owner verified beta alias pre-merge and production post-merge (About 1.0.0, What's-New fires once, go-online connects). The **public launch moment** is now the launch site + announcement, **2026-07-23 10:00 PDT**.
 - **Code audit #2 CLOSED end-to-end** (2026-07-20): remediated on `beta` (`79ce245`+`8f56962`, `988d160`, `19923b1`), three independent reviews PASS, promoted via **PR #5** — the first PR gated by the new CI `Tier trailers` range check (fired live: "4 code commit(s) classified correctly") — deployed to production and live-verified (CSP byte-identical to pre-session, mixnet connects). Review records in PR #5; advisory follow-ups logged below.
 - **Release workflow LIVE** (ADR-0016 + amendment): beta channel at the Workers preview alias (`beta-xx-wallet-mobile.<account>.workers.dev` — note: the `[env.beta]` block in wrangler.toml is NOT what the build uses; non-production-branch builds version-upload to the same Worker), `main` PR-only behind required CI.
 - **Pre-launch program** (launch ~2026-07-23): launch website (separate workstream) → launch.
 
 ## Next
 
-- **Launch morning (2026-07-23 10:00 PDT):** confirm launch site live → open the prepared beta→main PR → CI `checks` green (incl. the tier-trailer range check over the three commits) → merge = launch.
+- **Launch morning (2026-07-23 10:00 PDT):** wallet side is DONE — launch site goes live + announcement (separate workstream). Nothing to deploy.
 - **Review-advisory follow-ups (non-blocking, from the audit-2 review passes):** (1) `_headers` `worker-src` comment still says "service worker is same-origin only" while the directive is `'self' blob:` — same comment/header-drift class as AUDIT-2026-07-001, log as its own item; (2) ADR-0014 amendment wording nit: the blob worker's top-level fetch is `worker-src`-governed, only the inner `importScripts` is `script-src` — fix next time 0014 is touched; (3) re-confirm `main` branch protection (required `checks`) whenever protection settings are next touched.
 
 ## Workflow (in force since ADR-0016)
@@ -37,7 +37,8 @@ Day-to-day commits land on **`beta`** (auto-deploys to the beta preview URL). Pr
   setup-node-v6 npm-only auto-cache both inert here) `11e2794`, Non-AI-Check = Owner-observed CI
   green on the push; wrangler.toml `[env.beta]` comment aligned with recorded deploy reality
   (comment-only) `e219947`. Both independent reviews PASS (packet-only subagent passes). Launch PR
-  description pre-drafted; PR opens launch morning.
+  description pre-drafted; PR opens launch morning. **Evening: merged to production ahead of
+  schedule** (Owner's call — deploy decoupled from the 07-23 announcement); prod verified live.
 - **2026-07-17:** Code audit #2 REMEDIATED, all four findings, on `beta` (T2 ceremony throughout):
   **001** `script-src blob:` investigated by live removal test on beta — xxdk-wasm's blob-worker
   bootstrap requires it (CSP violation observed, go-online blocked) → kept + `_headers` comment
