@@ -37,7 +37,11 @@ Day-to-day commits land on **`beta`** (auto-deploys to the beta preview URL). Pr
   + PWA-install tip + funds-safe-on-chain reassurance, and a compact shared storage note on
   Welcome ahead of both paths. Typecheck + 455/455 green. `recoverSleeveFromQuantumMnemonic()`
   exists in `keyring/sleeve.ts` but stays un-wired — a future "recover from quantum phrase"
-  import method is the real fix for the second trap.
+  import method is the real fix for the second trap. Follow-up sweep of warning coverage across
+  all screens: ED/reaping, multisig→exchange, 28-day lock (bond/unbond/chill/withdraw),
+  conviction lock-days, remove-account all already covered; one gap closed — caption under
+  Export keystore (file+password = the funds; guard like the phrase). Memos 21-day retention
+  note deliberately skipped as clutter.
 - **2026-07-21:** v1.0.0 launch ritual on `beta`. Version bump everywhere it lives (sweep-confirmed
   four places: package.json/lockfile, version.ts `APP_VERSION`, README badge, Settings→About — the
   last now imports `APP_VERSION` so it can't drift again) + launch What's-New entry per house style
