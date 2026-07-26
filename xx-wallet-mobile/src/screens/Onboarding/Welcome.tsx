@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Download, Plus } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Download, Plus } from 'lucide-react';
 
 /**
  * The first thing a user sees when they have no accounts.
@@ -38,6 +38,19 @@ export function Welcome() {
 
       {/* Actions */}
       <div className="space-y-3 pb-6">
+        {/* Shared storage-durability note — sits ahead of BOTH the create
+            and import paths. Ephemeral storage (private tabs, clear-on-exit
+            settings) silently erases the encrypted keystore on close; users
+            experience it as the wallet "forgetting" their accounts. Static
+            copy only, no incognito detection (ADR-0015: warn, don't gate). */}
+        <div className="flex items-start gap-3 p-3 rounded-2xl bg-warning/10 border border-warning/30 text-left">
+          <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-ink-300 leading-relaxed">
+            Don't use a private or incognito tab — your wallet lives in this
+            browser's storage, and private tabs erase it when closed. For
+            durable storage, install the app to your home screen.
+          </p>
+        </div>
         <Link to="/onboarding/create" className="btn-primary w-full">
           <Plus size={18} strokeWidth={2} />
           Create new wallet

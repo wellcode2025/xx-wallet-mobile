@@ -365,6 +365,29 @@ export function CreateWallet() {
               </p>
             </div>
 
+            {/* Static storage-durability warning — deliberately NO detection
+                (no navigator.storage checks, no incognito sniffing; ADR-0015:
+                warn, don't gate). Ephemeral storage silently erases the
+                encrypted keystore on tab close, which users experience as
+                the wallet "forgetting" their accounts. */}
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-warning/10 border border-warning/30">
+              <AlertTriangle size={18} className="text-warning flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-ink-200 space-y-1">
+                <p className="font-medium">Don't use a private or incognito tab</p>
+                <p className="text-ink-300 text-xs leading-relaxed">
+                  Your wallet lives in this browser's storage. Private tabs —
+                  and "clear site data on exit" settings — erase it when you
+                  close them. For durable storage, install the app to your
+                  home screen.
+                </p>
+                <p className="text-ink-300 text-xs leading-relaxed">
+                  Even if storage is wiped, your funds are safe on-chain and
+                  can be restored with your recovery phrase — that's why the
+                  backup matters.
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">

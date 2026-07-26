@@ -204,13 +204,22 @@ function AccountDetailView({ address }: { address: string }) {
               enters the browser, so there is genuinely nothing to back
               up from this wallet's side. */}
           {!isLedger && (
-            <button
-              onClick={handleExport}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
-            >
-              <Download size={18} className="text-ink-400" />
-              <span className="text-sm text-ink-100">Export keystore (.json)</span>
-            </button>
+            <>
+              <button
+                onClick={handleExport}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-900 border border-ink-800 active:bg-ink-800/40 text-left"
+              >
+                <Download size={18} className="text-ink-400" />
+                <span className="text-sm text-ink-100">Export keystore (.json)</span>
+              </button>
+              {/* One-tap download deserves one line of context: the file is a
+                  real backup, and file + password = the funds. */}
+              <p className="text-xs text-ink-300 leading-relaxed px-1 pb-1">
+                The exported file is encrypted with this account's password.
+                Together, file and password restore the account anywhere —
+                guard both like your recovery phrase.
+              </p>
+            </>
           )}
           <button
             onClick={() => setRemoveOpen(true)}
