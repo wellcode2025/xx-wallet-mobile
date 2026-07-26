@@ -281,6 +281,24 @@ export function ImportWallet() {
               </p>
             </div>
 
+            {/* Sleeve wallets have TWO valid BIP39 phrases. The quantum
+                (master) phrase passes validateMnemonic just fine but derives
+                a different sr25519 keypair — the user lands on a legitimate-
+                looking empty address and concludes their funds are gone.
+                Always-visible warning (not a tooltip — this is mobile). */}
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-warning/10 border border-warning/30">
+              <AlertTriangle size={18} className="text-warning flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-ink-200 space-y-1">
+                <p className="font-medium">Use your standard phrase only</p>
+                <p className="text-ink-300 text-xs leading-relaxed">
+                  Only the standard phrase restores your wallet. Do not enter
+                  your quantum phrase — it is a backup for the future quantum
+                  rollover, and importing it derives a different, empty
+                  address.
+                </p>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-ink-300 mb-1.5 uppercase tracking-wide">
                 Account name

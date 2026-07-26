@@ -2,7 +2,7 @@
 
 > Live status ledger. **Updated every session that changes the project**, before the session ends. This replaces the status-narrative sections that used to live in `CLAUDE.md`; the phase-by-phase build history remains in the internal handoff doc (local-only, not in the public tree). See `PROJECT_DOCTRINE.md` §12.
 
-_Last updated: 2026-07-21 by the Lead — **v1.0.0 IN PRODUCTION**; public launch moment 2026-07-23_
+_Last updated: 2026-07-25 by the Lead — post-launch onboarding warnings (quantum-phrase import + ephemeral storage) on `beta`_
 
 ---
 
@@ -28,6 +28,16 @@ Day-to-day commits land on **`beta`** (auto-deploys to the beta preview URL). Pr
 
 ## Recently done
 
+- **2026-07-25:** Onboarding warnings from post-launch community feedback (X user: "wallet forgot
+  my accounts, then my Q phrase gave a new empty address"). Both symptoms were app-permitted user
+  error: ephemeral storage (incognito/clear-on-exit) erasing the keystore, and the Sleeve quantum
+  master phrase passing BIP39 validation but deriving a different sr25519 address. Copy/UI only,
+  no logic: ImportWallet always-visible amber card (use the standard phrase only), CreateWallet
+  password-step storage warning (deliberately no incognito detection — ADR-0015 warn-don't-gate)
+  + PWA-install tip + funds-safe-on-chain reassurance, and a compact shared storage note on
+  Welcome ahead of both paths. Typecheck + 455/455 green. `recoverSleeveFromQuantumMnemonic()`
+  exists in `keyring/sleeve.ts` but stays un-wired — a future "recover from quantum phrase"
+  import method is the real fix for the second trap.
 - **2026-07-21:** v1.0.0 launch ritual on `beta`. Version bump everywhere it lives (sweep-confirmed
   four places: package.json/lockfile, version.ts `APP_VERSION`, README badge, Settings→About — the
   last now imports `APP_VERSION` so it can't drift again) + launch What's-New entry per house style
