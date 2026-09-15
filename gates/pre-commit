@@ -8,39 +8,171 @@
 # The secret block is NEVER overridable here. The warnings are advisory.
 # Install: see gates/README.md. Mirror the secret scan in CI too (--no-verify
 # bypasses local hooks).
+#
+# ---------------------------------------------------------------------------
+# DIVERGENCES FROM THE DOCTRINE KIT v2.1 (docs/adr/0017). Ported from
+# selvage-labs, where five independent review rounds PROVED each one against an
+# installed gate. Every fix below closes a path where this gate printed nothing
+# and exited 0 while scanning no content at all. Runnable proof for all of them:
+# gates/test-gates.sh
+#
+#  1. The diff invocation gained --no-ext-diff --no-textconv --text
+#     --no-relative. Without them the scan fails OPEN: a .gitattributes
+#     `-diff`/`binary` entry, or a diff.external setting (difftastic and
+#     friends), hides staged content from the scan entirely.
+#  2. The assignment pattern accepts a quote on either side of the separator
+#     and the secret[_-]?key spelling. The kit pattern matched only bare
+#     `api_key=value`; `api_key = "value"`, `"api_key": "value"` and
+#     `SOME_SECRET_KEY="value"` all slipped through — every shape a secret
+#     actually takes in TypeScript, JSON, YAML and a quoted .env. Deliberately
+#     NOT broadened to a generic identifier suffix: that false-positives on
+#     `tokenCount = f()`. The value class has no '.': with it,
+#     `SECRET_KEY = process.env.SECRET_KEY` would block on `process.env`, and
+#     this block is not overridable.
+#  3. grep -a throughout, and the header filter matches real header prefixes
+#     instead of any "+++ ".
+#  4. The diff is captured separately and a git failure BLOCKS; the kit's
+#     `|| true` turned any git error (a bad diff.* config value) into a silent
+#     empty scan and a green gate.
+#  5. The pattern match is a pipe into a draining grep (no -q) with its status
+#     checked: the kit's `printf | grep -q` under pipefail made every commit
+#     over ~64 KB of added text pass (SIGPIPE read as no-match), and a
+#     here-string failed open on a full /tmp. grep rc >= 2 BLOCKS.
+#  6. The two filter stages are run and checked SEPARATELY. Chained, they fail
+#     open under pipefail — bash reports the rightmost non-zero status, so a
+#     stage-1 grep dying with rc 2 is masked by stage 2's ordinary rc 1, and
+#     the gate scans an empty string and exits 0. Found during this port by the
+#     independent review; it is a defect in the selvage-labs gate too, and the
+#     fix was applied there in the same session.
+#
+# Not ported from selvage-labs: its Stripe key pattern (no Stripe here) and its
+# auto-chaining of gates/*-boundary (this repo runs the boundary gate strictly
+# in CI over the whole tree — see .github/workflows/ci.yml). ADR-0017 §
+# Alternatives.
+# ---------------------------------------------------------------------------
 
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
+# cd to the root, as gates/xx-wallet-boundary already does. `git commit`
+# guarantees a hook runs with cwd = repo top level, but this script is also
+# invoked directly — the test suite does it, and in this repository the daily
+# working directory is xx-wallet-mobile/ while gates/ sits at the super-repo
+# root, so running it by hand from a subdirectory is the natural habit.
+# It matters because `gitleaks protect --staged` defaults its --source to the
+# PROCESS's cwd: from a subdirectory it scans only that subtree, finds no
+# repo-root .gitleaks.toml, and reports success. A staged secret anywhere else
+# is never looked at, and nothing says the scan was narrower than the commit.
+cd "$repo_root" || { echo "BLOCKED: cannot enter the repository root '$repo_root'."; exit 1; }
 fail=0
 
 # --- 1. Secret scan over staged ADDED lines only -----------------------------
 # Look at what is actually being committed (added lines in the staged diff).
-staged_added="$(git diff --cached --no-color -U0 | grep '^+' | grep -v '^+++' || true)"
+# --no-ext-diff: a diff.external setting (difftastic etc.) otherwise replaces the
+#   output entirely and the scan sees nothing.   --no-textconv / --text: a
+#   .gitattributes `-diff` or `binary` entry otherwise collapses the file to
+#   "Binary files differ" and it is never scanned. All of these made the gate
+#   FAIL OPEN before this fix.   --no-relative: diff.relative would otherwise
+#   hide files outside the current directory (a hook may run from a subdir).
+#   The diff is captured on its own first: a git failure must BLOCK, not
+#   quietly yield an empty scan and a green gate.
+diff_rc=0
+raw_diff="$(git diff --cached --no-color --no-ext-diff --no-textconv --no-relative --text -U0)" || diff_rc=$?
+if [ "$diff_rc" -ne 0 ]; then
+  echo "BLOCKED: git diff failed (rc $diff_rc) — staged content cannot be scanned. Fix the git error first; this block is not overridable."
+  exit 1
+fi
+#   grep -a: --text emits raw bytes, and without -a a single NUL anywhere in the
+#   staged set flips grep into binary mode, which prints NOTHING — blanking the
+#   scan for the whole commit (an image staged next to a key). Header lines are
+#   dropped by their real prefix ('+++ a/', '+++ /dev/null', …) rather than any
+#   '+++ ', so an added content line that merely starts with '++ ' still gets
+#   scanned.
+#   Each filter stage runs and is checked SEPARATELY. Chaining them
+#   (`… | grep '^+' | grep -v '^+++'`) fails open under pipefail: bash reports
+#   the RIGHTMOST non-zero status, so a stage-1 grep that dies with rc 2 is
+#   masked by stage 2's ordinary rc 1 "no match" — the gate then sees an empty
+#   staged_added, skips the scan entirely and exits 0. Proved:
+#     bash -c 'set -o pipefail; (exit 2) | (exit 1); echo $?'   ->   1
+#   rc 1 from a stage just means "matched nothing", which for stage 1 is a
+#   deletion-only commit; rc >= 2 is a real failure and must BLOCK.
+#   (printf is a shell builtin and the greps drain their input, so neither stage
+#   can take SIGPIPE here.)
+plus_rc=0
+plus_lines="$(printf '%s\n' "$raw_diff" | grep -a '^+')" || plus_rc=$?
+if [ "$plus_rc" -gt 1 ]; then
+  echo "BLOCKED: the added-line filter failed (rc $plus_rc) — staged content cannot be scanned. This block is not overridable."
+  exit 1
+fi
+filter_rc=0
+staged_added="$(printf '%s\n' "$plus_lines" | grep -Eav '^\+\+\+ ([abciw]/|/dev/null)')" || filter_rc=$?
+if [ "$filter_rc" -gt 1 ]; then
+  echo "BLOCKED: the header filter failed (rc $filter_rc) — staged content cannot be scanned. This block is not overridable."
+  exit 1
+fi
 
-# Patterns for common credential shapes. Tune per project by adding lines.
-# Kept deliberately conservative to limit false positives, but the high-signal
-# shapes (private keys, AWS keys, generic api_key=... assignments) are caught.
+# --- the patterns -------------------------------------------------------------
+#
+# HIGH-SIGNAL shapes. A line matching one of these is a credential almost by
+# definition, wherever it appears. They block in every file, test files included.
 secret_patterns=(
   '-----BEGIN [A-Z ]*PRIVATE KEY-----'
   'AKIA[0-9A-Z]{16}'                                  # AWS access key id
   'ASIA[0-9A-Z]{16}'                                  # AWS temp key id
   'gh[pousr]_[A-Za-z0-9]{20,}'                        # GitHub tokens
   'xox[baprs]-[A-Za-z0-9-]{10,}'                      # Slack tokens
-  '(secret|password|passwd|api[_-]?key|token|access[_-]?key)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9/+=_-]{12,}'
   'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'  # JWT
 )
+
+# Deliberately NOT here: a generic `keyword = <long value>` heuristic.
+# One lived here and was removed. Four rounds of independent review produced
+# four blocking findings, every one of them inside the same forty lines trying
+# to tell a credential from an identifier by shape and file extension:
+#   round 2  the pattern blocked 13 lines of ordinary wallet code
+#   round 3  narrowing it to "must contain a digit" silently accepted a quoted
+#            word-based passphrase in production source
+#   round 4  the replacement accepted a bare word in .env / YAML / shell, and
+#            the change could not be committed because this file's own example
+#            tripped it
+#   round 5  the config-file carve-out then blocked ordinary placeholder text
+#            (`POSTGRES_PASSWORD: changeme-in-production` in a compose file,
+#            `DB_PASSWORD=please-set-a-real-value` in a .env.example)
+# Each fix closed the proven case and opened the adjacent one. That is the shape
+# of the problem, not bad luck: this distinction does not reduce to a regex over
+# a file extension. gitleaks spends its effort on exactly this — entropy
+# scoring, a maintained ruleset, a real allowlist model — so the decision
+# (docs/adr/0017) is to let it, and to keep here only what is cheap and certain.
+#
+# What remains local is the high-signal set above, which produced zero findings
+# in four rounds of adversarial review, plus gitleaks itself when it is
+# installed. CI runs gitleaks over full history on every push and is the
+# authority; see .github/workflows/ci.yml.
 
 if [ -n "$staged_added" ]; then
   for pat in "${secret_patterns[@]}"; do
     # `-e --` so patterns beginning with '-' (e.g. PRIVATE KEY header) aren't
     # mis-read as grep options.
-    if echo "$staged_added" | grep -EiqI -e "$pat"; then
+    # A pipe into a DRAINING grep (no -q, output discarded): grep reads to EOF, so
+    # the writer never takes SIGPIPE, and pipefail returns grep's own status.
+    #   - `printf | grep -q` failed open past ~64 KB (SIGPIPE read as no-match);
+    #   - a here-string failed open when /tmp was full (bash needs a temp file
+    #     above 64 KB and the failed redirect read as no-match).
+    # The status is checked explicitly: 0 = match, 1 = no match, anything else
+    # means grep itself failed and the scan must BLOCK rather than pass.
+    # -a, not -I: binary-looking input must still be matched, not skipped.
+    match_rc=0
+    printf '%s\n' "$staged_added" | grep -Eia -e "$pat" >/dev/null || match_rc=$?
+    if [ "$match_rc" -gt 1 ]; then
+      echo "BLOCKED: grep failed (rc $match_rc) while scanning for /$pat/ — cannot verify staged content. This block is not overridable."
+      fail=1; continue
+    fi
+    if [ "$match_rc" -eq 0 ]; then
       echo "BLOCKED: a staged line matches a secret pattern: /$pat/"
       echo "         Remove the secret from the staged change. This block is not overridable."
       fail=1
     fi
   done
+
 fi
 
 # --- 2. Advisory: strategy gate ----------------------------------------------
@@ -56,6 +188,59 @@ code_changed="$(git diff --cached --name-only | grep -Ev '^(docs/|PROJECT_STATE\
 ledger_changed="$(git diff --cached --name-only | grep -E '^PROJECT_STATE\.md$' || true)"
 if [ -n "$code_changed" ] && [ -z "$ledger_changed" ]; then
   echo "warning: code changed but PROJECT_STATE.md is not in this commit — update the ledger before ending the session (advisory)"
+fi
+
+# --- 1b. gitleaks, when it is installed -------------------------------------
+# The authority on "is this a credential". Not required locally — it is a
+# downloaded binary and this gate must run on every machine — but used when
+# present, and CI runs it over full history regardless (ADR-0017).
+if [ -z "$staged_added" ]; then
+  # Nothing was added, so there is nothing for gitleaks to judge — the same
+  # guard the pattern loop above uses. It currently returns "no leaks found" on
+  # empty input anyway; not relying on that keeps the two paths consistent.
+  :
+elif command -v gitleaks >/dev/null 2>&1; then
+  gl_rc=0
+  # gitleaks is given THIS gate's diff on stdin, not left to do its own.
+  #
+  # `gitleaks protect --staged` diffs internally, and that diffing honours
+  # .gitattributes: a path marked `-diff` or `binary` is skipped silently, with
+  # no message. That is the same blind spot fix 1 above was written to close for
+  # the local patterns — reopened in the tool brought in to be the authority.
+  # Verified: a Slack webhook staged in src/keyring/ under `secret.txt -diff`
+  # passes `protect --staged` clean, and CI's `detect --source .` is equally
+  # blind to it once committed.
+  #
+  # `detect --pipe` reads a diff from stdin and does no diffing of its own, so
+  # feeding it $raw_diff — already captured with --no-ext-diff --no-textconv
+  # --text --no-relative — means gitleaks sees exactly what this gate sees.
+  gl_args=(detect --pipe --redact --no-banner)
+  if [ -n "${GITLEAKS_CONFIG:-}" ]; then
+    gl_args+=(--config "$GITLEAKS_CONFIG")
+  elif [ -f "$repo_root/.gitleaks.toml" ]; then
+    # Passed explicitly: --pipe has no source directory to discover it from.
+    gl_args+=(--config "$repo_root/.gitleaks.toml")
+  fi
+  # $staged_added, NOT $raw_diff: the raw diff still contains the '-' lines, and
+  # gitleaks is not diff-aware in --pipe mode — it matches a secret on a REMOVED
+  # line exactly as on an added one. Piping the raw diff therefore blocked the
+  # commit that DELETES a secret, which is the remediation for the very problem
+  # this gate exists to prevent, and it is not overridable. Added lines only.
+  printf '%s\n' "$staged_added" | gitleaks "${gl_args[@]}" >/dev/null 2>&1 || gl_rc=$?
+  if [ "$gl_rc" -eq 1 ]; then
+    echo "BLOCKED: gitleaks reported a problem with the staged change. Run:"
+    echo "         gitleaks protect --staged --redact --verbose"
+    echo "         Usually a secret. gitleaks also exits 1 on a malformed"
+    echo "         .gitleaks.toml, so check the output rather than assuming."
+    echo "         This block is not overridable."
+    fail=1
+  elif [ "$gl_rc" -gt 1 ]; then
+    echo "BLOCKED: gitleaks failed to run (rc $gl_rc) — staged content was not verified by it."
+    fail=1
+  fi
+else
+  echo "note: gitleaks is not installed, so only the high-signal patterns ran locally."
+  echo "      CI scans full history with it. To scan here too: see docs/adr/0017."
 fi
 
 if [ "$fail" -ne 0 ]; then

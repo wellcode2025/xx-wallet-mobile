@@ -22,3 +22,4 @@ Most of these are retroactive captures (2026-07-11 brownfield audit, Stage 2) of
 | [0014](0014-web-platform-header-posture.md) | Deliberate web-platform posture — CSP/HSTS, public sourcemaps, same-origin WASM | T2 |
 | [0015](0015-warn-and-acknowledge-over-hard-blocks.md) | Risk-to-self gets warn + acknowledge; only integrity violations get hard blocks | T1 |
 | [0016](0016-beta-main-release-channels.md) | Two release channels — beta auto-deploys; main is PR-only behind required CI | T2 |
+| [0017](0017-port-proved-gate-fixes-from-selvage.md) | Port the proved secret-scan fixes from selvage-labs; stop the gates failing open; retire the credential heuristic in favour of gitleaks | T2 |
