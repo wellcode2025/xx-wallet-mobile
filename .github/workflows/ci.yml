@@ -60,5 +60,23 @@ jobs:
 
       - name: Secret scan (gitleaks, full history)
         run: |
+          # Force git to diff every path, overriding any `-diff`/`binary` entry
+          # in the repository's own .gitattributes.
+          #
+          # gitleaks does its own diffing when it walks history, and that
+          # diffing honours .gitattributes: a path marked `-diff` or `binary`
+          # is skipped SILENTLY, with no finding and no warning. A secret
+          # committed under such an attribute is invisible to this scan
+          # forever. Proved against this exact gitleaks version — a Slack
+          # webhook in src/keyring/ under `secret.txt -diff` scans clean, and
+          # is found the moment the attribute is neutralised.
+          #
+          # .git/info/attributes takes precedence over the in-tree
+          # .gitattributes, and is not itself committable, so this cannot be
+          # switched off by anyone opening a pull request. `* diff` alone
+          # covers both `-diff` and the `binary` macro.
+          #
+          # Runnable proof: gates/test-ci-secret-scan.sh   (docs/adr/0018)
+          printf '* diff\n' > .git/info/attributes
           curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz | tar -xz gitleaks
           ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose

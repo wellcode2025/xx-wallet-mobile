@@ -27,6 +27,20 @@ _Last updated: 2026-09-14 by the Lead — gate fixes ported from selvage-labs; t
   --staged` — which scopes itself to the process's working directory — scanned
   only a subtree when the gate was run by hand from one. Fixed, with `--source`
   passed explicitly.
+  **CI's half of that is now fixed too (ADR-0018, 2026-09-15):** `gitleaks
+  detect --source .` walks history by diffing it itself, and that diffing
+  honours `.gitattributes`, so a path marked `-diff` or `binary` was skipped
+  silently — permanently, and reachable by anyone who can open a PR, with no
+  backstop anywhere. CI now writes `* diff` to `.git/info/attributes` before
+  scanning, which takes precedence over the in-tree file and cannot be switched
+  off by a commit. `gates/test-ci-secret-scan.sh` is the runnable proof — 24 cases that
+  EXECUTE the workflow's own step under Actions' real shell semantics and read
+  the verdict from a file only the scanner can write. **Three review rounds were
+  needed to make the test honest**, each finding a weaker proxy than the last:
+  a substring in the workflow text, then the step's exit code, then a substring
+  in the step's whole output. All four mutations now fail.
+  Known limit, verified: gitleaks skips some file extensions (`.bin`, `.jpg`,
+  `.pdf`, `.zip`, `.exe`) outright, which no attribute override reaches.
   Round 7 found that gitleaks inherits the very blind spot the local scan was
   hardened against: `gitleaks protect --staged` does its own diffing, which
   honours `.gitattributes`, so a file marked `-diff` or `binary` was skipped
@@ -47,15 +61,11 @@ _Last updated: 2026-09-14 by the Lead — gate fixes ported from selvage-labs; t
 
 ## Next
 
-- **CI's gitleaks invocation has a `.gitattributes` blind spot (T2, needs its own
-  change and review).** `.github/workflows/ci.yml` runs `gitleaks detect --source
-  . --config .gitleaks.toml` over full history, and that skips any path marked
-  `-diff` or `binary`, verified against a committed secret. The local gate was
-  fixed by piping its own hardened diff to `detect --pipe`; CI needs equivalent
-  treatment, or a check that refuses new `-diff`/`binary` attributes on source
-  paths. A `.gitattributes` change is an ordinary file, so this is reachable by
-  anyone who can open a PR. Until it is done there is **no backstop** in the
-  pipeline for a secret hidden that way.
+- **Unpinned CI secret-scanner download (T2, own change).**
+  `.github/workflows/ci.yml` fetches the gitleaks tarball over HTTPS with **no
+  checksum**, so the tool CI trusts to find secrets is itself unverified supply
+  chain. Noticed while fixing ADR-0018; deliberately not bundled into that diff.
+  Fix is a `sha256sum -c` against a pinned digest, or the official action.
 
 - **Launch morning (2026-07-23 10:00 PDT):** wallet side is DONE — launch site goes live + announcement (separate workstream). Nothing to deploy.
 - **Review-advisory follow-ups (non-blocking, from the audit-2 review passes):** (1) `_headers` `worker-src` comment still says "service worker is same-origin only" while the directive is `'self' blob:` — same comment/header-drift class as AUDIT-2026-07-001, log as its own item; (2) ADR-0014 amendment wording nit: the blob worker's top-level fetch is `worker-src`-governed, only the inner `importScripts` is `script-src` — fix next time 0014 is touched; (3) re-confirm `main` branch protection (required `checks`) whenever protection settings are next touched.
