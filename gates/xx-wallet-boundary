@@ -24,28 +24,101 @@ set -euo pipefail
 strict="${XXWALLET_BOUNDARY_STRICT:-0}"
 mode="${1:-}"
 
+# Paths are root-relative; the hook may be invoked from any subdirectory, and
+# the per-file pathspecs below must resolve from the same place.
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# Filenames are NUL-delimited throughout (docs/adr/0017). Word-splitting a
+# newline-joined list silently SKIPPED any path containing a space — a file the
+# gate never opened reads exactly like a file with nothing to flag — and
+# `git show ":$f"` interpreted glob metacharacters, so `a[0].tsx` resolved to a
+# different file (or none). Both were proved by gates/test-gates.sh.
 if [ "$mode" = "--tree" ]; then
-  staged_files="$(git ls-files)"
-  show_file() { cat "$1" 2>/dev/null; }
+  mapfile -d '' staged_arr < <(git ls-files -z)
+  present_arr=(${staged_arr[@]+"${staged_arr[@]}"})   # --tree lists only files that exist
+  # -- so a leading-dash name is read as a path, not an option.
+  show_file() { cat -- "$1" 2>/dev/null; }
 else
-  staged_files="$(git diff --cached --name-only || true)"
-  show_file() { git show ":$1" 2>/dev/null; }
+  mapfile -d '' staged_arr < <(git diff --cached --name-only -z)
+  # Content scans need the files that still EXIST in the index: a staged
+  # deletion has no blob, and reading one would report "unreadable" and flag a
+  # plain `git rm` as unverified. The full list above is still what the T2 and
+  # public/internal checks use, because a deletion is part of those.
+  mapfile -d '' present_arr < <(git diff --cached --name-only -z --diff-filter=d)
+  # ":./path" rather than ":path": both read the index, but the leading "./"
+  # keeps a name that begins with "(" from being taken as pathspec magic. We
+  # cd'd to the repo root above, so "./" is root-relative. Verified against
+  # names containing spaces, glob metacharacters and parentheses.
+  # Returns non-zero if the blob cannot be read, and the callers CHECK it: a
+  # file the gate could not open must never read as a file with nothing to flag.
+  show_file() { git show ":./$1" 2>/dev/null; }
 fi
-[ -z "$staged_files" ] && exit 0
+[ "${#staged_arr[@]}" -eq 0 ] && exit 0
+
+t2_status="$(mktemp)" || { echo "boundary gate: could not create a temp file"; exit 2; }
+trap 'rm -f "$t2_status"' EXIT
 
 flagged=0
 flag() { echo "BOUNDARY: $1"; flagged=1; }
+
+# scan_file <path> <ere> [<exclude-ere>]
+#   0 = matched (after any exclusion), 1 = no match, 2 = could not be scanned.
+# Each stage is a separate, status-checked command. A chained
+# `show_file | grep A | grep -v B` fails open under pipefail: bash reports the
+# RIGHTMOST non-zero status, so a grep dying with rc 2 is masked by a later
+# stage's ordinary rc 1, the `if` reads it as "no match", and a file the gate
+# never managed to read looks exactly like a clean one. (docs/adr/0017)
+scan_file() {
+  local path="$1" pattern="$2" exclude="${3:-}" content hits rc
+  rc=0; content="$(show_file "$path")" || rc=$?
+  [ "$rc" -ne 0 ] && return 2
+  rc=0; hits="$(printf '%s\n' "$content" | grep -aE -e "$pattern")" || rc=$?
+  [ "$rc" -gt 1 ] && return 2
+  [ "$rc" -eq 1 ] && return 1
+  if [ -n "$exclude" ]; then
+    rc=0; printf '%s\n' "$hits" | grep -aEv -e "$exclude" >/dev/null || rc=$?
+    [ "$rc" -gt 1 ] && return 2
+    return "$rc"
+  fi
+  return 0
+}
+
+unreadable() {
+  echo "boundary gate: warning: '$1' could not be scanned — treating as UNVERIFIED, not as clean"
+  flagged=1
+}
+
 
 # ---- Facet (b): keyring isolation ------------------------------------------
 # @polkadot/keyring may be imported only under src/keyring/.
 # Only VALUE imports of the package root count: type-only imports and
 # '@polkadot/keyring/types' carry no key material and are allowed. Unit
 # tests (*.test.ts) may build fixture pairs — they don't ship.
-kr_files="$(echo "$staged_files" | grep -E '^xx-wallet-mobile/src/' | grep -Ev '^xx-wallet-mobile/src/keyring/' | grep -Ev '\.test\.tsx?$' | grep -E '\.(ts|tsx)$' || true)"
-for f in $kr_files; do
-  if show_file "$f" | grep -E "from ['\"]@polkadot/keyring['\"]|require\(['\"]@polkadot/keyring['\"]" | grep -Evq '^[[:space:]]*import[[:space:]]+type' ; then
-    flag "@polkadot/keyring imported outside src/keyring/ in $f (THE RULE facet b, ADR-0003)"
-  fi
+# Filtered with bash pattern matching, NOT a chain of greps.
+# `… | grep -z A | grep -zv B | grep -zE C || true` fails open under pipefail:
+# bash reports the RIGHTMOST non-zero status, so a stage dying with rc 2 is
+# masked by a later stage's ordinary rc 1 "no match", and the trailing `|| true`
+# erases even that — mapfile then gets an empty array, the loop below never
+# runs, and the gate reports no violations while having examined nothing.
+# A case statement cannot fail this way. (docs/adr/0017)
+kr_files=()
+for f in ${present_arr[@]+"${present_arr[@]}"}; do
+  case "$f" in
+    xx-wallet-mobile/src/keyring/*) continue ;;   # inside the boundary
+    xx-wallet-mobile/src/*) ;;
+    *) continue ;;
+  esac
+  case "$f" in *.test.ts|*.test.tsx) continue ;; esac   # fixtures do not ship
+  case "$f" in *.ts|*.tsx) kr_files+=("$f") ;; esac
+done
+for f in ${kr_files[@]+"${kr_files[@]}"}; do
+  rc=0
+  scan_file "$f" "from ['\"]@polkadot/keyring['\"]|require\(['\"]@polkadot/keyring['\"]" '^[[:space:]]*import[[:space:]]+type' || rc=$?
+  case "$rc" in
+    0) flag "@polkadot/keyring imported outside src/keyring/ in $f (THE RULE facet b, ADR-0003)" ;;
+    2) unreadable "$f" ;;
+  esac
 done
 
 # Facet (b), unlocked-pair handling: `xxKeyring.unlock(` may be called only
@@ -54,11 +127,24 @@ done
 # `xxKeyring.signMessage(...)` (raw messages) or the useTx hooks
 # (extrinsics) instead. Import-grep alone can't see this crossing; this
 # closes the gap audit finding AUDIT-2026-07-002 identified.
-ul_files="$(echo "$staged_files" | grep -E '^xx-wallet-mobile/src/' | grep -Ev '^xx-wallet-mobile/src/(keyring/|hooks/useTx|hooks/useSequentialTx)' | grep -Ev '\.test\.tsx?$' | grep -E '\.(ts|tsx)$' || true)"
-for f in $ul_files; do
-  if show_file "$f" | grep -q 'xxKeyring\.unlock('; then
-    flag "xxKeyring.unlock( outside src/keyring/ + useTx hooks in $f — unlocked pair handled outside the boundary (THE RULE facet b, ADR-0003, AUDIT-2026-07-002)"
-  fi
+ul_files=()
+for f in ${present_arr[@]+"${present_arr[@]}"}; do
+  case "$f" in
+    xx-wallet-mobile/src/keyring/*) continue ;;
+    xx-wallet-mobile/src/hooks/useTx*|xx-wallet-mobile/src/hooks/useSequentialTx*) continue ;;
+    xx-wallet-mobile/src/*) ;;
+    *) continue ;;
+  esac
+  case "$f" in *.test.ts|*.test.tsx) continue ;; esac
+  case "$f" in *.ts|*.tsx) ul_files+=("$f") ;; esac
+done
+for f in ${ul_files[@]+"${ul_files[@]}"}; do
+  rc=0
+  scan_file "$f" 'xxKeyring\.unlock\(' || rc=$?
+  case "$rc" in
+    0) flag "xxKeyring.unlock( outside src/keyring/ + useTx hooks in $f — unlocked pair handled outside the boundary (THE RULE facet b, ADR-0003, AUDIT-2026-07-002)" ;;
+    2) unreadable "$f" ;;
+  esac
 done
 
 # ---- Facet (a) proximity: T2 decode/signing/credential files ---------------
@@ -69,7 +155,30 @@ done
 t2_pattern="$(grep -Ev '^[[:space:]]*(#|$)' "$(git rev-parse --show-toplevel)/gates/t2-paths" | head -1 || true)"
 [ -z "$t2_pattern" ] && t2_pattern='^xx-wallet-mobile/(src/keyring/|src/utils/decodeCall|src/utils/bytesPackage|src/hooks/useTx|src/hooks/useSequentialTx|src/ledger/|src/cmix/(storageSecret|identity|identityExport|deviceKey|contactBinding)|src/api/constants|src/utils/pin|src/utils/webauthn|public/_headers)'
 t2_touched=""
-[ "$mode" != "--tree" ] && t2_touched="$(echo "$staged_files" | grep -E "$t2_pattern" || true)"
+if [ "$mode" != "--tree" ]; then
+  # Status checked rather than `|| true`'d: rc 1 is "nothing matched", rc >= 2
+  # means the advisory could not be computed and the operator must be told.
+  # mapfile, not $(...): command substitution silently drops NUL bytes, so the
+  # matched filenames came back concatenated into one unreadable line — and this
+  # list exists precisely so a human can read it and decide on the Tier trailer.
+  # The status is captured in THIS shell, not smuggled out of a process
+  # substitution. Writing `echo $? > file` after the pipe inside `< <(...)`
+  # looks equivalent and is not: under `set -e` the subshell aborts on the
+  # pipeline's own non-zero status — which includes the ordinary rc 1 "no T2
+  # path touched" — before the echo ever runs, leaving the status file empty
+  # and `[ "$t2_rc" -gt 1 ]` erroring with "integer expected" on every commit.
+  t2_rc=0
+  printf '%s\0' "${staged_arr[@]}" | grep -zE "$t2_pattern" > "$t2_status" || t2_rc=$?
+  if [ "$t2_rc" -gt 1 ]; then
+    echo "boundary gate: warning: the T2 tier-map check failed (rc $t2_rc) and was NOT applied"
+    [ "$strict" = "1" ] && { echo "boundary gate: STRICT — failing because the T2 check could not run."; exit 1; }
+  else
+    mapfile -d '' t2_arr < "$t2_status"
+    if [ "${#t2_arr[@]}" -gt 0 ]; then
+      t2_touched="$(printf '%s\n' "${t2_arr[@]}")"
+    fi
+  fi
+fi
 if [ -n "$t2_touched" ]; then
   echo "boundary gate: T2-area files in this commit (tier map, GAP_REPORT axis 7):"
   echo "$t2_touched" | sed 's/^/  - /'
@@ -78,11 +187,17 @@ fi
 
 # ---- Never-active-content: no dangerouslySetInnerHTML anywhere -------------
 # The codebase renders chain- and peer-supplied data as text only (ADR-0002).
-html_files="$(echo "$staged_files" | grep -E '\.(ts|tsx)$' || true)"
-for f in $html_files; do
-  if show_file "$f" | grep -q 'dangerouslySetInnerHTML'; then
-    flag "dangerouslySetInnerHTML in $f — untrusted-content surfaces are text-only (ADR-0002)"
-  fi
+html_files=()
+for f in ${present_arr[@]+"${present_arr[@]}"}; do
+  case "$f" in *.ts|*.tsx) html_files+=("$f") ;; esac
+done
+for f in ${html_files[@]+"${html_files[@]}"}; do
+  rc=0
+  scan_file "$f" 'dangerouslySetInnerHTML' || rc=$?
+  case "$rc" in
+    0) flag "dangerouslySetInnerHTML in $f — untrusted-content surfaces are text-only (ADR-0002)" ;;
+    2) unreadable "$f" ;;
+  esac
 done
 
 if [ "$flagged" -ne 0 ]; then
